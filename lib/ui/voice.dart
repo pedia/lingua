@@ -134,8 +134,8 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
                   }
 
                   final m = {
-                    'zh': '你好,我的名字${vs[i].name},我是一个语音角色',
-                    'en': 'Hello my name is ${vs[i].name}, I am a robot',
+                    'zh': '你好,这是一个中文语音合成引擎',
+                    'en': 'Hello, I am focus on bilingualism',
                   };
                   final s = m[vs[i].lang] ?? m['en']!;
 

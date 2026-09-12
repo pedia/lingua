@@ -7,7 +7,7 @@ import '../data/library_store.dart';
 import '../epub/parser.dart';
 import '../settings/app_settings.dart';
 import '../translate/translation_service.dart';
-import 'reader_page.dart';
+import 'reader.dart';
 import 'settings_page.dart';
 
 class LibraryPage extends StatefulWidget {

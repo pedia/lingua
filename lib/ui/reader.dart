@@ -1,38 +1,72 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:lingua/settings/setting.dart';
 import 'package:lingua/ui/voice.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/library_store.dart';
 import '../epub/book.dart';
-import '../epub/parser.dart';
-import '../epub/writer.dart';
-import '../settings/app_settings.dart';
-import '../translate/translation_service.dart';
-import '../tts/tts_controller.dart';
-import '../data/sample.dart';
 import '../tts/dualtts.dart';
-import '../settings/setting.dart';
 
-class ChapterFrame extends ConsumerStatefulWidget {
-  const ChapterFrame(this.chapter, {super.key});
-  final Chapter chapter;
-
-  @override
-  ConsumerState<ChapterFrame> createState() => _ChapterFrameState();
+/// current index of chapter and line
+class Progress {
+  Progress({this.chapter = 0, this.line = 0});
+  int chapter;
+  int line;
 }
 
-class _ChapterFrameState extends ConsumerState<ChapterFrame> {
+class BookFrame extends ConsumerStatefulWidget {
+  const BookFrame(this.book, this.progress, {super.key});
+  final Book book;
+  final Progress progress;
+
+  @override
+  ConsumerState<BookFrame> createState() => _BookFrameState();
+}
+
+class _BookFrameState extends ConsumerState<BookFrame> {
+  /// best font style
+  final bf = const TextStyle(
+    fontFamily: null, // let platform decide
+    fontFamilyFallback: [
+      'PingFang TC', // iOS / macOS
+      'Microsoft JhengHei', // Windows
+      'Noto Sans CJK TC',
+      'Source Han Sans TC',
+      'sans-serif',
+    ],
+    fontSize: 16,
+    height: 1.55,
+    fontWeight: FontWeight.w400,
+  );
+
   String lang = ''; // TODO: current lang
   final dt = DualTts();
+
+  late Progress progress;
+
+  /// CASE: avoid using ref in initState
+  bool _initialized = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_initialized) {
+      _initialized = true;
+
+      // ✅ Safe to use ref here
+      lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    dt.addListener(_onTts);
+    progress = widget.progress;
 
-    lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
+    // CASE:
+    // move into didChangeDependencies
+    // lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
+
+    dt.addListener(_onTts);
   }
 
   @override
@@ -48,12 +82,24 @@ class _ChapterFrameState extends ConsumerState<ChapterFrame> {
     if (!mounted) {
       return;
     }
+
+    progress.line = dt.index;
+
     debugPrint('got dts notify ${dt.playing} ${dt.index}');
+
+    // next chapter
+    if (!dt.playing && dt.index == lines.length) {
+      if (progress.chapter + 1 < widget.book.chapters.length) {
+        progress = Progress(chapter: progress.chapter + 1);
+      }
+
+      // TODO: How to play next
+    }
     setState(() {});
   }
 
   List<Line> get lines {
-    return widget.chapter.lines
+    return widget.book.chapters[progress.chapter].lines
         .where((line) => lang == '' || line.lang == lang)
         .toList();
   }
@@ -65,38 +111,40 @@ class _ChapterFrameState extends ConsumerState<ChapterFrame> {
       if (m.has('tts.en')) Voice.from('en', m.objectOf('tts.en')),
       if (m.has('tts.zh')) Voice.from('zh', m.objectOf('tts.zh')),
     ];
-
     return dt.apply(vs).then((x) => debugPrint('dualtts inited'));
   }
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
-    final ts = TextStyle(
-      // fontFamily: 'Roboto', // Or 'SF Pro', 'Inter', etc.
-      fontSize: 18.0, // Standard body size (14.0 - 18.0)
-      fontWeight: FontWeight.w400, // Regular weight is easiest to read
-      // color: Colors
-      //     .white70, // Soft black reduces eye strain compared to pure black
-      height: 1.5, // Line height (1.4 to 1.6 is ideal for body text)
-      letterSpacing: 0.5, // Subtle letter spacing helps character recognition
-    );
-
     return Scaffold(
       key: _scaffoldKey,
       drawer: Drawer(
-        child: ListView.builder(
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return ListTile(
-              selected: index == 3,
-              title: Text('epub.chapters[$index].title'),
-              onTap: () {
-                Navigator.pop(context);
-                // _goToChapter(index);
-              },
-            );
-          },
+        child: Column(
+          children: [
+            SafeArea(
+              // TODO: vertically center
+              child: SizedBox(
+                height: 50,
+                child: Center(child: Text(widget.book.title)),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: widget.book.chapters.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    selected: index == progress.chapter,
+                    title: Text(widget.book.chapters[index].title),
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => progress = Progress(chapter: index));
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       appBar: AppBar(
@@ -104,7 +152,7 @@ class _ChapterFrameState extends ConsumerState<ChapterFrame> {
           icon: Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text(widget.chapter.title),
+        title: Text(widget.book.chapters[progress.chapter].title),
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Display language',
@@ -200,9 +248,9 @@ class _ChapterFrameState extends ConsumerState<ChapterFrame> {
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.red),
                           ),
-                          child: Text(lines[i].text, style: ts),
+                          child: Text(lines[i].text, style: bf),
                         )
-                      : Text(lines[i].text, style: ts),
+                      : Text(lines[i].text, style: bf),
                 );
               },
             ),

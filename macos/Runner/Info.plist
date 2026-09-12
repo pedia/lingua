@@ -28,5 +28,30 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleDocumentTypes</key>
+			<array>
+			<dict>
+				<key>CFBundleTypeName</key>
+				<string>EPUB Book</string>
+				<key>CFBundleTypeRole</key>
+				<string>Viewer</string>          <!-- or Editor -->
+				<key>LSHandlerRank</key>
+				<string>Owner</string>           <!-- Owner / Alternate / Default -->
+				<key>LSItemContentTypes</key>
+				<array>
+				<string>org.idpf.epub-container</string>
+				</array>
+				<!-- Optional but useful -->
+				<key>CFBundleTypeExtensions</key>
+				<array>
+				<string>epub</string>
+				</array>
+			</dict>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

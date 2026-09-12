@@ -1,15 +1,13 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
-import 'reader_page.dart';
-import '../epub/book.dart';
+import 'reader.dart';
 import '../epub/parser.dart';
 import '../data/sample.dart';
 
-/// Globally pump OpenFile event to Widgets
+/// Globally pump `OpenFile` event to Widgets
 class OpenFile {
   static final _controller = StreamController<String>.broadcast();
   static Stream<String> get stream => _controller.stream;
@@ -22,11 +20,6 @@ class OpenFile {
     _controller.close();
   }
 }
-
-///
-
-/// android
-StreamSubscription? _intentSub;
 
 class LibraryFrame extends ConsumerStatefulWidget {
   const LibraryFrame({super.key});
@@ -43,7 +36,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
     super.initState();
 
     _subscription = OpenFile.stream.listen((fn) {
-      debugPrint('Lib got[macos] $fn');
+      debugPrint('lib got $fn');
       setState(() => events.add(fn));
     });
   }
@@ -51,8 +44,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
   @override
   void dispose() {
     _subscription?.cancel();
-    // android
-    _intentSub?.cancel();
+
     super.dispose();
   }
 
@@ -72,7 +64,9 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
             leading: Icon(Icons.book_rounded),
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => ChapterFrame(sample)),
+                MaterialPageRoute<void>(
+                  builder: (_) => BookFrame(sample, Progress()),
+                ),
               );
             },
           ),
@@ -85,7 +79,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               if (context.mounted) {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => ChapterFrame(book.chapters.first),
+                    builder: (_) => BookFrame(book, Progress()),
                   ),
                 );
               }

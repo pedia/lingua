@@ -9,7 +9,7 @@ List<Line> splitSentences(String text) {
   final parts = cleaned.split(RegExp(r'(?<=[.!?…])\s+|(?<=[。！？])'));
   return [
     for (final part in parts)
-      if (part.trim().isNotEmpty) Line(part.trim()),
+      if (part.trim().isNotEmpty) Line(part.trim(), detectLanguage(part)),
   ];
 }
 

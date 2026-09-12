@@ -1,33 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingua/settings/setting.dart';
 
-import 'data/library_store.dart';
-import 'settings/app_settings.dart';
-import 'translate/translation_service.dart';
 import 'ui/lib.dart';
 
-class LinguaApp extends StatelessWidget {
+ThemeData buildTheme(Brightness brightness) {
+  final base = ThemeData(brightness: brightness, useMaterial3: true);
+
+  // System fonts with good Chinese (TW) + English support
+  const fontFamilyFallback = [
+    'PingFang TC', // iOS / macOS
+    'Microsoft JhengHei', // Windows
+    'Noto Sans CJK TC',
+    'Source Han Sans TC',
+    'sans-serif',
+  ];
+
+  final textTheme = base.textTheme
+      .apply(
+        fontFamily: null, // use platform default
+        fontFamilyFallback: fontFamilyFallback,
+        bodyColor: brightness == Brightness.light
+            ? Colors.black87
+            : Colors.white,
+        displayColor: brightness == Brightness.light
+            ? Colors.black87
+            : Colors.white,
+      )
+      .copyWith(
+        // Optional: improve readability for Chinese
+        bodyLarge: base.textTheme.bodyLarge?.copyWith(
+          height: 1.55,
+          fontSize: 16,
+        ),
+        bodyMedium: base.textTheme.bodyMedium?.copyWith(
+          height: 1.55,
+          fontSize: 14.5,
+        ),
+        titleLarge: base.textTheme.titleLarge?.copyWith(
+          height: 1.35,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+
+  return base.copyWith(textTheme: textTheme);
+}
+
+class LinguaApp extends ConsumerWidget {
   const LinguaApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tm = ref.watch(settingProvider.select((m) => m.intOf('ui.theme-mode')));
     return MaterialApp(
       title: 'Lingua Reader',
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.values[tm],
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F6F5E),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F6F5E),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: buildTheme(Brightness.light),
+      darkTheme: buildTheme(Brightness.dark),
       home: LibraryFrame(),
     );
   }

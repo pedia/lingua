@@ -43,9 +43,9 @@ class ChapterStub implements Chapter {
     required this.href,
     required String title,
     required List<Line> lines,
-  })  : _title = title,
-        _lines = lines,
-        file = ArchiveFile.noData('stub');
+  }) : _title = title,
+       _lines = lines,
+       file = ArchiveFile.noData('stub');
 
   final String href;
 
@@ -94,13 +94,13 @@ class Book {
   const Book({
     required this.title,
     required this.author,
-    required this.language,
+    this.language,
     required this.chapters,
   });
 
   final String title;
   final String author;
-  final String language;
+  final String? language;
   final List<Chapter> chapters;
 
   int get sentenceCount =>
