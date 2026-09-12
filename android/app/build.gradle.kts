@@ -8,6 +8,9 @@ plugins {
 android {
     namespace = "com.lingua.reader.lingua"
     compileSdk = flutter.compileSdkVersion
+    print(flutter.compileSdkVersion)
+    // for receive_sharing_intent
+    // compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
