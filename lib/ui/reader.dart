@@ -176,16 +176,15 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               ).showSnackBar(SnackBar(content: Text('You selected: $val')));
             },
             itemBuilder: (BuildContext context) => const [
-              PopupMenuItem(value: 'en', child: Text('en only')),
-              PopupMenuItem(value: 'zh', child: Text('zh only')),
-              PopupMenuItem(value: '', child: Text('all')),
+              PopupMenuItem(value: 'en', child: Text('Only English')),
+              PopupMenuItem(value: 'zh', child: Text('Only Chinese')),
+              PopupMenuItem(value: '', child: Text('All')),
             ],
-            child: TextButton.icon(
-              icon: Icon(Icons.language_rounded, size: 36),
-              onPressed:
-                  null, // disabled because PopupMenuButton handles the tap
-              label: Text(lang),
-            ),
+            child: Text(switch (lang) {
+              'en' => 'EN',
+              'zh' => 'ZH',
+              '' || _ => 'ALL',
+            }),
           ),
           // SizedBox(width: 20),
           IconButton(
