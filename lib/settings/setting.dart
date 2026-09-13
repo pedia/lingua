@@ -283,3 +283,18 @@ class Tile extends ConsumerWidget {
     }
   }
 }
+
+const fontFamilyFallback = [
+  // Good Chinese fonts first
+  'Noto Sans CJK TC',
+  'Noto Sans TC',
+  'Source Han Sans TC',
+  'NotoSansCJK',
+  'SEC CJK', // Samsung specific
+  'SamsungOneKorean', // sometimes helps
+  // Generic fallbacks
+  'sans-serif',
+  'Roboto',
+  // 'PingFang TC', // iOS / macOS
+  'Microsoft JhengHei', // Windows
+];

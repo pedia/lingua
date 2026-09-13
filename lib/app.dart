@@ -7,19 +7,13 @@ import 'ui/lib.dart';
 ThemeData buildTheme(Brightness brightness) {
   final base = ThemeData(brightness: brightness, useMaterial3: true);
 
-  // System fonts with good Chinese (TW) + English support
-  const fontFamilyFallback = [
-    'PingFang TC', // iOS / macOS
-    'Microsoft JhengHei', // Windows
-    'Noto Sans CJK TC',
-    'Source Han Sans TC',
-    'sans-serif',
-  ];
-
   final textTheme = base.textTheme
       .apply(
-        fontFamily: null, // use platform default
-        fontFamilyFallback: fontFamilyFallback,
+        fontFamily: 'NotoSansTC', // use platform default
+        fontFamilyFallback: const [
+          'SEC CJK', // Samsung specific
+          'sans-serif', 'Roboto',
+        ],
         bodyColor: brightness == Brightness.light
             ? Colors.black87
             : Colors.white,
@@ -51,13 +45,16 @@ class LinguaApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tm = ref.watch(settingProvider.select((m) => m.intOf('ui.theme-mode')));
+    final tm = ref.watch(
+      settingProvider.select((m) => m.intOf('ui.theme-mode')),
+    );
     return MaterialApp(
       title: 'Lingua Reader',
       themeMode: ThemeMode.values[tm],
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
+      supportedLocales: const [Locale('zh', 'TW'), Locale('en', 'US')],
       home: LibraryFrame(),
     );
   }

@@ -16,9 +16,9 @@ void main() {
   test('splits latin and cjk sentences', () {
     expect(
       splitSentences('Hello world. How are you? Fine!'),
-      equals([Line('Hello world.'), Line('How are you?'), Line('Fine!')]),
+      equals([Line('Hello world.','en'), Line('How are you?','en'), Line('Fine!','en')]),
     );
-    expect(splitSentences('你好。世界！'), equals([Line('你好。'), Line('世界！')]));
+    expect(splitSentences('你好。世界！'), equals([Line('你好。','zh'), Line('世界！','zh')]));
   });
 
   test('parses a minimal epub', () {

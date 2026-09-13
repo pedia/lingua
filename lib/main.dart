@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'dart:io' show Platform;
+
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,28 +16,6 @@ import 'epub/parser.dart';
 import 'settings/app_settings.dart';
 import 'translate/translation_service.dart';
 import 'ui/lib.dart';
-
-Future<void> _importEpub(Store store, Object? argument) async {
-  if (argument is! String || argument.isEmpty) {
-    return;
-  }
-
-  final file = File(argument);
-  if (!file.existsSync()) {
-    return;
-  }
-
-  try {
-    final parsed = const EpubParser().parseBytes(await file.readAsBytes());
-    await store.importEpub(
-      sourcePath: argument,
-      title: parsed.title,
-      author: parsed.author,
-    );
-  } catch (error) {
-    debugPrint('Unable to import opened EPUB: $error');
-  }
-}
 
 /// macos
 late final MacosFileOpenSubscription fileOpenSubscription;
@@ -55,7 +34,7 @@ Future<void> main() async {
     fileOpenSubscription = MacosFileOpenHandler.instance.listen(
       (files) async {
         for (final file in files) {
-          debugPrint('Got MacosPackage: ${file.path}');
+          debugPrint('Got[MacosPackage]: ${file.path}');
           OpenFile.send(file.path);
         }
       },
@@ -68,10 +47,15 @@ Future<void> main() async {
   if (Platform.isAndroid) {
     // Check if app was opened with a file
     String? initialFile = await _openWithAppPlugin.getInitialFile();
+    debugPrint("initialFile: $initialFile");
+    if (initialFile != null) {
+      OpenFile.send(initialFile);
+    }
 
     // Listen for new files opened while app is running
     _openWithAppPlugin.getFileStream().listen((filePath) {
-      print("New file: $filePath");
+      debugPrint("New file: $filePath");
+      OpenFile.send(filePath);
     });
   }
 

@@ -1,10 +1,15 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 
 import 'reader.dart';
 import '../epub/parser.dart';
+import '../epub/book.dart';
 import '../data/sample.dart';
 
 /// Globally pump `OpenFile` event to Widgets
@@ -12,13 +17,50 @@ class OpenFile {
   static final _controller = StreamController<String>.broadcast();
   static Stream<String> get stream => _controller.stream;
 
-  static void send(String fn) {
-    _controller.add(fn);
+  static void send(String fp) {
+    cp(fp).then((nf) {
+      _controller.add(nf);
+    });
   }
 
   static void dispose() {
     _controller.close();
   }
+
+  /// iOS/Android Must copy
+  /// macOS → Better, but still safer to copy
+  /// Always copy the file to a permanent location
+  static Future<String> cp(String fp) async {
+    final src = File(fp);
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final booksDir = Directory('${appDir.path}/books');
+
+    if (!await booksDir.exists()) {
+      await booksDir.create(recursive: true);
+    }
+
+    final fileName = p.basename(fp);
+    final newPath = '${booksDir.path}/$fileName';
+
+    await src.copy(newPath);
+    return newPath;
+  }
+}
+
+enum ItemType { assets, file, demo, debug }
+
+class Item {
+  Item({
+    required this.name,
+    required this.path,
+    required this.type,
+    this.progress = const Progress(),
+  });
+  final ItemType type;
+  final String path;
+  final String name;
+  Progress progress;
 }
 
 class LibraryFrame extends ConsumerStatefulWidget {
@@ -37,7 +79,9 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
 
     _subscription = OpenFile.stream.listen((fn) {
       debugPrint('lib got $fn');
-      setState(() => events.add(fn));
+      setState(
+        () => items.add(Item(type: ItemType.file, path: fn, name: p.basename(fn))),
+      );
     });
   }
 
@@ -48,45 +92,91 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
     super.dispose();
   }
 
-  final events = <String>[];
+  Future<Book?> openEpub(String path) async {
+    final file = File(path);
+    if (!file.existsSync()) {
+      return null;
+    }
 
-  void openEpub(String path) {
-    // Your logic to open the .epub file
+    return const EpubParser().parseBytes(await file.readAsBytes());
   }
+
+  final items = <Item>[
+    Item(
+      name: 'Paranoid Mage',
+      path: 'assets/paranoid-mage-dual.epub',
+      type: ItemType.assets,
+    ),
+    Item(
+      name: 'Mother of Learning',
+      path: 'assets/mother-of-learning-dual.epub',
+      type: ItemType.assets,
+    ),
+    Item(name: 'Sample', path: '', type: ItemType.demo),
+    Item(
+      name: 'Debug, 中文',
+      path: '事實上，我想我並不記得這個月之前噴泉是什麼樣子',
+      type: ItemType.debug,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final fontName = DefaultTextStyle.of(context).style.fontFamily;
+
     return Scaffold(
-      body: ListView(
-        children: [
-          ListTile(
-            title: Text('sample'),
-            leading: Icon(Icons.book_rounded),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => BookFrame(sample, Progress()),
-                ),
+      appBar: AppBar(
+        title: Text('Lingua Reader'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add, size: 36),
+            onPressed: () async {
+              final result = await FilePicker.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: const ['epub'],
               );
-            },
-          ),
-          ListTile(
-            title: Text('Paranoid Mage'),
-            leading: Icon(Icons.book_rounded),
-            onTap: () async {
-              final d = await rootBundle.load('assets/paranoid-mage-dual.epub');
-              final book = EpubParser().parseBytes(d.buffer.asInt8List());
-              if (context.mounted) {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => BookFrame(book, Progress()),
-                  ),
-                );
+              if (result?.files != null) {
+                for (final file in result!.files) {
+                  OpenFile.send(file.path!);
+                }
               }
             },
           ),
-          ...events.map((e) => ListTile(title: Text(e))),
         ],
+      ),
+      body: Scrollbar(
+        child: ListView.builder(
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final e = items[index];
+            return ListTile(
+              title: e.type == ItemType.debug
+                  ? Text('${e.name} $fontName')
+                  : Text(e.name),
+              subtitle: e.type == ItemType.debug ? Text(e.path) : null,
+              leading: Icon(Icons.book_rounded),
+              onTap: () async {
+                Book? book;
+                if (e.type == ItemType.assets) {
+                  final d = await rootBundle.load(e.path);
+                  book = EpubParser().parseBytes(d.buffer.asInt8List());
+                } else if (e.type == ItemType.file) {
+                  book = await openEpub(e.path);
+                } else if (e.type == ItemType.demo) {
+                  book = sample;
+                }
+
+                if (context.mounted && book != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => BookFrame(book!, Progress()),
+                    ),
+                  );
+                }
+              },
+            );
+          },
+        ),
       ),
     );
   }

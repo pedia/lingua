@@ -65,7 +65,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
             .map(
               (e) => PopupMenuItem<Object>(
                 value: e,
-                child: Text(Voice.displayVoice(e.cast<String,String>())),
+                child: Text(Voice.displayVoice(e.cast<String, String>())),
               ),
             )
             .toList();
@@ -106,12 +106,16 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
 
   Widget card(BuildContext context, int i) {
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(vs[i].title, style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                vs[i].title,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               // Expanded(),
               TextButton(
                 onPressed: () async {

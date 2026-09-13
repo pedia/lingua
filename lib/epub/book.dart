@@ -7,7 +7,7 @@ class Line {
   final String lang;
 
   @override
-  String toString() => 'Line($text)';
+  String toString() => 'Line($text)$lang';
 
   @override
   bool operator ==(Object other) =>

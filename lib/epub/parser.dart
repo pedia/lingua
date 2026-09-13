@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import 'package:archive/archive.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:xml/xml.dart';
+import 'package:html/dom.dart';
 
 import 'book.dart';
 import 'text_splitter.dart';
@@ -73,15 +75,8 @@ class EpubParser {
       if (file == null) {
         continue;
       }
-      final html = utf8.decode(file.content as List<int>);
-      final extracted = _extractHtml(html);
-      final sentences = splitSentences(extracted);
-      if (sentences.isEmpty) {
-        continue;
-      }
-      chapters.add(
-        Chapter.from(href, file),
-      );
+
+      chapters.add(Chapter.from(href, file));
       index += 1;
     }
 
@@ -125,32 +120,37 @@ class EpubParser {
 
   static Chapter decode(String href, ArchiveFile file) {
     final html = utf8.decode(file.content as List<int>);
-    final extracted = _extractHtml(html);
-    return Chapter.cache(
-        href: href,
-        lines: splitSentences(extracted),
-        title: _headingFromHtml(html) ?? '');
-  }
+    final dom = html_parser.parse(html);
 
-  static String _extractHtml(String html) {
-    final document = html_parser.parse(html);
-    for (final tag in ['script', 'style', 'nav']) {
-      document.querySelectorAll(tag).forEach((node) => node.remove());
+    String? title;
+    for (final selector in ['title', 'h1', 'h2', 'h3']) {
+      final text = dom.querySelector(selector)?.text.trim();
+      if (text != null) {
+        title = text;
+      }
     }
-    return collapseWhitespace(
-      document.body?.text ?? document.documentElement?.text ?? '',
+
+    // debugPrint('decode: $title');
+
+    return Chapter.cache(
+      href: href,
+      lines: extractLines(dom),
+      title: title ?? '',
     );
   }
 
-  static String? _headingFromHtml(String html) {
-    final document = html_parser.parse(html);
-    for (final selector in ['h1', 'h2', 'h3', 'title']) {
-      final text = document.querySelector(selector)?.text.trim();
-      if (text != null && text.isNotEmpty) {
-        return collapseWhitespace(text);
-      }
+  static List<Line> extractLines(Document dom) {
+    final ret = <Line>[];
+    for (var p in dom.querySelectorAll('p')) {
+      final t = p.text.trim();
+      final lang = switch (p.className) {
+        'zh' || 'en' => p.className,
+        _ => detectLanguage(p.text),
+      };
+
+      ret.add(Line(t, lang));
     }
-    return null;
+    return ret;
   }
 
   String _dirName(String path) {

@@ -5,12 +5,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../epub/book.dart';
 import '../tts/dualtts.dart';
+import 'font.dart';
 
 /// current index of chapter and line
 class Progress {
-  Progress({this.chapter = 0, this.line = 0});
-  int chapter;
-  int line;
+  const Progress({this.chapter = 0, this.line = 0});
+  final int chapter;
+  final int line;
+
+  Progress copyWith({int? chapter, int? line}) =>
+      Progress(chapter: chapter ?? this.chapter, line: line ?? this.line);
 }
 
 class BookFrame extends ConsumerStatefulWidget {
@@ -24,19 +28,22 @@ class BookFrame extends ConsumerStatefulWidget {
 
 class _BookFrameState extends ConsumerState<BookFrame> {
   /// best font style
-  final bf = const TextStyle(
-    fontFamily: null, // let platform decide
-    fontFamilyFallback: [
-      'PingFang TC', // iOS / macOS
-      'Microsoft JhengHei', // Windows
-      'Noto Sans CJK TC',
-      'Source Han Sans TC',
-      'sans-serif',
-    ],
-    fontSize: 16,
-    height: 1.55,
-    fontWeight: FontWeight.w400,
-  );
+  TextStyle textStyle(String lang) => switch (lang) {
+    'zh' => const TextStyle(
+      fontFamily: 'NotoSansTC', // let platform decide
+      fontFamilyFallback: fontFamilyFallback,
+      fontSize: 18,
+      height: 1.55,
+      fontWeight: FontWeight.w400,
+    ),
+    'en' || _ => const TextStyle(
+      fontFamily: 'monospace', // let platform decide
+      fontFamilyFallback: ['Roboto', 'Noto Sans'],
+      fontSize: 16,
+      height: 1.55,
+      fontWeight: FontWeight.w200,
+    ),
+  };
 
   String lang = ''; // TODO: current lang
   final dt = DualTts();
@@ -83,14 +90,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       return;
     }
 
-    progress.line = dt.index;
+    progress = progress.copyWith(line: dt.index + 1);
 
     debugPrint('got dts notify ${dt.playing} ${dt.index}');
 
     // next chapter
     if (!dt.playing && dt.index == lines.length) {
       if (progress.chapter + 1 < widget.book.chapters.length) {
-        progress = Progress(chapter: progress.chapter + 1);
+        progress = progress.copyWith(chapter: progress.chapter + 1, line: 0);
       }
 
       // TODO: How to play next
@@ -123,25 +130,29 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         child: Column(
           children: [
             SafeArea(
-              // TODO: vertically center
-              child: SizedBox(
-                height: 50,
-                child: Center(child: Text(widget.book.title)),
+              child: Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  title: Text(widget.book.title),
+                  subtitle: Text(widget.book.author),
+                ),
               ),
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: widget.book.chapters.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    selected: index == progress.chapter,
-                    title: Text(widget.book.chapters[index].title),
-                    onTap: () {
-                      Navigator.pop(context);
-                      setState(() => progress = Progress(chapter: index));
-                    },
-                  );
-                },
+              child: Scrollbar(
+                child: ListView.builder(
+                  itemCount: widget.book.chapters.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      selected: index == progress.chapter,
+                      title: Text(widget.book.chapters[index].title),
+                      onTap: () {
+                        Navigator.pop(context);
+                        setState(() => progress = Progress(chapter: index));
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -196,6 +207,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           PopupMenuButton<String>(
             tooltip: 'More',
             onSelected: (String value) async {
+              if (value == 'font') {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (context) => FontFrame()),
+                );
+                return;
+              }
               final f = Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (context) {
@@ -223,6 +240,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               PopupMenuItem(value: 'search', child: Text('Search')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
+              PopupMenuItem(value: 'font', child: Text('Font Demo')),
             ],
             child: Icon(Icons.more_horiz, size: 36),
           ),
@@ -248,9 +266,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.red),
                           ),
-                          child: Text(lines[i].text, style: bf),
+                          child: Text(
+                            lines[i].text,
+                            style: textStyle(lines[i].lang),
+                          ),
                         )
-                      : Text(lines[i].text, style: bf),
+                      : Text(lines[i].text, style: textStyle(lines[i].lang)),
                 );
               },
             ),

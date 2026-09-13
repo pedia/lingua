@@ -51,13 +51,13 @@ class Voice {
   }
 
   Map<String, Object> toSetting() => {
-        'lang': lang,
-        'language': language,
-        'rate': rate,
-        'pitch': pitch,
-        if (volume != null) 'volume': volume!,
-        if (voice != null) 'voice': voice!,
-      };
+    'lang': lang,
+    'language': language,
+    'rate': rate,
+    'pitch': pitch,
+    if (volume != null) 'volume': volume!,
+    if (voice != null) 'voice': voice!,
+  };
 
   String get title =>
       <String, String>{'en': 'English', 'zh': 'Chinese'}[lang] ?? '';
@@ -185,7 +185,6 @@ class DualTts extends ChangeNotifier {
     playing = false;
     tts.stop();
 
-    lines.clear();
     super.dispose();
   }
 }
