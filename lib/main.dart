@@ -1,27 +1,19 @@
-import 'dart:io';
-
-import 'dart:io';
-
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:universal_io/universal_io.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:macos_file_open_handler/macos_file_open_handler.dart';
 import 'package:open_with_app/open_with_app.dart';
-import 'dart:async';
 
 import 'app.dart';
-import 'data/library_store.dart';
-import 'epub/parser.dart';
-import 'settings/app_settings.dart';
-import 'translate/translation_service.dart';
 import 'ui/lib.dart';
 
 /// macos
 late final MacosFileOpenSubscription fileOpenSubscription;
 
 // android openfile
-final _openWithAppPlugin = OpenWithApp();
+late final OpenWithApp _openWithAppPlugin;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +37,7 @@ Future<void> main() async {
   }
 
   if (Platform.isAndroid) {
+    _openWithAppPlugin = OpenWithApp();
     // Check if app was opened with a file
     String? initialFile = await _openWithAppPlugin.getInitialFile();
     debugPrint("initialFile: $initialFile");

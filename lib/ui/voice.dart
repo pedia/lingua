@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -15,17 +16,27 @@ class VoiceSettingPage extends StatefulWidget {
 
 class _VoiceSettingPageState extends State<VoiceSettingPage> {
   final tts = FlutterTts();
-  late List ves; // list of {"name": "Karen", "locale": "en-AU"}
+  final List<Map<String, String>> allves =
+      []; // engine support voices, item like: {"name": "Karen", "locale": "en-AU"}
   List<Voice> vs = [];
 
   @override
   void initState() {
     super.initState();
     setState(() => vs = widget.vs);
+    debugPrint('widget vs: $vs');
 
     tts.getVoices.then((x) {
-      setState(() => ves = x);
-      // debugPrint('$ves');
+      final list = (x as List).cast<Map>();
+      final typed = list.map((e) => Map<String, String>.from(e)).where((e) {
+        return e['locale'] == 'en-US' ||
+            e['locale'] == 'zh-TW' ||
+            // exclude gender: unspecified
+            e['gender'] != 'unspecified';
+      });
+
+      setState(() => allves.addAll(typed));
+      debugPrint('engine voices: $typed');
     });
   }
 
@@ -35,27 +46,21 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
     super.dispose();
   }
 
-  Widget choose(BuildContext context, int i) {
-    return PopupMenuButton<Object>(
-      // TODO: Map<String, String>
+  Widget chooseVoice(BuildContext context, int i) {
+    return PopupMenuButton<Map<String, String>>(
       tooltip: 'Choose voice',
       initialValue: vs[i].voice,
       onSelected: (v) {
-        setState(
-          () =>
-              vs[i] = vs[i].copyWith(voice: (v as Map).cast<String, String>()),
-        );
+        setState(() => vs[i] = vs[i].copyWith(voice: v));
       },
       itemBuilder: (BuildContext context) {
-        debugPrint('${ves.length}');
-        return ves
+        return allves
             .where((e) {
               if (e['locale'] != vs[i].language) {
                 return false;
               }
               // exclude gender: unspecified
-              final String gender = e['gender'] ?? '';
-              if (gender == 'unspecified') {
+              if (e['gender'] == 'unspecified') {
                 return false;
               }
 
@@ -63,9 +68,9 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
               return true;
             })
             .map(
-              (e) => PopupMenuItem<Object>(
+              (e) => PopupMenuItem<Map<String, String>>(
                 value: e,
-                child: Text(Voice.displayVoice(e.cast<String, String>())),
+                child: Text(Voice.displayVoice(e)),
               ),
             )
             .toList();
@@ -74,6 +79,37 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
         onPressed: null, // disabled because PopupMenuButton handles the tap
         child: Text(vs[i].name, style: Theme.of(context).textTheme.labelLarge),
       ),
+    );
+  }
+
+  Widget chooseVoiceDropdown(BuildContext context, int i) {
+    return DropdownButton<DropKey>(
+      key: Key(vs[i].lang),
+      value: DropKey(vs[i].voice),
+      underline: null,
+      onChanged: (v) {
+        setState(() => vs[i] = vs[i].copyWith(voice: v!.m));
+      },
+      items: allves
+          .where((e) {
+            if (e['locale'] != vs[i].language) {
+              return false;
+            }
+            // exclude gender: unspecified
+            if (e['gender'] == 'unspecified') {
+              return false;
+            }
+
+            // com.apple.speech.synthesis.voice.Fred
+            return true;
+          })
+          .map(
+            (e) => DropdownMenuItem<DropKey>(
+              value: DropKey(e),
+              child: Text(Voice.displayVoice(e)),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -106,121 +142,139 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
 
   Widget card(BuildContext context, int i) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                vs[i].title,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              // Expanded(),
-              TextButton(
-                onPressed: () async {
-                  await tts.stop();
-                  await tts.awaitSpeakCompletion(true);
-                  await tts.setSpeechRate(vs[i].rate);
-                  await tts.setPitch(vs[i].pitch);
-                  if (vs[i].volume != null) await tts.setVolume(vs[i].volume!);
-
-                  // setLanguage must before setVoice
-                  try {
-                    await tts.setLanguage(vs[i].language);
-                  } catch (e) {
-                    debugPrint('setLanguage failed: $e');
-                  }
-
-                  if (vs[i].voice != null) {
-                    final v = await tts.setVoice(vs[i].voice!);
-                    debugPrint('setVoice: ${vs[i].voice} -> $v');
-                  }
-
-                  final m = {
-                    'zh': '你好,这是一个中文语音合成引擎',
-                    'en': 'Hello, I am focus on bilingualism',
-                  };
-                  final s = m[vs[i].lang] ?? m['en']!;
-
-                  tts.speak(s);
-                },
-                child: Text('Play Sample'),
-              ),
-            ],
-          ),
-
-          // voice
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [Text('Voice'), choose(context, i)],
-          ),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                flex: 1,
-                child: Text('Rate ${vs[i].rate.toStringAsFixed(2)}'),
-              ),
-              Flexible(
-                flex: 3,
-                child: Slider(
-                  value: vs[i].rate,
-                  min: 0.0,
-                  max: 1.0,
-                  onChanged: (val) {
-                    setState(() => vs[i] = vs[i].copyWith(rate: val));
-                  },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  vs[i].title,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-              ),
-            ],
-          ),
+                // Expanded(),
+                TextButton(
+                  onPressed: () async {
+                    await tts.stop();
+                    await tts.awaitSpeakCompletion(true);
+                    await tts.setSpeechRate(vs[i].rate);
+                    await tts.setPitch(vs[i].pitch);
+                    if (vs[i].volume != null)
+                      await tts.setVolume(vs[i].volume!);
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                flex: 1,
-                child: Text('Volume ${vs[i].volume?.toStringAsFixed(2)}'),
-              ),
-              Flexible(
-                flex: 3,
-                child: Slider(
-                  divisions: 5,
-                  value: vs[i].volume ?? 1.0,
-                  min: 0.0,
-                  max: 1.0,
-                  onChanged: (val) {
-                    setState(() => vs[i] = vs[i].copyWith(volume: val));
+                    // setLanguage must before setVoice
+                    try {
+                      await tts.setLanguage(vs[i].language);
+                    } catch (e) {
+                      debugPrint('setLanguage failed: $e');
+                    }
+
+                    if (vs[i].voice != null) {
+                      final v = await tts.setVoice(vs[i].voice!);
+                      debugPrint('setVoice: ${vs[i].voice} -> $v');
+                    }
+
+                    final m = {
+                      'zh': '你好,选择体验更好的语音合成引擎 say something in English',
+                      'en': 'Hello, I am focus on bilingualism',
+                    };
+                    final s = m[vs[i].lang] ?? m['en']!;
+
+                    tts.speak(s);
                   },
+                  child: Text('Play Sample'),
                 ),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                flex: 1,
-                child: Text('Pitch ${vs[i].pitch.toStringAsFixed(2)}'),
-              ),
-              Flexible(
-                flex: 3,
-                child: Slider(
-                  divisions: 10,
-                  value: vs[i].pitch,
-                  min: 0.5,
-                  max: 2.0,
-                  onChanged: (val) {
-                    setState(() => vs[i] = vs[i].copyWith(pitch: val));
-                  },
+              ],
+            ),
+
+            // voice
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(flex: 1, child: Text('Voice')),
+                Flexible(flex: 1, child: chooseVoiceDropdown(context, i)),
+              ],
+            ),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  flex: 1,
+                  child: Text('Rate ${vs[i].rate.toStringAsFixed(2)}'),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Flexible(
+                  flex: 3,
+                  child: Slider(
+                    value: vs[i].rate,
+                    min: 0.0,
+                    max: 1.0,
+                    onChanged: (val) {
+                      setState(() => vs[i] = vs[i].copyWith(rate: val));
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  flex: 1,
+                  child: Text('Volume ${vs[i].volume?.toStringAsFixed(2)}'),
+                ),
+                Flexible(
+                  flex: 3,
+                  child: Slider(
+                    divisions: 5,
+                    value: vs[i].volume ?? 1.0,
+                    min: 0.0,
+                    max: 1.0,
+                    onChanged: (val) {
+                      setState(() => vs[i] = vs[i].copyWith(volume: val));
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  flex: 1,
+                  child: Text('Pitch ${vs[i].pitch.toStringAsFixed(2)}'),
+                ),
+                Flexible(
+                  flex: 3,
+                  child: Slider(
+                    divisions: 10,
+                    value: vs[i].pitch,
+                    min: 0.5,
+                    max: 2.0,
+                    onChanged: (val) {
+                      setState(() => vs[i] = vs[i].copyWith(pitch: val));
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+/// Map<String, String> cannot be compared?
+class DropKey {
+  DropKey(this.m);
+  final Map<String, String>? m;
+
+  @override
+  bool operator ==(Object other) => other is DropKey && mapEquals(m, other.m);
+
+  @override
+  int get hashCode => Object.hashAll(m?.entries ?? []);
 }

@@ -1,6 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:universal_io/universal_io.dart';
+
 import 'package:path/path.dart' as p;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -116,7 +118,9 @@ class Setting extends Notifier<TypedMap> {
 
   Future load() async {
     try {
-      final docs = await getApplicationDocumentsDirectory();
+      final docs = kIsWeb
+          ? Directory('.')
+          : await getApplicationDocumentsDirectory();
       final file = File(p.join(docs.path, 'setting.json'));
       final m = jsonDecode(file.readAsStringSync());
       state = TypedMap(m);

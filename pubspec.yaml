@@ -27,6 +27,8 @@ dependencies:
   macos_file_open_handler: any
   # receive_sharing_intent: 1.8.1
   open_with_app: any
+  universal_io: ^2.3.1
+  scrollable_positioned_list: ^0.3.8
 
 dev_dependencies:
   flutter_test:

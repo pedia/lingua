@@ -1,8 +1,11 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lingua/settings/setting.dart';
 import 'package:lingua/ui/voice.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../epub/book.dart';
 import '../epub/book.dart';
 import '../tts/dualtts.dart';
 import 'font.dart';
@@ -46,9 +49,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   };
 
   String lang = ''; // TODO: current lang
-  final dt = DualTts();
-
   late Progress progress;
+  final dt = DualTts();
+  final roller = ScrollController();
 
   /// CASE: avoid using ref in initState
   bool _initialized = false;
@@ -79,6 +82,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   @override
   void dispose() {
     // _settings.removeListener(_onSettings);
+    roller.dispose();
     dt
       ..removeListener(_onTts)
       ..dispose();
@@ -90,9 +94,15 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       return;
     }
 
-    progress = progress.copyWith(line: dt.index + 1);
-
     debugPrint('got dts notify ${dt.playing} ${dt.index}');
+
+    if (dt.playing) {
+      setState(() {
+        progress = progress.copyWith(line: dt.index + 1);
+      });
+    }
+
+    // roller.jumpTo(index: max(0, progress.line - 1));
 
     // next chapter
     if (!dt.playing && dt.index == lines.length) {
@@ -102,7 +112,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
       // TODO: How to play next
     }
-    setState(() {});
   }
 
   List<Line> get lines {
@@ -141,6 +150,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             Expanded(
               child: Scrollbar(
                 child: ListView.builder(
+                  key: PageStorageKey<String>(widget.book.title),
                   itemCount: widget.book.chapters.length,
                   itemBuilder: (context, index) {
                     return ListTile(
@@ -248,31 +258,39 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(8),
-              itemCount: lines.length,
-              itemBuilder: (context, i) {
-                return GestureDetector(
-                  onTapDown: (details) {
-                    // TODO: not work
-                    debugPrint('click $i');
-                    if (dt.playing) {
-                      dt.jumpTo(i);
-                    }
-                  },
-                  child: dt.playing && i == dt.index
-                      ? Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.red),
-                          ),
-                          child: Text(
-                            lines[i].text,
-                            style: textStyle(lines[i].lang),
-                          ),
-                        )
-                      : Text(lines[i].text, style: textStyle(lines[i].lang)),
-                );
-              },
+            child: Scrollbar(
+              controller: roller,
+              thumbVisibility: true,
+              child: ListView.builder(
+                key: PageStorageKey<String>(
+                  '${widget.book.title} ${progress.chapter}',
+                ),
+                controller: roller,
+                padding: EdgeInsets.all(8),
+                itemCount: lines.length,
+                itemBuilder: (context, i) {
+                  return GestureDetector(
+                    onTapDown: (details) {
+                      // TODO: not work
+                      debugPrint('click $i');
+                      if (dt.playing) {
+                        dt.jumpTo(i);
+                      }
+                    },
+                    child: dt.playing && i == dt.index
+                        ? Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.red),
+                            ),
+                            child: Text(
+                              lines[i].text,
+                              style: textStyle(lines[i].lang),
+                            ),
+                          )
+                        : Text(lines[i].text, style: textStyle(lines[i].lang)),
+                  );
+                },
+              ),
             ),
           ),
           if (dt.playing) panel(context),

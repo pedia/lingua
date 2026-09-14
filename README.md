@@ -44,3 +44,8 @@ more function
 Start with GoogleFonts.notoSansTcTextTheme() + height: 1.55.
 
 
+## icon prompt
+Generate an app icon shows a cartoon bilingual white boy walking up stairs from the bottom right to the top left.
+Limited text; languages: English, Spanish, Japanese; white background.
+
+round corner

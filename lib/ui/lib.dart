@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:universal_io/universal_io.dart';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
@@ -103,6 +104,16 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
 
   final items = <Item>[
     Item(
+      name: 'The Little Prince',
+      path: 'assets/the-little-prince-dual.epub',
+      type: ItemType.assets,
+    ),
+    Item(
+      name: 'Super Supportive',
+      path: 'assets/super-supportive-dual.epub',
+      type: ItemType.assets,
+    ),
+    Item(
       name: 'Paranoid Mage',
       path: 'assets/paranoid-mage-dual.epub',
       type: ItemType.assets,
@@ -115,7 +126,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
     Item(name: 'Sample', path: '', type: ItemType.demo),
     Item(
       name: 'Debug, 中文',
-      path: '事實上，我想我並不記得這個月之前噴泉是什麼樣子',
+      path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
       type: ItemType.debug,
     ),
   ];
