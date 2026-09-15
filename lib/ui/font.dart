@@ -1,51 +1,53 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:osfont/osfont.dart';
+
+/// flutter supported system font
+Future<String?> osFontFamily() async {
+  if (Platform.isMacOS) return '.AppleSystemUIFont';
+  if (Platform.isIOS) return 'CupertinoSystemDisplay';
+  if (Platform.isAndroid) {
+    final fl = await Osfont().getAvailableFonts();
+    try {
+      // TODO: galaxy, 'NotoSerifCJK-Regular',
+      final font = fl.firstWhere((e) => e.fileName.contains('SECCJK-Regular'));
+      // if Galaxy
+      return await Osfont.loadFont(font, customFamilyName: '.osdefault');
+    } catch (e) {
+      debugPrint('loadFont failed: $e');
+    }
+  }
+  return null;
+}
 
 class FontFrame extends StatelessWidget {
   const FontFrame({super.key});
 
   final List<String> fonts = const [
-    'NotoSansTC', // assets
-    'SECCJK-Regular',
-    // Generic
-    'NotoSerifCJK-Regular',
-
-    // Android common
-    'Roboto',
-    'Noto Sans',
-    'Noto Sans CJK TC',
-    'Noto Sans TC',
-    'Noto Sans SC',
-    'Source Han Sans TC',
-    'SEC CJK',
-
-    // iOS / macOS
+    '',
+    '.osdefault', // osfont
     '.AppleSystemUIFont',
-    'PingFang TC',
-    'PingFang SC',
-    'PingFang HK',
-    '.SF UI Text',
-    '.SF UI Display',
-    'Helvetica',
-    'Helvetica Neue',
-    'Arial',
+    'CupertinoSystemDisplay',
+    'Segoe UI', // Windows
+    'Roboto', // Android
   ];
 
-  final demo = """「私は、ガラスを食べられますか？」――いいえ！それは私を傷つけません。
+  final demo = """English, is hard? 123.
+「私は、ガラスを食べられますか？」――いいえ！それは私を傷つけません。
 『我能吞下玻璃嗎？』——不，這傷不到我的身體！
-“나는 유리를 먹을 수 있습니까?”…… 아니요! 그래도 아프지 않아요.
-“简”体中文。',English 123""";
+“나는유리를먹을수있습니까?”…… 아니요! 그래도 아프지 않아요.
+“简”体、中文，年度报告。""";
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('System Font Demo')),
+      appBar: AppBar(title: const Text('Font Demo')),
       body: Builder(
         // for inside DefaultTextStyle
         builder: (context) => Scrollbar(
           child: ListView(
             primary: true,
             children: [
-              Text(demo, style: TextStyle(fontFamily: 'SamsungOne')),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(

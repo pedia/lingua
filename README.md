@@ -54,7 +54,7 @@ adb -s 192.168.31.105:38761 shell cat /system/etc/fonts.xml
 ```
 
 
-## font
-Galaxy
+## os native font
+- Galaxy
 SECCJK-Regular.ttc # OneUI
 NotoSerifCJK-Regular.ttc

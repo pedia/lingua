@@ -8,22 +8,13 @@ import 'package:open_with_app/open_with_app.dart';
 
 import 'app.dart';
 import 'ui/lib.dart';
-
-/// macos
-late final MacosFileOpenSubscription fileOpenSubscription;
-
-// android openfile
-late final OpenWithApp _openWithAppPlugin;
+import 'ui/font.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // final store = await Store.open();
-  // final settings = AppSettings(await SharedPreferences.getInstance());
-  // final translation = TranslationService(settings);
-
   if (Platform.isMacOS) {
-    fileOpenSubscription = MacosFileOpenHandler.instance.listen(
+    MacosFileOpenHandler.instance.listen(
       (files) async {
         for (final file in files) {
           debugPrint('Got[MacosPackage]: ${file.path}');
@@ -37,20 +28,23 @@ Future<void> main() async {
   }
 
   if (Platform.isAndroid) {
-    _openWithAppPlugin = OpenWithApp();
+    final openWithAppPlugin = OpenWithApp();
     // Check if app was opened with a file
-    String? initialFile = await _openWithAppPlugin.getInitialFile();
+    String? initialFile = await openWithAppPlugin.getInitialFile();
     debugPrint("initialFile: $initialFile");
     if (initialFile != null) {
       OpenFile.send(initialFile);
     }
 
     // Listen for new files opened while app is running
-    _openWithAppPlugin.getFileStream().listen((filePath) {
+    openWithAppPlugin.getFileStream().listen((filePath) {
       debugPrint("New file: $filePath");
       OpenFile.send(filePath);
     });
   }
 
-  runApp(ProviderScope(child: LinguaApp()));
+  final ff = await osFontFamily();
+  debugPrint('osfont: $ff');
+
+  runApp(ProviderScope(child: LinguaApp(family: ff)));
 }
