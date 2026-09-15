@@ -55,8 +55,8 @@ class Voice {
     'language': language,
     'rate': rate,
     'pitch': pitch,
-    if (volume != null) 'volume': volume!,
-    if (voice != null) 'voice': voice!,
+    'volume': ?volume,
+    'voice': ?voice,
   };
 
   String get title =>

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/settings/setting.dart';
 
@@ -9,10 +10,23 @@ ThemeData buildTheme(Brightness brightness) {
 
   final textTheme = base.textTheme
       .apply(
-        fontFamily: 'NotoSansTC', // use platform default
+        fontFamily: 'SECCJK-Regular', // use platform default
+        // fontFamily: 'Roboto', // use platform default
         fontFamilyFallback: const [
-          'SEC CJK', // Samsung specific
-          'sans-serif', 'Roboto',
+          
+          //   // iOS/MacOS
+          //   'PingFang TC',
+          //   'PingFang SC',
+          //   'Hiragino Sans',
+          'SamsungOne', // Samsung specific
+          //   // Windows
+          //   'Microsoft YaHei',
+          //   'Yu Gothic',
+          //   'Malgun Gothic',
+          //   // Android / Linux generic
+          //   'Noto Sans CJK SC',
+          //   'Noto Sans CJK JP',
+          //   'Noto Sans CJK KR',
         ],
         bodyColor: brightness == Brightness.light
             ? Colors.black87
@@ -54,7 +68,13 @@ class LinguaApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
-      supportedLocales: const [Locale('zh', 'TW'), Locale('en', 'US')],
+      supportedLocales: const [
+        Locale('en', 'US'),
+        Locale('zh', 'TW'),
+        Locale('jp', 'JP'),
+        Locale('ko', 'KR'),
+        Locale('es', 'ES'),
+      ],
       home: LibraryFrame(),
     );
   }

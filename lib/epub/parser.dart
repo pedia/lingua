@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 
 import 'package:archive/archive.dart';
 import 'package:html/parser.dart' as html_parser;
@@ -75,6 +74,9 @@ class EpubParser {
       if (file == null) {
         continue;
       }
+
+      // TODO: check first 2 chapter empty or use nav
+      if (index < 2) {}
 
       chapters.add(Chapter.from(href, file));
       index += 1;

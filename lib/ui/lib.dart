@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 
 import 'reader.dart';
+import 'font.dart';
+import '../data/model.dart';
 import '../epub/parser.dart';
 import '../epub/book.dart';
 import '../data/sample.dart';
@@ -49,21 +51,6 @@ class OpenFile {
   }
 }
 
-enum ItemType { assets, file, demo, debug }
-
-class Item {
-  Item({
-    required this.name,
-    required this.path,
-    required this.type,
-    this.progress = const Progress(),
-  });
-  final ItemType type;
-  final String path;
-  final String name;
-  Progress progress;
-}
-
 class LibraryFrame extends ConsumerStatefulWidget {
   const LibraryFrame({super.key});
 
@@ -80,9 +67,15 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
 
     _subscription = OpenFile.stream.listen((fn) {
       debugPrint('lib got $fn');
-      setState(
-        () => items.add(Item(type: ItemType.file, path: fn, name: p.basename(fn))),
-      );
+      ref
+          .read(itemsProvider.notifier)
+          .add(Item(type: ItemType.file, path: fn, name: p.basename(fn)));
+
+      // setState(
+      //   () => items.add(
+      //     Item(type: ItemType.file, path: fn, name: p.basename(fn)),
+      //   ),
+      // );
     });
   }
 
@@ -102,37 +95,9 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
     return const EpubParser().parseBytes(await file.readAsBytes());
   }
 
-  final items = <Item>[
-    Item(
-      name: 'The Little Prince',
-      path: 'assets/the-little-prince-dual.epub',
-      type: ItemType.assets,
-    ),
-    Item(
-      name: 'Super Supportive',
-      path: 'assets/super-supportive-dual.epub',
-      type: ItemType.assets,
-    ),
-    Item(
-      name: 'Paranoid Mage',
-      path: 'assets/paranoid-mage-dual.epub',
-      type: ItemType.assets,
-    ),
-    Item(
-      name: 'Mother of Learning',
-      path: 'assets/mother-of-learning-dual.epub',
-      type: ItemType.assets,
-    ),
-    Item(name: 'Sample', path: '', type: ItemType.demo),
-    Item(
-      name: 'Debug, 中文',
-      path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
-      type: ItemType.debug,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final items = ref.watch(itemsProvider);
     final fontName = DefaultTextStyle.of(context).style.fontFamily;
 
     return Scaffold(
@@ -153,10 +118,30 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               }
             },
           ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            onSelected: (String value) async {
+              if (value == 'font') {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (context) => FontFrame()),
+                );
+                return;
+              }
+            },
+            itemBuilder: (BuildContext context) => const [
+              PopupMenuItem(value: 'search', child: Text('Search')),
+              PopupMenuItem(value: 'replace', child: Text('Replace')),
+              PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
+              PopupMenuItem(value: 'font', child: Text('Font Demo')),
+            ],
+            child: Icon(Icons.more_vert, size: 36),
+          ),
         ],
       ),
       body: Scrollbar(
         child: ListView.builder(
+          primary: true,
+          key: PageStorageKey<String>('lib'),
           itemCount: items.length,
           itemBuilder: (context, index) {
             final e = items[index];
@@ -180,10 +165,16 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                 if (context.mounted && book != null) {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => BookFrame(book!, Progress()),
+                      builder: (_) => BookFrame(
+                        book: book!,
+                        path: e.path,
+                        progress: e.progress,
+                      ),
                     ),
                   );
                 }
+
+                ref.read(itemsProvider.notifier).touch(e);
               },
             );
           },

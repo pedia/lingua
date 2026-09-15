@@ -160,8 +160,9 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
                     await tts.awaitSpeakCompletion(true);
                     await tts.setSpeechRate(vs[i].rate);
                     await tts.setPitch(vs[i].pitch);
-                    if (vs[i].volume != null)
+                    if (vs[i].volume != null) {
                       await tts.setVolume(vs[i].volume!);
+                    }
 
                     // setLanguage must before setVoice
                     try {
@@ -172,7 +173,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
 
                     if (vs[i].voice != null) {
                       final v = await tts.setVoice(vs[i].voice!);
-                      debugPrint('setVoice: ${vs[i].voice} -> $v');
+                      // debugPrint('setVoice: ${vs[i].voice} -> $v');
                     }
 
                     final m = {

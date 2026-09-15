@@ -3,27 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:lingua/settings/setting.dart';
 import 'package:lingua/ui/voice.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-import '../epub/book.dart';
+import '../data/model.dart';
 import '../epub/book.dart';
 import '../tts/dualtts.dart';
 import 'font.dart';
 
-/// current index of chapter and line
-class Progress {
-  const Progress({this.chapter = 0, this.line = 0});
-  final int chapter;
-  final int line;
-
-  Progress copyWith({int? chapter, int? line}) =>
-      Progress(chapter: chapter ?? this.chapter, line: line ?? this.line);
-}
-
 class BookFrame extends ConsumerStatefulWidget {
-  const BookFrame(this.book, this.progress, {super.key});
+  const BookFrame({
+    required this.book,
+    required this.progress,
+    required this.path,
+    super.key,
+  });
   final Book book;
   final Progress progress;
+  final String path;
 
   @override
   ConsumerState<BookFrame> createState() => _BookFrameState();
@@ -67,21 +62,51 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     }
   }
 
+  /// CASES: save/restore scroll offset, include
+  /// - addPostFrameCallback
+  /// - ScrollController.addListener
+  /// - dispose Future
+  late final ItemList _itemsProvider;
+  double offset = 0;
+
   @override
   void initState() {
     super.initState();
     progress = widget.progress;
 
     // CASE:
-    // move into didChangeDependencies
+    // Not work here(in initState). Move into didChangeDependencies
     // lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
 
+    // safe here
+    _itemsProvider = ref.read(itemsProvider.notifier);
+
     dt.addListener(_onTts);
+
+    // Set drawer opened at first time frame appear
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      roller.jumpTo(progress.offset);
+      _scaffoldKey.currentState?.openDrawer();
+    });
+
+    roller.addListener(() {
+      offset = roller.offset;
+    });
   }
 
   @override
   void dispose() {
     // _settings.removeListener(_onSettings);
+
+    /// save progress
+    /// `updateProgress` only worked in Future
+    Future(
+      () => _itemsProvider.updateProgress(
+        widget.path,
+        progress.copyWith(offset: offset),
+      ),
+    );
+
     roller.dispose();
     dt
       ..removeListener(_onTts)
@@ -98,16 +123,17 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     if (dt.playing) {
       setState(() {
-        progress = progress.copyWith(line: dt.index + 1);
+        progress = progress.copyWith(line: dt.index);
       });
     }
 
-    // roller.jumpTo(index: max(0, progress.line - 1));
-
     // next chapter
     if (!dt.playing && dt.index == lines.length) {
-      if (progress.chapter + 1 < widget.book.chapters.length) {
-        progress = progress.copyWith(chapter: progress.chapter + 1, line: 0);
+      if (progress.chapterIndex + 1 < widget.book.chapters.length) {
+        progress = progress.copyWith(
+          chapter: progress.chapterIndex + 1,
+          line: 0,
+        );
       }
 
       // TODO: How to play next
@@ -115,7 +141,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   }
 
   List<Line> get lines {
-    return widget.book.chapters[progress.chapter].lines
+    return widget.book.chapters[progress.chapterIndex].lines
         .where((line) => lang == '' || line.lang == lang)
         .toList();
   }
@@ -139,7 +165,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         child: Column(
           children: [
             SafeArea(
-              child: Card(
+              child: DrawerHeader(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
                   title: Text(widget.book.title),
@@ -150,15 +176,18 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             Expanded(
               child: Scrollbar(
                 child: ListView.builder(
+                  primary: true,
                   key: PageStorageKey<String>(widget.book.title),
                   itemCount: widget.book.chapters.length,
                   itemBuilder: (context, index) {
                     return ListTile(
-                      selected: index == progress.chapter,
+                      selected: index == progress.chapterIndex,
                       title: Text(widget.book.chapters[index].title),
                       onTap: () {
                         Navigator.pop(context);
-                        setState(() => progress = Progress(chapter: index));
+                        setState(
+                          () => progress = Progress(chapterIndex: index),
+                        );
                       },
                     );
                   },
@@ -173,7 +202,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           icon: Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text(widget.book.chapters[progress.chapter].title),
+        title: Text(widget.book.chapters[progress.chapterIndex].title),
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Display language',
@@ -181,9 +210,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             onSelected: (String val) {
               ref.watch(settingProvider.notifier).put('ui.lang', val);
               setState(() => lang = val);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('You selected: $val')));
+              // TODO: reset index
+              // roller.ensureVisible
             },
             itemBuilder: (BuildContext context) => const [
               PopupMenuItem(value: 'en', child: Text('Only English')),
@@ -242,7 +270,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                 //     context,
                 //   ).read(settingProvider);
                 //   debugPrint(m.toString());
-                applyVoice(context);
+                if (mounted) {
+                  applyVoice(context);
+                }
               });
             },
             itemBuilder: (BuildContext context) => const [
@@ -263,7 +293,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               thumbVisibility: true,
               child: ListView.builder(
                 key: PageStorageKey<String>(
-                  '${widget.book.title} ${progress.chapter}',
+                  '${widget.book.title} ${progress.chapterIndex}',
                 ),
                 controller: roller,
                 padding: EdgeInsets.all(8),
@@ -274,7 +304,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                       // TODO: not work
                       debugPrint('click $i');
                       if (dt.playing) {
-                        dt.jumpTo(i);
+                        dt.jumpTo(max(0, i - 1));
                       }
                     },
                     child: dt.playing && i == dt.index
