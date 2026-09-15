@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/settings/setting.dart';
+import 'package:lingua/ui/font.dart';
 
 import 'ui/lib.dart';
 
@@ -15,13 +16,7 @@ class LinguaApp extends ConsumerWidget {
     final textTheme = base.textTheme
         .apply(
           fontFamily: family ?? '',
-          fontFamilyFallback: const [
-            // packages/flutter/lib/src/material/typography.dart
-            '.AppleSystemUIFont',
-            'CupertinoSystemDisplay',
-            'Segoe UI',
-            'Roboto',
-          ],
+          fontFamilyFallback: fontFamilyFallback,
           bodyColor: brightness == Brightness.light
               ? Colors.black87
               : Colors.white,

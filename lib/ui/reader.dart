@@ -28,15 +28,15 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// best font style
   TextStyle textStyle(String lang) => switch (lang) {
     'zh' => const TextStyle(
-      fontFamily: 'default', // let platform decide
+      fontFamily: '.osdefault', // let platform decide
       fontFamilyFallback: fontFamilyFallback,
       fontSize: 18,
       height: 1.55,
       fontWeight: FontWeight.w400,
     ),
     'en' || _ => const TextStyle(
-      fontFamily: 'default', // let platform decide
-      fontFamilyFallback: ['Roboto', 'Noto Sans'],
+      fontFamily: '.osdefault', // let platform decide
+      fontFamilyFallback: fontFamilyFallback,
       fontSize: 18,
       height: 1.55,
       fontWeight: FontWeight.w200,

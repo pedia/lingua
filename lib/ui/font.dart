@@ -2,6 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:osfont/osfont.dart';
 
+// packages/flutter/lib/src/material/typography.dart
+const fontFamilyFallback = [
+  '.AppleSystemUIFont',
+  'CupertinoSystemDisplay',
+  'Segoe UI',
+  'Roboto',
+];
+
 /// flutter supported system font
 Future<String?> osFontFamily() async {
   if (Platform.isMacOS) return '.AppleSystemUIFont';
@@ -15,6 +23,7 @@ Future<String?> osFontFamily() async {
       return await Osfont.loadFont(font, customFamilyName: '.osdefault');
     } catch (e) {
       debugPrint('loadFont failed: $e');
+      return 'Roboto';
     }
   }
   return null;
