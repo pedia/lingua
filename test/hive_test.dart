@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:lingua/data/model.dart';
+import 'package:lingua/g.dart';
 
 void main() {
   test('box2', () async {
@@ -34,5 +36,25 @@ void main() {
     // }
 
     print(box.toMap());
+  });
+  test('model', () async {
+    gbox = await Hive.openBox('app', path: '.');
+
+    final a = Item(
+      name: 'The Little Prince',
+      path: 'assets/the-little-prince-dual.epub',
+      type: ItemType.assets,
+    )..toJson();
+
+    final al = ItemList(items: [a]);
+
+    final jl = al.toJson();
+    final bl = ItemList.fromJson(jl);
+    expect(al, bl);
+
+    gbox.put('items', al.toJson());
+
+    final cl = ItemList.fromJson(gbox.get('items'));
+    expect(al, cl);
   });
 }

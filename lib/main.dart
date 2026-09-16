@@ -17,7 +17,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final docs = await getApplicationDocumentsDirectory();
-  box = await Hive.openBox('all', path: docs.path);
+  gbox = await Hive.openBox('all', path: docs.path);
 
   if (Platform.isMacOS) {
     MacosFileOpenHandler.instance.listen(

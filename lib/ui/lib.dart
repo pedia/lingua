@@ -98,7 +98,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
 
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(itemsProvider);
+    final items = ref.watch(itemsProvider).items;
     final fontName = DefaultTextStyle.of(context).style.fontFamily;
 
     return Scaffold(

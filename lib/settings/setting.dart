@@ -70,7 +70,7 @@ class TypedMap {
         if (!m.containsKey(i)) {
           return null;
         }
-        m = m[i];
+        m = m[i].cast<String, dynamic>();
       }
       if (!m.containsKey(arr.last)) {
         return null;
@@ -107,11 +107,11 @@ class Setting extends Notifier<TypedMap> {
   }
 
   void save(String key) {
-    box.put('settings', state.map).then((_) => debugPrint('saved by $key'));
+    gbox.put('settings', state.map).then((_) => debugPrint('saved by $key'));
   }
 
   Future load() async {
-    final m = box.get('settings');
+    final m = gbox.get('settings');
 
     state = m is Map && m.isNotEmpty
         ? TypedMap(m.cast<String, dynamic>())

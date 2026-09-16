@@ -67,7 +67,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// - addPostFrameCallback
   /// - ScrollController.addListener
   /// - dispose Future
-  late final ItemList _itemsProvider;
+  late final ItemListNotifier _itemsProvider;
   double offset = 0;
 
   @override
@@ -124,7 +124,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     if (dt.playing) {
       setState(() {
-        progress = progress.copyWith(line: dt.index);
+        progress = progress.copyWith(lineIndex: dt.index);
       });
     }
 
@@ -132,8 +132,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     if (!dt.playing && dt.index == lines.length) {
       if (progress.chapterIndex + 1 < widget.book.chapters.length) {
         progress = progress.copyWith(
-          chapter: progress.chapterIndex + 1,
-          line: 0,
+          chapterIndex: progress.chapterIndex + 1,
+          lineIndex: 0,
         );
       }
 
