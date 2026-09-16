@@ -1,7 +1,13 @@
 import 'package:meta/meta.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+import '../g.dart';
+
+part 'model.g.dart';
 
 /// current index of chapter and line
+@JsonSerializable(createJsonSchema: false)
 class Progress {
   const Progress({this.chapterIndex = 0, this.lineIndex = 0, this.offset = 0});
   final int chapterIndex;
@@ -17,6 +23,10 @@ class Progress {
   @override
   String toString() =>
       'Progress{$chapterIndex,$lineIndex,${offset.toStringAsFixed(2)}}';
+
+  factory Progress.fromJson(Map<String, Object?> json) =>
+      _$ProgressFromJson(json);
+  Map<String, dynamic> toJson() => _$ProgressToJson(this);
 }
 
 enum ItemType { assets, file, demo, debug }

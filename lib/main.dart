@@ -1,17 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:universal_io/universal_io.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_file_open_handler/macos_file_open_handler.dart';
 import 'package:open_with_app/open_with_app.dart';
+import 'package:hive_ce/hive_ce.dart';
 
 import 'app.dart';
+import 'g.dart';
 import 'ui/lib.dart';
 import 'ui/font.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final docs = await getApplicationDocumentsDirectory();
+  box = await Hive.openBox('all', path: docs.path);
 
   if (Platform.isMacOS) {
     MacosFileOpenHandler.instance.listen(

@@ -50,7 +50,7 @@ class LinguaApp extends ConsumerWidget {
     );
     return MaterialApp(
       title: 'Lingua Reader',
-      themeMode: ThemeMode.light, // values[tm],
+      themeMode: ThemeMode.values[tm],
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),

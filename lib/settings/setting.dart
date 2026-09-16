@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'package:universal_io/universal_io.dart';
 
-import 'package:path/path.dart' as p;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
+
+import '../g.dart';
 
 class TypedMap {
   TypedMap(this.map);
@@ -108,44 +106,33 @@ class Setting extends Notifier<TypedMap> {
     save(key);
   }
 
-  Future save(String key) async {
-    final docs = await getApplicationDocumentsDirectory();
-    final file = File(p.join(docs.path, 'setting.json'));
-    await file.writeAsString(jsonEncode(state.map));
-
-    debugPrint('saved by $key');
+  void save(String key) {
+    box.put('settings', state.map).then((_) => debugPrint('saved by $key'));
   }
 
   Future load() async {
-    try {
-      final docs = kIsWeb
-          ? Directory('.')
-          : await getApplicationDocumentsDirectory();
-      final file = File(p.join(docs.path, 'setting.json'));
-      final m = jsonDecode(file.readAsStringSync());
-      state = TypedMap(m);
-      debugPrint('loaded');
-    } catch (e) {
-      debugPrint('load failed $e');
-      state = TypedMap({
-        // defaults
-        'tts': {
-          'en': {
-            'rate': 0.44,
-            'pitch': 1.0,
-            'language': 'en-US',
-            'voice': {'locale': 'en-US', 'name': 'Samantha'},
-          },
-          'zh': {
-            'rate': 0.62,
-            'pitch': 1.0,
-            'language': 'zh-TW',
-            'voice': {'locale': 'zh-TW', 'name': 'Meijia'},
-          },
-        },
-        'ui': {'theme': 'system', 'lang': ''},
-      });
-    }
+    final m = box.get('settings');
+
+    state = m is Map && m.isNotEmpty
+        ? TypedMap(m.cast<String, dynamic>())
+        : TypedMap({
+            // defaults
+            'tts': {
+              'en': {
+                'rate': 0.44,
+                'pitch': 1.0,
+                'language': 'en-US',
+                'voice': {'locale': 'en-US', 'name': 'Samantha'},
+              },
+              'zh': {
+                'rate': 0.62,
+                'pitch': 1.0,
+                'language': 'zh-TW',
+                'voice': {'locale': 'zh-TW', 'name': 'Meijia'},
+              },
+            },
+            'ui': {'lang': '', 'theme-mode': 0},
+          });
   }
 }
 
@@ -165,10 +152,11 @@ final settingProvider = NotifierProvider<Setting, TypedMap>(Setting.new);
 
 enum SettingType {
   slider,
-  onoff, // switch
-  title, // group title
-  text,
-  custom,
+  bool, // switch
+  title, // group title, stub
+  readonly,
+  choice,
+  builder,
 }
 
 class SettingItem {
@@ -188,7 +176,8 @@ class SettingItem {
   final SettingType type;
   final String title;
   final String? description;
-  final Function? choices;
+  // title, value
+  final List<(String, Object)>? choices;
   final Range? range;
   final String Function(Object)? gentitle; // generate title
   final Widget Function(BuildContext context, WidgetRef ref)? builder;
@@ -199,91 +188,4 @@ class Range<T extends num> {
   final T max;
 
   Range(this.min, this.max);
-}
-
-/// Widget for setting item
-class Tile extends ConsumerWidget {
-  const Tile(this.item, {super.key});
-  final SettingItem item;
-
-  Widget choose(BuildContext context, WidgetRef ref) {
-    final v = ref.watch(settingProvider.select((m) => m.of(item.key)));
-    return PopupMenuButton<Object>(
-      tooltip: item.title,
-      initialValue: v,
-      onSelected: (Object value) {
-        ref.read(settingProvider.notifier).put(item.key, value);
-
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Change ${item.title}: $value')));
-      },
-      itemBuilder: (BuildContext context) => item.choices!(),
-      child: TextButton(
-        onPressed: null, // disabled because PopupMenuButton handles the tap
-        child: Text(item.gentitle != null ? item.gentitle!(v) : ''),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint('Tile ${item.key}');
-    final v = ref.watch(settingProvider.select((m) => m.of(item.key)));
-    final tile = switch (item.type) {
-      SettingType.custom => item.builder!(context, ref),
-      SettingType.onoff => SwitchListTile(
-        title: Text(item.title),
-        subtitle: Text(item.description ?? ''),
-        value: v ?? item.defaults,
-        onChanged: (v) {
-          ref.read(settingProvider.notifier).put(item.key, v);
-        },
-      ),
-      SettingType.slider => ListTile(
-        title: Text(item.title),
-        trailing: Text(
-          '${v ?? item.defaults}',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        subtitle: Text(item.description ?? ''),
-      ),
-      SettingType.text => ListTile(
-        title: Text(item.title),
-        trailing: item.choices == null
-            ? Text(
-                v ?? item.defaults ?? '',
-                style: Theme.of(context).textTheme.bodyLarge,
-              )
-            : choose(context, ref),
-        subtitle: Text(item.description ?? ''),
-      ),
-
-      SettingType.title => Padding(
-        padding: EdgeInsets.only(left: 8, top: 20),
-        child: Text(item.title),
-      ),
-    };
-
-    if (item.type == SettingType.slider) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          tile,
-          Slider(
-            value:
-                (v as num?)?.toDouble() ??
-                (item.defaults != null ? (item.defaults as num).toDouble() : 0),
-            min: item.range?.min as double? ?? 0.0,
-            max: item.range?.max as double? ?? 1.0,
-            onChanged: (v) {
-              ref.read(settingProvider.notifier).put(item.key, v);
-            },
-          ),
-        ],
-      );
-    } else {
-      return tile;
-    }
-  }
 }

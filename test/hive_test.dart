@@ -22,6 +22,11 @@ void main() {
     // expect(box.length, equals(1));
 
     box.put(1, 42);
+    box.put(2, {
+      'a': 'b',
+      'c': [1],
+    });
+    expect(box.get(2), isMap);
     // expect(box.length, equals(2));
     // box.add('hello');
     // for (var i = 0; i < box.length; i++) {

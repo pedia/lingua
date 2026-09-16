@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lingua/settings/setting.dart';
+import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/voice.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -250,6 +251,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                 );
                 return;
               }
+              else if (value == 'setting') {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (context) => SettingFrame()),
+                );
+                return;
+              }
               final f = Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (context) {
@@ -276,6 +283,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               });
             },
             itemBuilder: (BuildContext context) => const [
+              PopupMenuItem(value: 'setting', child: Text('Setting')),
               PopupMenuItem(value: 'search', child: Text('Search')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
@@ -291,35 +299,40 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             child: Scrollbar(
               controller: roller,
               thumbVisibility: true,
-              child: ListView.builder(
-                key: PageStorageKey<String>(
-                  '${widget.book.title} ${progress.chapterIndex}',
-                ),
-                controller: roller,
-                padding: EdgeInsets.all(8),
-                itemCount: lines.length,
-                itemBuilder: (context, i) {
-                  return GestureDetector(
-                    onTapDown: (details) {
-                      // TODO: not work
-                      debugPrint('click $i');
-                      if (dt.playing) {
-                        dt.jumpTo(max(0, i - 1));
-                      }
-                    },
-                    child: dt.playing && i == dt.index
-                        ? Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.red),
-                            ),
-                            child: Text(
+              child: SafeArea(
+                child: ListView.builder(
+                  key: PageStorageKey<String>(
+                    '${widget.book.title} ${progress.chapterIndex}',
+                  ),
+                  controller: roller,
+                  padding: EdgeInsets.all(8),
+                  itemCount: lines.length,
+                  itemBuilder: (context, i) {
+                    return GestureDetector(
+                      onTapDown: (details) {
+                        // TODO: not work
+                        debugPrint('click $i');
+                        if (dt.playing) {
+                          dt.jumpTo(max(0, i - 1));
+                        }
+                      },
+                      child: dt.playing && i == dt.index
+                          ? Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.red),
+                              ),
+                              child: Text(
+                                lines[i].text,
+                                style: textStyle(lines[i].lang),
+                              ),
+                            )
+                          : Text(
                               lines[i].text,
                               style: textStyle(lines[i].lang),
                             ),
-                          )
-                        : Text(lines[i].text, style: textStyle(lines[i].lang)),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),

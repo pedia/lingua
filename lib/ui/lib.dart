@@ -10,6 +10,7 @@ import 'package:file_picker/file_picker.dart';
 
 import 'reader.dart';
 import 'font.dart';
+import 'setting.dart';
 import '../data/model.dart';
 import '../epub/parser.dart';
 import '../epub/book.dart';
@@ -120,15 +121,19 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           ),
           PopupMenuButton<String>(
             tooltip: 'More',
-            onSelected: (String value) async {
-              if (value == 'font') {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (context) => FontFrame()),
-                );
-                return;
-              }
+            onSelected: (String cv) async {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => switch (cv) {
+                    'font' => FontFrame(),
+                    'setting' => SettingFrame(),
+                    _ => FontFrame(),
+                  },
+                ),
+              );
             },
             itemBuilder: (BuildContext context) => const [
+              PopupMenuItem(value: 'setting', child: Text('Setting')),
               PopupMenuItem(value: 'search', child: Text('Search')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
