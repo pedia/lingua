@@ -53,8 +53,9 @@ class TypedMap {
         }
 
         try {
-          m = m[i];
-        } catch (_) {
+          m = m[i].cast<String, dynamic>();
+        } catch (e) {
+          debugPrint('$e');
           return false;
         }
       }
@@ -109,11 +110,15 @@ class Setting extends Notifier<TypedMap> {
   }
 
   void save(String key) {
-    gbox.put('settings', state.map).then((_) => debugPrint('saved by $key'));
+    gbox
+        .put('settings', state.map)
+        .then((_) => debugPrint('saved by $key ${state.map}'));
   }
 
   Future load() async {
     final m = gbox.get('settings');
+
+    debugPrint('load $m');
 
     state = m is Map && m.isNotEmpty
         ? TypedMap(m.cast<String, dynamic>())

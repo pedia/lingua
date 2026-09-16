@@ -11,6 +11,9 @@ import 'package:file_picker/file_picker.dart';
 import 'reader.dart';
 import 'font.dart';
 import 'setting.dart';
+import 'voice.dart';
+import '../tts/dualtts.dart';
+import '../settings/setting.dart';
 import '../data/model.dart';
 import '../epub/parser.dart';
 import '../epub/book.dart';
@@ -123,11 +126,16 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           PopupMenuButton<String>(
             tooltip: 'More',
             onSelected: (String cv) async {
+              final m = ProviderScope.containerOf(
+                context,
+              ).read(settingProvider);
+
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (context) => switch (cv) {
                     'font' => FontFrame(),
                     'setting' => SettingFrame(),
+                    'tts-setting' => VoiceSettingPage.from(context),
                     _ => FontFrame(),
                   },
                 ),

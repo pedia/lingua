@@ -10,6 +10,32 @@ class VoiceSettingPage extends StatefulWidget {
   const VoiceSettingPage(this.vs, {super.key});
   final List<Voice> vs;
 
+  factory VoiceSettingPage.from(BuildContext context) {
+    final m = ProviderScope.containerOf(context).read(settingProvider);
+    return VoiceSettingPage([
+      Voice.from(
+        'en',
+        m.of('tts.en') ??
+            {
+              'rate': 0.44,
+              'pitch': 1.0,
+              'language': 'en-US',
+              'voice': {'locale': 'en-US', 'name': 'Samantha'},
+            },
+      ),
+      Voice.from(
+        'zh',
+        m.of('tts.zh') ??
+            {
+              'rate': 0.62,
+              'pitch': 1.0,
+              'language': 'zh-TW',
+              'voice': {'locale': 'zh-TW', 'name': 'Meijia'},
+            },
+      ),
+    ]);
+  }
+
   @override
   State<VoiceSettingPage> createState() => _VoiceSettingPageState();
 }
@@ -24,7 +50,6 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
   void initState() {
     super.initState();
     setState(() => vs = widget.vs);
-    debugPrint('widget vs: $vs');
 
     tts.getVoices.then((x) {
       final list = (x as List).cast<Map>();
@@ -83,9 +108,11 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
   }
 
   Widget chooseVoiceDropdown(BuildContext context, int i) {
-    return DropdownButton<DropKey>(
+    return DropdownButton<WrapKey>(
       key: Key(vs[i].lang),
-      value: DropKey(vs[i].voice),
+      value: WrapKey(vs[i].voice).containedIn(allves)
+          ? WrapKey(vs[i].voice)
+          : null,
       underline: null,
       onChanged: (v) {
         setState(() => vs[i] = vs[i].copyWith(voice: v!.m));
@@ -104,8 +131,8 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
             return true;
           })
           .map(
-            (e) => DropdownMenuItem<DropKey>(
-              value: DropKey(e),
+            (e) => DropdownMenuItem<WrapKey>(
+              value: WrapKey(e),
               child: Text(Voice.displayVoice(e)),
             ),
           )
@@ -269,13 +296,22 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
 }
 
 /// Map<String, String> cannot be compared?
-class DropKey {
-  DropKey(this.m);
+class WrapKey {
+  WrapKey(this.m);
   final Map<String, String>? m;
 
   @override
-  bool operator ==(Object other) => other is DropKey && mapEquals(m, other.m);
+  bool operator ==(Object other) => other is WrapKey && mapEquals(m, other.m);
 
   @override
   int get hashCode => Object.hashAll(m?.entries ?? []);
+
+  bool containedIn(List<Map> list) {
+    for (final o in list) {
+      if (mapEquals(m, o)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

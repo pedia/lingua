@@ -54,6 +54,8 @@ void main() {
       'c': 1,
     });
 
+    expect(m.has('a.b'), isTrue);
+
     // i already exists
     m.put("i.b", "1");
 

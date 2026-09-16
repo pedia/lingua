@@ -53,7 +53,8 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
 
   @override
   Widget build(BuildContext context) {
-    // final setting = ref.watch(settingProvider.notifier);
+    final m = ref.watch(settingProvider);
+    debugPrint('all setting: $m');
     return Scaffold(
       appBar: AppBar(title: const Text('Setting')),
       body: ListView(children: items.map((e) => Tile(e)).toList()),

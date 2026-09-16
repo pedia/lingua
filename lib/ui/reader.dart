@@ -46,6 +46,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
   String lang = ''; // TODO: current lang
   late Progress progress;
+  Playback playbackState = Playback.stop;
   final dt = DualTts();
   final roller = ScrollController();
 
@@ -120,16 +121,19 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       return;
     }
 
-    debugPrint('got dts notify ${dt.playing} ${dt.index}');
+    debugPrint('got dts notify ${dt.state} ${dt.index}');
 
-    if (dt.playing) {
+    if (dt.state != playbackState ||
+        (dt.state != Playback.stop && dt.index != progress.lineIndex)) {
       setState(() {
         progress = progress.copyWith(lineIndex: dt.index);
+        playbackState = dt.state;
       });
     }
 
     // next chapter
-    if (!dt.playing && dt.index == lines.length) {
+    if (dt.state == Playback.playing && dt.index + 1 == lines.length) {
+      print('TODO: speak, next chapter');
       if (progress.chapterIndex + 1 < widget.book.chapters.length) {
         progress = progress.copyWith(
           chapterIndex: progress.chapterIndex + 1,
@@ -150,11 +154,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   Future applyVoice(BuildContext context) {
     final m = ProviderScope.containerOf(context).read(settingProvider);
 
+    debugPrint('in apply got setting: $m');
+    print(m.has('tts.en'));
+
     final vs = [
       if (m.has('tts.en')) Voice.from('en', m.objectOf('tts.en')),
       if (m.has('tts.zh')) Voice.from('zh', m.objectOf('tts.zh')),
     ];
-    return dt.apply(vs).then((x) => debugPrint('dualtts inited'));
+    return dt.apply(vs).then((x) => debugPrint('dualtts inited $vs'));
   }
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -226,19 +233,26 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             }),
           ),
           // SizedBox(width: 20),
-          IconButton(
-            tooltip: dt.playing ? 'Pause' : 'Play',
-            icon: dt.playing
-                ? Icon(Icons.pause_circle, size: 36)
-                : Icon(Icons.play_circle, size: 36),
+          IconButton.filled(
+            tooltip: switch (dt.state) {
+              Playback.playing => 'Stop',
+              _ => 'Play',
+            },
+            icon: Icon(switch (dt.state) {
+              Playback.playing => Icons.stop,
+              _ => Icons.play_arrow,
+            }),
             onPressed: () async {
-              dt.load(lines);
+              if (dt.state == Playback.playing) {
+                dt.stop();
+              } else {
+                if (!dt.inited) {
+                  await applyVoice(context);
+                }
 
-              if (!dt.inited) {
-                await applyVoice(context);
+                dt.load(lines);
+                dt.play();
               }
-
-              dt.toggle();
             },
           ),
 
@@ -259,13 +273,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               final f = Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (context) {
-                    final m = ProviderScope.containerOf(
-                      context,
-                    ).read(settingProvider);
-                    return VoiceSettingPage([
-                      Voice.from('en', m.of('tts.en')),
-                      Voice.from('zh', m.of('tts.zh')),
-                    ]);
+                    return VoiceSettingPage.from(context);
                   },
                 ),
               );
@@ -317,7 +325,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                         onTapDown: (details) {
                           scrollToNextPage();
                         },
-                        child: dt.playing && i == dt.index
+                        onDoubleTap: () {
+                          if (dt.state == Playback.playing) {
+                            dt.jumpTo(max(0, i - 1)); // dutts.play bug?
+                          }
+                        },
+                        child: dt.state == Playback.playing && i == dt.index
                             ? Container(
                                 decoration: BoxDecoration(
                                   border: Border.all(color: Colors.red),
@@ -338,7 +351,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               ),
             ),
           ),
-          if (dt.playing) panel(context),
+          if (dt.state != Playback.stop) panel(context),
         ],
       ),
     );
@@ -395,9 +408,17 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               icon: const Icon(Icons.skip_previous),
             ),
             IconButton.filled(
-              tooltip: dt.playing ? 'Pause' : 'Listen',
+              tooltip: switch (dt.state) {
+                Playback.playing => 'Pause',
+                Playback.pause => 'Play',
+                _ => '_',
+              },
               onPressed: dt.toggle,
-              icon: Icon(dt.playing ? Icons.pause : Icons.play_arrow),
+              icon: Icon(switch (dt.state) {
+                Playback.playing => Icons.pause,
+                Playback.pause => Icons.play_arrow,
+                Playback.stop => Icons.stop,
+              }),
             ),
             IconButton(
               tooltip: 'Next sentence',

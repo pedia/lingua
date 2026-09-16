@@ -79,6 +79,9 @@ class Voice {
       '$lang/$language vol:${volume?.toStringAsFixed(2)} rate:${rate.toStringAsFixed(2)} pitch:${pitch.toStringAsFixed(2)} $voice';
 }
 
+/// Triple state for tts engine
+enum Playback { playing, pause, stop }
+
 class DualTts extends ChangeNotifier {
   DualTts();
 
@@ -86,7 +89,7 @@ class DualTts extends ChangeNotifier {
   final Map<String, Voice> ss = {};
   List<Line> lines = const [];
   int index = 0;
-  bool playing = false;
+  Playback state = Playback.stop;
 
   bool get inited => ss.isNotEmpty;
 
@@ -107,28 +110,28 @@ class DualTts extends ChangeNotifier {
   }
 
   void jumpTo(int nextIndex) async {
-    if (lines.isEmpty) {
+    if (lines.isEmpty || nextIndex > lines.length - 1 || nextIndex < 0) {
       return;
     }
+
     await tts.stop();
-    index = nextIndex.clamp(0, lines.length - 1);
-    debugPrint('$nextIndex $index');
+    index = nextIndex;
     notifyListeners();
   }
 
   Future<void> play() async {
-    if (lines.isEmpty || playing) {
+    if (lines.isEmpty || state == Playback.playing) {
       return;
     }
-    playing = true;
+    state = Playback.playing;
     notifyListeners();
-    while (playing && index < lines.length) {
+    while (state == Playback.playing && index < lines.length) {
       notifyListeners();
       final line = lines[index];
       final v = ss[line.lang];
       if (v != null) {
-        // debugPrint('set tts $v');
         await tts.setSpeechRate(v.rate);
+        debugPrint('rate: ${v.rate}');
         await tts.setPitch(v.pitch);
         if (v.volume != null) await tts.setVolume(v.volume!);
 
@@ -138,29 +141,38 @@ class DualTts extends ChangeNotifier {
           debugPrint('setLanguage failed: $e, %v');
         }
         if (v.voice != null) await tts.setVoice(v.voice!);
+      } else {
+        debugPrint('voices mess ${ss.length} ${line.lang}');
       }
 
-      await tts.speak(lines[index].text);
-      if (!playing) {
+      await tts.speak(line.text);
+      if (state == Playback.stop) {
         break;
       }
       if (index < lines.length - 1) {
         index += 1;
       } else {
-        playing = false;
+        state = Playback.stop;
       }
       notifyListeners();
-    }
+    } // end while
   }
 
   Future<void> pause() async {
-    playing = false;
+    state == Playback.pause;
     await tts.pause();
     notifyListeners();
   }
 
+  Future<void> stop() async {
+    state == Playback.stop;
+    await tts.stop();
+    lines.clear();
+    notifyListeners();
+  }
+
   Future<void> toggle() async {
-    if (playing) {
+    if (state == Playback.playing) {
       await pause();
     } else {
       await play();
@@ -171,18 +183,18 @@ class DualTts extends ChangeNotifier {
     if (lines.isEmpty) {
       return;
     }
-    final wasPlaying = playing;
+    final wasPlaying = state;
     await pause();
     index = (index + delta).clamp(0, lines.length - 1);
     notifyListeners();
-    if (wasPlaying) {
+    if (wasPlaying == Playback.playing) {
       await play();
     }
   }
 
   @override
   void dispose() {
-    playing = false;
+    state = Playback.stop;
     tts.stop();
 
     super.dispose();
