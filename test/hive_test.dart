@@ -44,17 +44,18 @@ void main() {
       name: 'The Little Prince',
       path: 'assets/the-little-prince-dual.epub',
       type: ItemType.assets,
+      progress: Progress(chapterIndex: 2, offset: 3),
     )..toJson();
 
     final al = ItemList(items: [a]);
+    gbox.put('items', al.toJson());
 
     final jl = al.toJson();
     final bl = ItemList.fromJson(jl);
     expect(al, bl);
 
-    gbox.put('items', al.toJson());
-
     final cl = ItemList.fromJson(gbox.get('items'));
     expect(al, cl);
+    print(gbox.toMap());
   });
 }

@@ -1,26 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lingua/settings/setting.dart';
-import 'dart:convert';
 
 void main() {
   test('settings all', () {
-    final jd = jsonDecode("""
-{
-  "tts": {
-    "zh": {
-      "pitch": 0.3,
-      "rate": 0.4,
-      "language": "en-US",
-      "system": true
-    }
-  },
-  "i": 13,
-  "s": "foo",
-  "b": false,
-  "t": true,
-  "seq": [13,24]
-}
-""");
+    final jd = {
+      "tts": {
+        "zh": {"pitch": 0.3, "rate": 0.4, "language": "en-US", "system": true},
+      },
+      "i": 13,
+      "s": "foo",
+      "b": false,
+      "t": true,
+      "seq": [13, 24],
+    };
 
     final m = TypedMap(jd);
     expect(m.has("b"), isTrue);
@@ -39,8 +31,8 @@ void main() {
     expect(m.listOf("seq"), equals([13, 24]));
 
     expect(() => m.stringOf("b"), throwsA(const TypeMatcher<TypeError>()));
-    expect(() => m.flag("a"), throwsA(const TypeMatcher<TypeError>()));
-    expect(() => m.flag("a.c"), throwsA(const TypeMatcher<TypeError>()));
+    expect(m.flag("a"), isFalse);
+    expect(m.flag("a.c"), isFalse);
     expect(m.objectOf("tts.zh"), TypeMatcher<Map>());
 
     // of not throw
@@ -49,9 +41,21 @@ void main() {
 
     m.put("a.b.c", "cc");
     expect(m.stringOf("a.b.c"), "cc");
+    m.put("a.c", "cc");
+    expect(m.stringOf("a.b.c"), "cc"); //
+    expect(m.stringOf("a.c"), "cc");
+    m.put("a.c", 1);
+    expect(m.stringOf("a.b.c"), "cc");
+    expect(m.intOf("a.c"), 1);
+    expect(m.stringOf("a.b.c"), "cc");
+    expect(m.of("a"), isMap);
+    expect(m.of("a"), {
+      'b': {'c': 'cc'},
+      'c': 1,
+    });
 
     // i already exists
-    expect(() => m.put("i.b", "1"), throwsA(const TypeMatcher<TypeError>()));
+    m.put("i.b", "1");
 
     final o2 = m.copyWith('aa', 'newer');
     expect(o2 != m, isTrue);

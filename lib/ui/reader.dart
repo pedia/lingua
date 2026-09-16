@@ -250,8 +250,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                   MaterialPageRoute<void>(builder: (context) => FontFrame()),
                 );
                 return;
-              }
-              else if (value == 'setting') {
+              } else if (value == 'setting') {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(builder: (context) => SettingFrame()),
                 );
@@ -300,38 +299,41 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               controller: roller,
               thumbVisibility: true,
               child: SafeArea(
-                child: ListView.builder(
-                  key: PageStorageKey<String>(
-                    '${widget.book.title} ${progress.chapterIndex}',
-                  ),
-                  controller: roller,
-                  padding: EdgeInsets.all(8),
-                  itemCount: lines.length,
-                  itemBuilder: (context, i) {
-                    return GestureDetector(
-                      onTapDown: (details) {
-                        // TODO: not work
-                        debugPrint('click $i');
-                        if (dt.playing) {
-                          dt.jumpTo(max(0, i - 1));
-                        }
-                      },
-                      child: dt.playing && i == dt.index
-                          ? Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.red),
-                              ),
-                              child: Text(
+                child: GestureDetector(
+                  behavior: HitTestBehavior
+                      .opaque, // 👈 Crucial: Captures taps on empty space
+                  onTap: () {
+                    toNextChapter();
+                  },
+                  child: ListView.builder(
+                    key: PageStorageKey<String>(
+                      '${widget.book.title} ${progress.chapterIndex}',
+                    ),
+                    controller: roller,
+                    padding: EdgeInsets.all(8),
+                    itemCount: lines.length,
+                    itemBuilder: (context, i) {
+                      return GestureDetector(
+                        onTapDown: (details) {
+                          scrollToNextPage();
+                        },
+                        child: dt.playing && i == dt.index
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.red),
+                                ),
+                                child: Text(
+                                  lines[i].text,
+                                  style: textStyle(lines[i].lang),
+                                ),
+                              )
+                            : Text(
                                 lines[i].text,
                                 style: textStyle(lines[i].lang),
                               ),
-                            )
-                          : Text(
-                              lines[i].text,
-                              style: textStyle(lines[i].lang),
-                            ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -339,6 +341,45 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           if (dt.playing) panel(context),
         ],
       ),
+    );
+  }
+
+  void toNextChapter() {
+    if (progress.chapterIndex + 1 < widget.book.chapters.length) {
+      setState(
+        () => progress = progress.copyWith(
+          chapterIndex: progress.chapterIndex + 1,
+          lineIndex: 0,
+        ),
+      );
+    } else {
+      debugPrint('book end');
+    }
+  }
+
+  void scrollToNextPage() {
+    if (!roller.hasClients) return;
+
+    final double viewportHeight = roller.position.viewportDimension;
+    final double target = (roller.offset + viewportHeight).clamp(
+      0.0,
+      roller.position.maxScrollExtent,
+    );
+
+    // debugPrint(
+    //   'offset: ${roller.offset} h: $viewportHeight max: ${roller.position.maxScrollExtent}',
+    // );
+
+    if (roller.offset == roller.position.maxScrollExtent) {
+      debugPrint('next chapter');
+      toNextChapter();
+      return;
+    }
+
+    roller.animateTo(
+      target,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOut,
     );
   }
 

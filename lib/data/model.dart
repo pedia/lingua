@@ -50,31 +50,14 @@ abstract class Item with _$Item {
 
 @freezed
 abstract class ItemList with _$ItemList {
+  @JsonSerializable(explicitToJson: true)
   const factory ItemList({@Default([]) List<Item> items}) = _ItemList;
 
-  const ItemList._();
+  factory ItemList.fromJson(Map json) =>
+      _$ItemListFromJson(json.cast<String, dynamic>());
 
-  ItemList addItem(Item target) => copyWith(items: [target, ...items]);
-
-  ItemList updateItemProgress(String path, Progress progress) => copyWith(
-    items: [
-      for (final e in items)
-        if (e.path == path) e.copyWith(progress: progress) else e,
-    ],
-  );
-
-  /// move `target` to the first place
-  ItemList touchItem(Item target) =>
-      copyWith(items: [target, ...items.where((e) => e.path != target.path)]);
-
-  ItemList removeItem(Item target) =>
-      copyWith(items: items.where((e) => e.path != target.path).toList());
-
-  factory ItemList.fromJson(List<Map> json) => ItemList(
-    items: json.map((e) => Item.fromJson(e.cast<String, dynamic>())).toList(),
-  );
-
-  List<Map> toJson() => items.map((e) => e.toJson()).toList();
+  @override
+  Map<String, Object?> toJson() => _$ItemListToJson(this as _ItemList);
 }
 
 class ItemListNotifier extends Notifier<ItemList> {
@@ -85,31 +68,41 @@ class ItemListNotifier extends Notifier<ItemList> {
     return ItemList();
   }
 
+  /// add means, put it at 1st place
   void add(Item target) {
-    state = state.addItem(target);
+    state = state.copyWith(items: [target, ...state.items]);
   }
 
   void updateProgress(String path, Progress progress) {
     print('update $path $progress');
-    state = state.updateItemProgress(path, progress);
+    state = ItemList(
+      items: [
+        for (final e in state.items)
+          if (e.path == path) e.copyWith(progress: progress) else e,
+      ],
+    );
     save();
   }
 
-  /// move `target` to the first place
+  /// Move `target` to 1st place
   void touch(Item target) {
-    state = state.touchItem(target);
+    state = state.copyWith(
+      items: [target, ...state.items.where((e) => e.path != target.path)],
+    );
     save();
   }
 
   void remove(Item target) {
-    state = state.removeItem(target);
+    state = state.copyWith(
+      items: state.items.where((e) => e.path != target.path).toList(),
+    );
     save();
   }
 
   Future load() async {
     final jl = gbox.get('items');
-    state = jl is List && jl.isNotEmpty
-        ? ItemList.fromJson(jl.cast<Map>())
+    state = jl is Map && jl.isNotEmpty
+        ? ItemList.fromJson(jl)
         : ItemList(
             items: [
               const Item(

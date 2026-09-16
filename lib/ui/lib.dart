@@ -111,6 +111,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               final result = await FilePicker.pickFiles(
                 type: FileType.custom,
                 allowedExtensions: const ['epub'],
+                allowMultiple: true,
               );
               if (result?.files != null) {
                 for (final file in result!.files) {

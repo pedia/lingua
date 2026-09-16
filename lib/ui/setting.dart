@@ -88,6 +88,7 @@ class Tile extends ConsumerWidget {
           value: v,
           underline: null,
           onChanged: (v) {
+            debugPrint('v: ${v.runtimeType}');
             ref.read(settingProvider.notifier).put(item.key, v);
           },
           items: item.choices!

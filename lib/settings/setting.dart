@@ -32,8 +32,10 @@ class TypedMap {
         if (!m.containsKey(i)) {
           m[i] = <String, dynamic>{};
         }
-
-        m = m[i];
+        if (m[i] is! Map) {
+          m[i] = <String, dynamic>{};
+        }
+        m = m[i].cast<String, dynamic>();
       }
       m[arr.last] = val;
     } else {
