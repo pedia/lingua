@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/settings/setting.dart';
 import 'package:lingua/ui/font.dart';
@@ -59,7 +59,7 @@ class LinguaApp extends ConsumerWidget {
         Locale('zh', 'TW'),
         Locale('jp', 'JP'),
         Locale('ko', 'KR'),
-        Locale('es', 'ES'),
+        // Locale('es', 'ES'),
       ],
       home: LibraryFrame(),
     );

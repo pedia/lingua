@@ -1,9 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:lingua/settings/setting.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/voice.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/model.dart';
 import '../epub/book.dart';
@@ -170,41 +171,37 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: Drawer(
-        child: Column(
-          children: [
-            SafeArea(
-              child: DrawerHeader(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  title: Text(widget.book.title),
-                  subtitle: Text(widget.book.author),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Scrollbar(
-                child: ListView.builder(
-                  primary: true,
-                  key: PageStorageKey<String>(widget.book.title),
-                  itemCount: widget.book.chapters.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      selected: index == progress.chapterIndex,
-                      title: Text(widget.book.chapters[index].title),
-                      onTap: () {
-                        Navigator.pop(context);
-                        setState(
-                          () => progress = Progress(chapterIndex: index),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
+        child: Scrollbar(
+          child: ListView.builder(
+            primary: true,
+            key: PageStorageKey<String>(widget.book.title),
+            itemCount: widget.book.chapters.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  child: ListTile(
+                    title: Text(widget.book.title),
+                    subtitle: Text(widget.book.author),
+                  ),
+                );
+              }
+              final i = index - 1;
+              return ListTile(
+                selected: i == progress.chapterIndex,
+                title: Text(widget.book.chapters[i].title),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => progress = Progress(chapterIndex: i));
+                },
+              );
+            },
+          ),
         ),
       ),
+
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.menu),
@@ -212,28 +209,28 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         ),
         title: Text(widget.book.chapters[progress.chapterIndex].title),
         actions: [
-          PopupMenuButton<String>(
-            tooltip: 'Display language',
-            initialValue: lang,
-            onSelected: (String val) {
-              ref.watch(settingProvider.notifier).put('ui.lang', val);
-              setState(() => lang = val);
-              // TODO: reset index
-              // roller.ensureVisible
-            },
-            itemBuilder: (BuildContext context) => const [
-              PopupMenuItem(value: 'en', child: Text('Only English')),
-              PopupMenuItem(value: 'zh', child: Text('Only Chinese')),
-              PopupMenuItem(value: '', child: Text('All')),
-            ],
-            child: Text(switch (lang) {
-              'en' => 'EN',
-              'zh' => 'ZH',
-              '' || _ => 'ALL',
-            }),
-          ),
+          // PopupMenuButton<String>(
+          //   tooltip: 'Display language',
+          //   initialValue: lang,
+          //   onSelected: (String val) {
+          //     ref.watch(settingProvider.notifier).put('ui.lang', val);
+          //     setState(() => lang = val);
+          //     // TODO: reset index
+          //     // roller.ensureVisible
+          //   },
+          //   itemBuilder: (BuildContext context) => const [
+          //     PopupMenuItem(value: 'en', child: Text('Only English')),
+          //     PopupMenuItem(value: 'zh', child: Text('Only Chinese')),
+          //     PopupMenuItem(value: '', child: Text('All')),
+          //   ],
+          //   child: Text(switch (lang) {
+          //     'en' => 'EN',
+          //     'zh' => 'ZH',
+          //     '' || _ => 'ALL',
+          //   }),
+          // ),
           // SizedBox(width: 20),
-          IconButton.filled(
+          IconButton(
             tooltip: switch (dt.state) {
               Playback.playing => 'Stop',
               _ => 'Play',
@@ -296,7 +293,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
               PopupMenuItem(value: 'font', child: Text('Font Demo')),
             ],
-            child: Icon(Icons.more_horiz, size: 36),
+            child: Icon(Icons.more_vert, size: 36),
           ),
         ],
       ),
