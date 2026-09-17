@@ -21,8 +21,8 @@ class Line {
 
 @immutable
 class Picture extends Line {
-  const Picture(super.text);
-  String get src => text;
+  const Picture(this.src) : super('');
+  final String src;
 
   @override
   String toString() => 'Picture($src)';
@@ -88,7 +88,7 @@ class ChapterStub implements Chapter {
   List<Line>? _lines;
 
   void _parse() {
-    final ch = EpubParser.decode(href, file);
+    final ch = EpubParser.decode2(href, file);
     _title = ch.title;
     _lines = ch.lines;
   }

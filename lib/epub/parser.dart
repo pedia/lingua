@@ -152,17 +152,29 @@ class EpubParser {
     String? title;
     for (final selector in ['title', 'h1', 'h2', 'h3']) {
       final text = dom.querySelector(selector)?.text.trim();
-      if (text != null && text.isNotEmpty) {
+      if (text != null &&
+          text.isNotEmpty &&
+          text != '未知' &&
+          text != 'Unknown') {
         title = text;
         break;
       }
     }
 
-    return Chapter.cache(
-      href: href,
-      lines: extract(dom.body!),
-      title: title ?? '',
-    );
+    final base = Uri(path: href);
+
+    // fix relative Picture.src
+    final lines = extract(dom.body!).map((line) {
+      if (line is Picture) {
+        final nu = base.resolve(line.src);
+        print('${line.src} to ${_normalize(nu.path)}');
+        return Picture(_normalize(nu.path));
+      } else {
+        return line;
+      }
+    }).toList();
+
+    return Chapter.cache(href: href, lines: lines, title: title ?? '');
   }
 
   /// TODO: impl with textOf(node)

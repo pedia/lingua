@@ -83,7 +83,7 @@ void main() {
 ''');
     final lines = extract(dom.body!);
     lines.forEach(print);
-    expect(lines.length, 6);
+    expect(lines.length, 7);
     expect(lines[0], Line('H1 Title', ''));
     expect(lines[1], Line('first line', ''));
     expect(lines[2], Line('메이드 인 코리아 시즌2', 'kr'));

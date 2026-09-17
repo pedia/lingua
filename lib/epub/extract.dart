@@ -40,8 +40,9 @@ List<Line> extract(dom.Node root) {
       return;
     }
 
-    // ── Structural / inline containers ─────────────────────────
-    // div, ul, li, span, a, i, em, strong, b, sup, …
+    // ── Structural containers we just walk through ─────────────
+    // figure, div, ul, li, span, a, i, em, strong, b, sup, …
+    // (figure is explicitly supported so <figure><img …></figure> works)
     final nextLang = node.attributes['lang'] ?? inheritedLang;
     for (final child in node.nodes) {
       walk(child, inheritedLang: nextLang);
@@ -76,7 +77,7 @@ void _extractMixedContent(dom.Element element, String lang, List<Line> result) {
     final tag = node.localName?.toLowerCase() ?? '';
 
     if (tag == 'img') {
-      flushText(); // emit any pending text first
+      flushText();
       final src = node.attributes['src'] ?? '';
       if (src.isNotEmpty) {
         result.add(Picture(src));
@@ -98,5 +99,5 @@ void _extractMixedContent(dom.Element element, String lang, List<Line> result) {
   for (final child in element.nodes) {
     process(child);
   }
-  flushText(); // remaining text at the end
+  flushText();
 }
