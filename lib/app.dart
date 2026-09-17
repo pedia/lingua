@@ -51,7 +51,7 @@ class LinguaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tm = ref.watch(
-      settingProvider.select((m) => m.intOf('ui.theme-mode')),
+      settingProvider.select((m) => m.intOf('ui.theme-mode', defaults: 0)),
     );
     return MaterialApp(
       title: 'Lingua Reader',

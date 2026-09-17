@@ -1,4 +1,7 @@
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -95,6 +98,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       offset = roller.offset;
     });
   }
+
+  Chapter get chapter => widget.book.chapters[progress.chapterIndex];
 
   @override
   void dispose() {
@@ -334,13 +339,13 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                                 ),
                                 child: Text(
                                   lines[i].text,
-                                  style: textStyle(lines[i].lang, fontSize.toDouble()),
+                                  style: textStyle(
+                                    lines[i].lang,
+                                    fontSize.toDouble(),
+                                  ),
                                 ),
                               )
-                            : Text(
-                                lines[i].text,
-                                style: textStyle(lines[i].lang, fontSize.toDouble()),
-                              ),
+                            : buildLine(lines[i]),
                       );
                     },
                   ),
@@ -440,6 +445,47 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget buildLine(Line line) {
+    if (line is Picture) {
+      return BytesImage(widget.book.files[line.src]?.content);
+    }
+    return Text(line.text, style: textStyle(line.lang, 18));
+  }
+}
+
+class BytesImage extends StatelessWidget {
+  const BytesImage(this.bytes, {super.key});
+  final Uint8List? bytes;
+
+  Future<ui.Image> decode(Uint8List? bytes) {
+    final c = Completer<ui.Image>();
+    if (bytes != null) {
+      ui.decodeImageFromList(bytes, (img) {
+        c.complete(img);
+      });
+    } else {
+      c.completeError('404');
+    }
+    return c.future;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ui.Image>(
+      future: decode(bytes),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError || !snapshot.hasData) {
+          return const Center(child: Text('Error loading image'));
+        }
+
+        // Pass the resolved dart:ui.Image straight into RawImage
+        return RawImage(image: snapshot.data, fit: BoxFit.fitWidth);
+      },
     );
   }
 }

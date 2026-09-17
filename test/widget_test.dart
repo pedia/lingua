@@ -4,8 +4,8 @@ import 'package:lingua/epub/text_splitter.dart' as text;
 void main() {
   test('detects language and collapses whitespace', () {
     expect(text.collapseWhitespace('  a   b '), 'a b');
-    expect(text.detectLanguage('Hello there'), 'en');
-    expect(text.detectLanguage('这是中文测试文本'), 'zh');
+    expect(text.detectLang('Hello there'), 'en');
+    expect(text.detectLang('这是中文测试文本'), 'zh');
 
     expect({} == {}, isFalse);
   });

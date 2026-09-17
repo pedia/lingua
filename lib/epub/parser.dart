@@ -7,6 +7,7 @@ import 'package:html/dom.dart';
 
 import 'book.dart';
 import 'text_splitter.dart';
+import 'extract.dart';
 
 class EpubParser {
   const EpubParser();
@@ -19,11 +20,14 @@ class EpubParser {
   Book parseArchive(Archive archive) {
     final files = <String, ArchiveFile>{};
     for (final file in archive) {
+      // print(file.name);
       if (!file.isFile) {
         continue;
       }
       files[_normalize(file.name)] = file;
     }
+
+    // print(files);
 
     if (files.keys.any((name) => name.endsWith('meta-inf/encryption.xml'))) {
       throw const DrmEpubException();
@@ -45,8 +49,8 @@ class EpubParser {
     final opf = _xml(files, opfPath);
     final opfDir = _dirName(opfPath);
 
-    final title = _firstText(opf, 'title') ?? 'Untitled';
-    final author = _firstText(opf, 'creator') ?? 'Unknown author';
+    final title = _firstText(opf, 'title') ?? '';
+    final author = _firstText(opf, 'creator') ?? '';
     final language = _firstText(opf, 'language') ?? 'en';
 
     final manifest = <String, String>{};
@@ -93,6 +97,7 @@ class EpubParser {
       author: author,
       language: language.split('-').first.toLowerCase(),
       chapters: chapters,
+      files: files,
     );
   }
 
@@ -127,30 +132,60 @@ class EpubParser {
     String? title;
     for (final selector in ['title', 'h1', 'h2', 'h3']) {
       final text = dom.querySelector(selector)?.text.trim();
-      if (text != null) {
+      if (text != null && text.isNotEmpty) {
         title = text;
+        break;
       }
     }
 
-    // debugPrint('decode: $title');
-
     return Chapter.cache(
       href: href,
-      lines: extractLines(dom),
+      lines: extractLines(dom, href),
       title: title ?? '',
     );
   }
 
-  static List<Line> extractLines(Document dom) {
+  static Chapter decode2(String href, ArchiveFile file) {
+    final html = utf8.decode(file.content as List<int>);
+    final dom = html_parser.parse(html);
+
+    String? title;
+    for (final selector in ['title', 'h1', 'h2', 'h3']) {
+      final text = dom.querySelector(selector)?.text.trim();
+      if (text != null && text.isNotEmpty) {
+        title = text;
+        break;
+      }
+    }
+
+    return Chapter.cache(
+      href: href,
+      lines: extract(dom.body!),
+      title: title ?? '',
+    );
+  }
+
+  /// TODO: impl with textOf(node)
+  static List<Line> extractLines(Document dom, String href) {
+    final base = Uri(path: href);
     final ret = <Line>[];
     for (var p in dom.querySelectorAll('p')) {
       final t = p.text.trim();
-      final lang = switch (p.className) {
-        'zh' || 'en' => p.className,
-        _ => detectLanguage(p.text),
-      };
-
-      ret.add(Line(t, lang));
+      if (t.isNotEmpty) {
+        var lang = p.attributes['lang'] ?? detectLang(p.text);
+        ret.add(Line(t, lang));
+      } else {
+        // for (final c in p.children) {
+        //   print('child: ${c.localName}');
+        // }
+        if (p.children.isNotEmpty) {
+          final src = p.querySelector('img')?.attributes['src'];
+          if (src != null && src.isNotEmpty) {
+            final nu = base.resolve(src);
+            ret.add(Picture(_normalize(nu.path)));
+          }
+        }
+      }
     }
     return ret;
   }
@@ -163,7 +198,7 @@ class EpubParser {
     return path.substring(0, index + 1);
   }
 
-  String _normalize(String path) {
+  static String _normalize(String path) {
     return path
         .replaceAll('\\', '/')
         .replaceFirst(RegExp(r'^/'), '')

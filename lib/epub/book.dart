@@ -1,5 +1,5 @@
+import 'package:meta/meta.dart';
 import 'package:archive/archive.dart';
-import 'package:flutter/cupertino.dart';
 import '../epub/parser.dart';
 
 @immutable
@@ -9,7 +9,7 @@ class Line {
   final String lang;
 
   @override
-  String toString() => 'Line($text)$lang';
+  String toString() => 'Line($lang: $text)';
 
   @override
   bool operator ==(Object other) =>
@@ -19,10 +19,27 @@ class Line {
   int get hashCode => Object.hash(text, lang);
 }
 
+@immutable
+class Picture extends Line {
+  const Picture(super.text);
+  String get src => text;
+
+  @override
+  String toString() => 'Picture($src)';
+
+  @override
+  bool operator ==(Object other) =>
+      other is Picture && src == other.src && lang == other.lang;
+
+  @override
+  int get hashCode => Object.hash(src, 'pic');
+}
+
 abstract class Chapter {
   String get title;
   List<Line> get lines;
   String get text;
+  String get href;
 
   factory Chapter.from(String href, ArchiveFile file) {
     return ChapterStub._(href: href, file: file);
@@ -98,12 +115,14 @@ class Book {
     required this.author,
     this.language,
     required this.chapters,
+    this.files = const <String, ArchiveFile>{},
   });
 
   final String title;
   final String author;
   final String? language;
   final List<Chapter> chapters;
+  final Map<String, ArchiveFile> files;
 
   int get sentenceCount =>
       chapters.fold(0, (sum, chapter) => sum + chapter.lines.length);
