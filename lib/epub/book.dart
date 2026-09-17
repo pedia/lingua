@@ -1,6 +1,6 @@
 import 'package:archive/archive.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:lingua/epub/parser.dart';
+import '../epub/parser.dart';
 
 @immutable
 class Line {

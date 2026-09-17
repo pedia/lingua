@@ -1,8 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingua/settings/setting.dart';
-import 'package:lingua/ui/font.dart';
+import 'package:go_router/go_router.dart';
+
+import 'settings/setting.dart';
+import 'ui/font.dart';
+import 'ui/book.dart';
 
 import 'ui/lib.dart';
 
@@ -27,14 +29,17 @@ class LinguaApp extends ConsumerWidget {
         .copyWith(
           // Optional: improve readability for Chinese
           bodyLarge: base.textTheme.bodyLarge?.copyWith(
+            fontFamily: family,
             height: 1.55,
             fontSize: 16,
           ),
           bodyMedium: base.textTheme.bodyMedium?.copyWith(
+            fontFamily: family,
             height: 1.55,
             fontSize: 14.5,
           ),
           titleLarge: base.textTheme.titleLarge?.copyWith(
+            fontFamily: family,
             height: 1.35,
             fontWeight: FontWeight.w600,
           ),
@@ -65,3 +70,24 @@ class LinguaApp extends ConsumerWidget {
     );
   }
 }
+
+final router = GoRouter(
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (_, _) => LibraryFrame(),
+      routes: [
+        GoRoute(
+          path: 'book/:path',
+          builder: (context, state) {
+            final _ = state.pathParameters['path']!;
+            return Scaffold(
+              appBar: AppBar(title: const Text('Details Screen')),
+            );
+            // BookFrame(book: book, progress: progress, path: path);
+          },
+        ),
+      ],
+    ),
+  ],
+);

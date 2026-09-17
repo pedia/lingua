@@ -4,6 +4,7 @@ import 'package:osfont/osfont.dart';
 
 // packages/flutter/lib/src/material/typography.dart
 const fontFamilyFallback = [
+  '.osdefault',
   '.AppleSystemUIFont',
   'CupertinoSystemDisplay',
   'Segoe UI',
@@ -18,7 +19,7 @@ Future<String?> osFontFamily() async {
     final fl = await Osfont().getAvailableFonts();
     try {
       // TODO: galaxy, 'NotoSerifCJK-Regular',
-      final font = fl.firstWhere((e) => e.fileName.contains('SECCJK-Regular'));
+      final font = fl.firstWhere((e) => e.fileName.contains('SECCJK-Regular.ttc') && e.ttcIndex==2);
       // if Galaxy
       return await Osfont.loadFont(font, customFamilyName: '.osdefault');
     } catch (e) {

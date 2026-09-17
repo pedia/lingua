@@ -8,16 +8,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 
-import 'reader.dart';
+import 'book.dart';
 import 'font.dart';
 import 'setting.dart';
 import 'voice.dart';
-import '../tts/dualtts.dart';
 import '../settings/setting.dart';
 import '../data/model.dart';
+import '../data/sample.dart';
 import '../epub/parser.dart';
 import '../epub/book.dart';
-import '../data/sample.dart';
 
 /// Globally pump `OpenFile` event to Widgets
 class OpenFile {

@@ -1,11 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:lingua/settings/setting.dart';
-import 'package:lingua/ui/setting.dart';
-import 'package:lingua/ui/voice.dart';
 
+import '../settings/setting.dart';
+import '../ui/setting.dart';
+import '../ui/voice.dart';
 import '../data/model.dart';
 import '../epub/book.dart';
 import '../tts/dualtts.dart';
@@ -28,18 +27,18 @@ class BookFrame extends ConsumerStatefulWidget {
 
 class _BookFrameState extends ConsumerState<BookFrame> {
   /// best font style
-  TextStyle textStyle(String lang) => switch (lang) {
-    'zh' => const TextStyle(
+  TextStyle textStyle(String lang, double fontSize) => switch (lang) {
+    'zh' => TextStyle(
       fontFamily: '.osdefault', // let platform decide
       fontFamilyFallback: fontFamilyFallback,
-      fontSize: 18,
+      fontSize: fontSize,
       height: 1.55,
       fontWeight: FontWeight.w400,
     ),
-    'en' || _ => const TextStyle(
+    'en' || _ => TextStyle(
       fontFamily: '.osdefault', // let platform decide
       fontFamilyFallback: fontFamilyFallback,
-      fontSize: 18,
+      fontSize: fontSize,
       height: 1.55,
       fontWeight: FontWeight.w200,
     ),
@@ -307,9 +306,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                 child: GestureDetector(
                   behavior: HitTestBehavior
                       .opaque, // 👈 Crucial: Captures taps on empty space
-                  onTap: () {
-                    toNextChapter();
-                  },
+                  onTap: toNextChapter,
                   child: ListView.builder(
                     key: PageStorageKey<String>(
                       '${widget.book.title} ${progress.chapterIndex}',
@@ -318,10 +315,13 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                     padding: EdgeInsets.all(8),
                     itemCount: lines.length,
                     itemBuilder: (context, i) {
+                      final fontSize = ref.watch(
+                        settingProvider.select(
+                          (m) => m.intOf('ui.zh-font-size', defaults: 18),
+                        ),
+                      );
                       return GestureDetector(
-                        onTapDown: (details) {
-                          scrollToNextPage();
-                        },
+                        onTapUp: scrollToNextPage,
                         onDoubleTap: () {
                           if (dt.state == Playback.playing) {
                             dt.jumpTo(max(0, i - 1)); // dutts.play bug?
@@ -334,12 +334,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                                 ),
                                 child: Text(
                                   lines[i].text,
-                                  style: textStyle(lines[i].lang),
+                                  style: textStyle(lines[i].lang, fontSize.toDouble()),
                                 ),
                               )
                             : Text(
                                 lines[i].text,
-                                style: textStyle(lines[i].lang),
+                                style: textStyle(lines[i].lang, fontSize.toDouble()),
                               ),
                       );
                     },
@@ -367,7 +367,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     }
   }
 
-  void scrollToNextPage() {
+  void scrollToNextPage(TapUpDetails d) {
     if (!roller.hasClients) return;
 
     final double viewportHeight = roller.position.viewportDimension;

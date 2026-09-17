@@ -11,7 +11,7 @@ class TypedMap {
 
   // TODO: return bool? is better
   bool flag(String key) => (of(key) ?? false) as bool;
-  int intOf(String key) => (of(key) ?? 0) as int;
+  int intOf(String key, {int? defaults}) => of(key) ?? defaults;
   double doubleOf(String key) => (of(key) ?? 0.0) as double;
   String stringOf(String key) => (of(key) ?? '') as String;
   Map objectOf(String key) => of(key) as Map;
