@@ -19,8 +19,12 @@ List<Line> extract(dom.Node root) {
     final tag = node.localName?.toLowerCase() ?? '';
 
     // ── Picture ────────────────────────────────────────────────
-    if (tag == 'img') {
-      final src = node.attributes['src'] ?? '';
+    if (tag == 'img' || tag == 'image') {
+      final src =
+          node.attributes['src'] ??
+          node.attributes['xlink:href'] ??
+          node.attributes['href'] ??
+          '';
       if (src.isNotEmpty) {
         result.add(Picture(src));
       }

@@ -154,8 +154,7 @@ class EpubParser {
       final text = dom.querySelector(selector)?.text.trim();
       if (text != null &&
           text.isNotEmpty &&
-          text != '未知' &&
-          text != 'Unknown') {
+          !{'未知', 'Unknown'}.contains(text)) {
         title = text;
         break;
       }
