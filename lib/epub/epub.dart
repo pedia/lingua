@@ -1,13 +1,19 @@
+import 'dart:convert';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' show parse;
+import 'package:archive/archive.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Content Model (short names)
 // ─────────────────────────────────────────────────────────────
 
-sealed class Chunk {}
+sealed class Chunk {
+  String get text;
+  String get lang => '';
+}
 
 class TextBlock extends Chunk {
+  @override
   final String lang;
   final List<Inline> inlines;
   final int? headingLevel; // 1–6 for <h1>–<h6>, null = normal <p>
@@ -17,8 +23,10 @@ class TextBlock extends Chunk {
       TextBlock([InlineText(text)], lang: lang);
 
   @override
-  String toString() =>
-      'TextBlock(level: $headingLevel, inlines: ${inlines.length})';
+  String get text => inlines.map((e) => e.text).join('');
+
+  @override
+  String toString() => '[${inlines.join("")}]';
 }
 
 class BlockImage extends Chunk {
@@ -29,29 +37,44 @@ class BlockImage extends Chunk {
   BlockImage(this.src, {this.alt, this.id});
 
   @override
-  String toString() => 'BlockImage("$src")';
+  String get text => '';
+
+  @override
+  String toString() => '[img $src]';
 }
 
-class ListBlock extends Chunk {
+class BlockList extends Chunk {
   final bool ordered;
   final List<ListItem> items;
 
-  ListBlock(this.items, {this.ordered = false});
+  BlockList(this.items, {this.ordered = false});
 
   @override
-  String toString() => 'ListBlock(ordered: $ordered, items: ${items.length})';
+  String get text => items.map((i) => i.text).join('');
+
+  @override
+  String toString() => '[list ${items.length}: ${items.join("\n")}]';
 }
 
+/// bullet point: ••‣⁃◦▪
 class ListItem {
   final List<Chunk> content;
 
   ListItem(this.content);
+
+  String get text => content.map((c) => c.text).join('');
+
+  @override
+  String toString() => '• ${content.join("\n")}';
 }
 
 class Table extends Chunk {
   final List<TableRow> rows;
 
   Table(this.rows);
+
+  @override
+  String get text => rows.map((i) => i.text).join('');
 
   @override
   String toString() => 'Table(rows: ${rows.length})';
@@ -61,6 +84,8 @@ class TableRow {
   final List<TableCell> cells;
   final bool isHeader;
 
+  String get text => cells.map((cell) => cell.text).join('');
+
   TableRow(this.cells, {this.isHeader = false});
 }
 
@@ -68,6 +93,8 @@ class TableCell {
   final List<Chunk> content;
   final int colspan;
   final int rowspan;
+
+  String get text => content.map((c) => c.text).join('');
 
   TableCell(this.content, {this.colspan = 1, this.rowspan = 1});
 }
@@ -77,21 +104,30 @@ class MathBlock extends Chunk {
   final bool display;
 
   MathBlock(this.content, {this.display = true});
+
+  @override
+  String get text => '';
 }
 
 class UnknownBlock extends Chunk {
   final String tag;
 
   UnknownBlock(this.tag);
+
+  @override
+  String get text => '';
 }
 
 // ─────────────────────────────────────────────────────────────
 // Inline content
 // ─────────────────────────────────────────────────────────────
 
-sealed class Inline {}
+sealed class Inline {
+  String get text;
+}
 
 class InlineText extends Inline {
+  @override
   final String text;
   final bool bold;
   final bool italic;
@@ -110,14 +146,15 @@ class InlineText extends Inline {
 
   @override
   String toString() {
-    final styles = [
-      if (bold) 'b',
-      if (italic) 'i',
+    final mark = [
+      if (bold) '*',
+      if (italic) '_',
       if (underline) 'u',
-      if (superscript) 'sup',
-      if (subscript) 'sub',
-    ];
-    return 'TextSpan("$text"${styles.isNotEmpty ? ' [${styles.join(',')}]' : ''})';
+      if (superscript) '^',
+      if (subscript) 'v',
+      '',
+    ].join('');
+    return '$mark${text.replaceAll("\n", "")}$mark';
   }
 }
 
@@ -126,6 +163,12 @@ class InlineImage extends Inline {
   final String? alt;
 
   InlineImage(this.src, {this.alt});
+
+  @override
+  String get text => '';
+
+  @override
+  String toString() => '<img $src>';
 }
 
 class Hyperlink extends Inline {
@@ -133,20 +176,32 @@ class Hyperlink extends Inline {
   final String? epubType;
   final List<Inline> children;
 
+  @override
+  String get text => children.map((e) => e.text).join('');
+
   Hyperlink(this.href, {this.epubType, this.children = const []});
 
   @override
-  String toString() => 'Hyperlink($href)';
+  String toString() => '<a to=$href>${children.join("")}></a>';
 }
 
 class Anchor extends Inline {
   final String id;
   Anchor(this.id);
+
+  @override
+  String get text => '';
+
+  @override
+  String toString() => '<a name=$id>';
 }
 
 class MathInline extends Inline {
   final String content;
   MathInline(this.content);
+
+  @override
+  String get text => '';
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -154,6 +209,17 @@ class MathInline extends Inline {
 // ─────────────────────────────────────────────────────────────
 
 class HtmlExtractor {
+  HtmlExtractor(this.href);
+  final String href; // base url
+
+  /// for path ../images/some.png
+  /// return absolute path base on href
+  String resolve(String path) {
+    final base = Uri(path: href);
+    print('$path => ${base.resolve(path).path}');
+    return base.resolve(path).path.toLowerCase();
+  }
+
   List<Chunk> extract(dom.Node root) {
     final result = <Chunk>[];
     _walk(root, result, lang: '');
@@ -183,7 +249,7 @@ class HtmlExtractor {
         if (src.isNotEmpty) {
           output.add(
             BlockImage(
-              src,
+              resolve(src),
               alt: node.attributes['alt'],
               id: node.attributes['id'],
             ),
@@ -248,7 +314,7 @@ class HtmlExtractor {
 
   // ── Nested lists ──────────────────────────────────────────
 
-  ListBlock _extractList(
+  BlockList _extractList(
     dom.Element listEl, {
     required bool ordered,
     required String lang,
@@ -263,7 +329,7 @@ class HtmlExtractor {
       items.add(ListItem(itemContent));
     }
 
-    return ListBlock(items, ordered: ordered);
+    return BlockList(items, ordered: ordered);
   }
 
   // ── Tables with colspan / rowspan ─────────────────────────
@@ -344,7 +410,7 @@ class HtmlExtractor {
     if (tag == 'img' || tag == 'image') {
       final src = _imageSrc(node);
       if (src.isNotEmpty) {
-        output.add(InlineImage(src, alt: node.attributes['alt']));
+        output.add(InlineImage(resolve(src), alt: node.attributes['alt']));
       }
       return;
     }
@@ -443,7 +509,128 @@ class HtmlExtractor {
   }
 }
 
-List<Chunk> extract(String html) {
-  final dom.Document document = parse(html);
-  return HtmlExtractor().extract(document.body!);
+abstract class Chapter {
+  String get title;
+  List<Chunk> get lines;
+  String get text;
+  String get href;
+
+  factory Chapter.from(String href, ArchiveFile file) {
+    return ChapterStub._(href: href, file: file);
+  }
+
+  factory Chapter.cache({
+    required String title,
+    required String href,
+    required List<Chunk> lines,
+  }) {
+    return ChapterStub.cache(href: href, title: title, lines: lines);
+  }
+}
+
+class ChapterStub implements Chapter {
+  ChapterStub._({required this.href, required this.file});
+  // ChapterStub.fromArchive({required this.href, this.file});
+
+  ChapterStub.cache({
+    required this.href,
+    required String title,
+    required List<Chunk> lines,
+  }) : _title = title,
+       _lines = lines,
+       file = ArchiveFile.noData('stub');
+
+  @override
+  final String href;
+
+  @override
+  String get title {
+    if (_title == null) {
+      _parse();
+    }
+    return _title ?? '';
+  }
+
+  @override
+  List<Chunk> get lines {
+    if (_lines == null) {
+      _parse();
+    }
+    return _lines!;
+  }
+
+  String? _title;
+  List<Chunk>? _lines;
+
+  void _parse() {
+    final html = utf8.decode(file.content);
+    final dom = parse(html);
+
+    /// title
+    String? title;
+    for (final selector in ['title', 'h1', 'h2', 'h3']) {
+      final text = dom.querySelector(selector)?.text.trim();
+      if (text != null &&
+          text.isNotEmpty &&
+          !{'未知', 'Unknown'}.contains(text)) {
+        title = text;
+        break;
+      }
+    }
+    _title = title;
+
+    /// chunks
+    final chs = HtmlExtractor(href).extract(dom.body!);
+    _lines = chs;
+  }
+
+  final ArchiveFile file;
+
+  @override
+  String get text => lines.join('\n');
+
+  // List<String> get texts => lines.map((l) => l.text).toList();
+
+  Chapter copyWith(String? title, String? href, List<Chunk>? lines) {
+    return ChapterStub.cache(
+      href: href ?? this.href,
+      title: title ?? this.title,
+      lines: lines ?? this.lines,
+    );
+  }
+}
+
+class Book {
+  const Book({
+    required this.title,
+    required this.author,
+    this.language,
+    required this.chapters,
+    this.files = const <String, ArchiveFile>{},
+  });
+
+  final String title;
+  final String author;
+  final String? language;
+  final List<Chapter> chapters;
+  final Map<String, ArchiveFile> files;
+
+  int get sentenceCount =>
+      chapters.fold(0, (sum, chapter) => sum + chapter.lines.length);
+}
+
+class DrmEpubException implements Exception {
+  const DrmEpubException();
+
+  @override
+  String toString() =>
+      'EPUB is encrypted or DRM-protected and cannot be opened.';
+}
+
+class EpubParseException implements Exception {
+  const EpubParseException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
 }

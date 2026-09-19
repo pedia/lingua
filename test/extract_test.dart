@@ -1,5 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:html/parser.dart' as html_parser;
 import 'package:lingua/epub/epub.dart';
+
+List<Chunk> extract(String html) {
+  return HtmlExtractor('').extract(html_parser.parse(html));
+}
 
 void main() {
   group('HtmlExtractor', () {
@@ -161,7 +166,7 @@ void main() {
     group('lists', () {
       test('unordered list', () {
         final chunks = extract('<ul><li>one</li><li>two</li></ul>');
-        final list = chunks.single as ListBlock;
+        final list = chunks.single as BlockList;
         expect(list.ordered, isFalse);
         expect(list.items, hasLength(2));
         expect(list.items[1].content.single is TextBlock, isTrue);
@@ -169,23 +174,23 @@ void main() {
 
       test('ordered list', () {
         final chunks = extract('<ol><li>first</li></ol>');
-        final list = chunks.single as ListBlock;
+        final list = chunks.single as BlockList;
         expect(list.ordered, isTrue);
       });
 
       test('nested lists', () {
         final chunks = extract('<ul><li>a<ul><li>b</li></ul></li></ul>');
-        final list = chunks.single as ListBlock;
+        final list = chunks.single as BlockList;
         final inner = list.items.single.content;
         expect(inner, hasLength(2));
         expect(inner[0] is TextBlock, isTrue);
-        final nested = inner[1] as ListBlock;
+        final nested = inner[1] as BlockList;
         expect(nested.items.single.content.single is TextBlock, isTrue);
       });
 
       test('non-li children are ignored', () {
         final chunks = extract('<ul><p>skip</p><li>keep</li></ul>');
-        final list = chunks.single as ListBlock;
+        final list = chunks.single as BlockList;
         expect(list.items, hasLength(1));
       });
     });
@@ -339,7 +344,7 @@ void main() {
         expect(BlockImage('a.jpg', alt: 'b').toString(), 'BlockImage("a.jpg")');
         expect(Hyperlink('c.html').toString(), 'Hyperlink(c.html)');
         expect(
-          ListBlock([ListItem([])]).toString(),
+          BlockList([ListItem([])]).toString(),
           'ListBlock(ordered: false, items: 1)',
         );
         expect(Table([TableRow([])]).toString(), 'Table(rows: 1)');
@@ -360,7 +365,7 @@ void main() {
       expect((chunks[0] as TextBlock).headingLevel, 1);
       expect(chunks[1] is TextBlock, isTrue);
       expect(chunks[2] is BlockImage, isTrue);
-      expect(chunks[3] is ListBlock, isTrue);
+      expect(chunks[3] is BlockList, isTrue);
       expect(chunks[4] is Table, isTrue);
     });
   });

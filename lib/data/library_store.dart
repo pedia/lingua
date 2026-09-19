@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../epub/book.dart';
+import '../epub/epub.dart';
 
 class BookNotifier extends Notifier<Book> {
   @override

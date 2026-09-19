@@ -17,7 +17,7 @@ import 'demo.dart';
 import '../data/model.dart';
 import '../data/sample.dart';
 import '../epub/parser.dart';
-import '../epub/book.dart';
+import '../epub/epub.dart';
 
 /// Globally pump `OpenFile` event to Widgets
 class OpenFile {
@@ -106,10 +106,10 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Lingua Reader'),
+        title: Text('bilingualism 📘'), // 📖📕📚📘📙
         actions: [
           IconButton(
-            icon: Icon(Icons.add, size: 36),
+            icon: Icon(Icons.library_add, size: 36),
             onPressed: () async {
               final result = await FilePicker.pickFiles(
                 type: FileType.custom,
@@ -161,8 +161,11 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               title: e.type == ItemType.debug
                   ? Text('${e.name} $fontName')
                   : Text(e.name),
-              subtitle: e.type == ItemType.debug ? Text(e.path) : null,
-              leading: Icon(Icons.book_rounded),
+              subtitle: e.type != ItemType.debug ? Text(e.path) : null,
+              leading: Icon(
+                Icons.library_books,
+                color: Theme.of(context).primaryColor,
+              ),
               onTap: () async {
                 Book? book;
                 if (e.type == ItemType.assets) {

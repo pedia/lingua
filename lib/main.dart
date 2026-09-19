@@ -49,7 +49,7 @@ Future<void> main() async {
   }
 
   final ff = await osFontFamily();
-  debugPrint('osfont: $ff');
+  debugPrint('osfont: $ff ${Directory.current.path}', );
 
   runApp(ProviderScope(child: LinguaApp(family: ff)));
 }

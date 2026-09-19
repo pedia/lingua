@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-import '../epub/book.dart';
+import '../epub/epub.dart';
 
 class Voice {
   Voice({
@@ -87,13 +87,13 @@ class DualTts extends ChangeNotifier {
 
   final tts = FlutterTts();
   final Map<String, Voice> ss = {};
-  List<Line> lines = const [];
+  List<Chunk> lines = const [];
   int index = 0;
   Playback state = Playback.stop;
 
   bool get inited => ss.isNotEmpty;
 
-  void load(List<Line> next, {int startAt = 0}) {
+  void load(List<Chunk> next, {int startAt = 0}) {
     lines = next;
     index = startAt.clamp(0, next.isEmpty ? 0 : next.length - 1);
     notifyListeners();

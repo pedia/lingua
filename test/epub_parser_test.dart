@@ -4,32 +4,15 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lingua/epub/book.dart';
+
 import 'package:lingua/epub/parser.dart';
-import 'package:lingua/epub/extract.dart';
+import 'package:lingua/epub/epub.dart';
+
 import 'package:lingua/epub/writer.dart';
 import 'package:lingua/epub/text_splitter.dart';
 import 'package:lingua/settings/app_settings.dart';
 
 void main() {
-  test('equal', () {
-    expect(Line('Hello world.'), Line('Hello world.'));
-  });
-  test('splits latin and cjk sentences', () {
-    expect(
-      splitSentences('Hello world. How are you? Fine!'),
-      equals([
-        Line('Hello world.', 'en'),
-        Line('How are you?', 'en'),
-        Line('Fine!', 'en'),
-      ]),
-    );
-    expect(
-      splitSentences('你好。世界！'),
-      equals([Line('你好。', 'zh'), Line('世界！', 'zh')]),
-    );
-  });
-
   test('parses a minimal epub', () {
     final zip = _minimalEpub();
     final book = const EpubParser().parseBytes(zip);
@@ -56,7 +39,10 @@ void main() {
         Chapter.cache(
           href: '',
           title: 'One',
-          lines: [Line('Hello world.', 'en'), Line('你好世界。', 'zh')],
+          lines: [
+            TextBlock.single('Hello world.', lang: 'en'),
+            TextBlock.single('你好世界。', lang: 'zh'),
+          ],
         ),
       ],
     );
@@ -81,16 +67,16 @@ void main() {
 </body>
 </html>
 ''');
-    final lines = extract(dom.body!);
+    final lines = HtmlExtractor('').extract(dom.body!);
     lines.forEach(print);
     expect(lines.length, 7);
-    expect(lines[0], Line('H1 Title', ''));
-    expect(lines[1], Line('first line', ''));
-    expect(lines[2], Line('메이드 인 코리아 시즌2', 'kr'));
-    expect(lines[3], Line('韩国制造2', ''));
-    expect(lines[4], Line('韩国制造3', 'zh'));
-    expect(lines[5], Picture('../images/foo.jpg'));
-    expect(lines[6], Line('foo'));
+    expect(lines[0], TextBlock.single('H1 Title'));
+    expect(lines[1], TextBlock.single('first line', lang: ''));
+    expect(lines[2], TextBlock.single('메이드 인 코리아 시즌2', lang: 'kr'));
+    expect(lines[3], TextBlock.single('韩国制造2', lang: ''));
+    expect(lines[4], TextBlock.single('韩国制造3', lang: 'zh'));
+    expect(lines[5], BlockImage('../images/foo.jpg'));
+    expect(lines[6], TextBlock.single('foo'));
   });
 }
 

@@ -118,7 +118,7 @@ class Setting extends Notifier<TypedMap> {
   Future load() async {
     final m = gbox.get('settings');
 
-    debugPrint('load $m');
+    debugPrint('setting load: $m');
 
     state = m is Map && m.isNotEmpty
         ? TypedMap(m.cast<String, dynamic>())

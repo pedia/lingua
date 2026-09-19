@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
-import 'book.dart';
+import 'epub.dart';
 import '../settings/app_settings.dart';
 
 class EpubWriter {
@@ -19,21 +19,19 @@ class EpubWriter {
     void add(String name, String body, {bool compress = true}) {
       final bytes = utf8.encode(body);
       final file = ArchiveFile(name, bytes.length, bytes);
-      file.compression =
-          compress ? CompressionType.deflate : CompressionType.none;
+      file.compression = compress
+          ? CompressionType.deflate
+          : CompressionType.none;
       archive.addFile(file);
     }
 
     add('mimetype', 'application/epub+zip', compress: false);
-    add(
-      'META-INF/container.xml',
-      '''<?xml version="1.0"?>
+    add('META-INF/container.xml', '''<?xml version="1.0"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
   <rootfiles>
     <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>''',
-    );
+</container>''');
 
     final manifest = StringBuffer();
     final spine = StringBuffer();
@@ -46,9 +44,7 @@ class EpubWriter {
       add('OEBPS/$id.xhtml', _chapterXhtml(chapters[i]));
     }
 
-    add(
-      'OEBPS/content.opf',
-      '''<?xml version="1.0"?>
+    add('OEBPS/content.opf', '''<?xml version="1.0"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="3.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="bookid">lingua-${title.hashCode}</dc:identifier>
@@ -60,8 +56,7 @@ class EpubWriter {
 $manifest  </manifest>
   <spine>
 $spine  </spine>
-</package>''',
-    );
+</package>''');
 
     return Uint8List.fromList(ZipEncoder().encode(archive));
   }
@@ -72,11 +67,13 @@ $spine  </spine>
 
     for (var i = 0; i < ch.lines.length; i++) {
       final line = ch.lines[i];
-      switch (line.lang) {
-        case '':
-          body.writeln('<p>${_esc(line.text)}</p>');
-        default:
-          body.writeln('<p lang=${line.lang}>${_esc(line.text)}</p>');
+      if (line is TextBlock) {
+        switch (line.lang) {
+          case '':
+            body.writeln('<p>${_esc(line.text)}</p>');
+          default:
+            body.writeln('<p lang=${line.lang}>${_esc(line.text)}</p>');
+        }
       }
     }
     return '''<?xml version="1.0" encoding="utf-8"?>

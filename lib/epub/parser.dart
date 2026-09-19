@@ -1,13 +1,9 @@
 import 'dart:convert';
 
 import 'package:archive/archive.dart';
-import 'package:html/parser.dart' as html_parser;
 import 'package:xml/xml.dart';
-import 'package:html/dom.dart';
 
-import 'book.dart';
-import 'text_splitter.dart';
-import 'extract.dart';
+import 'epub.dart';
 
 class EpubParser {
   const EpubParser();
@@ -20,7 +16,6 @@ class EpubParser {
   Book parseArchive(Archive archive) {
     final files = <String, ArchiveFile>{};
     for (final file in archive) {
-      // print(file.name);
       if (!file.isFile) {
         continue;
       }
@@ -123,82 +118,6 @@ class EpubParser {
       }
     }
     return null;
-  }
-
-  static Chapter decode(String href, ArchiveFile file) {
-    final html = utf8.decode(file.content as List<int>);
-    final dom = html_parser.parse(html);
-
-    String? title;
-    for (final selector in ['title', 'h1', 'h2', 'h3']) {
-      final text = dom.querySelector(selector)?.text.trim();
-      if (text != null && text.isNotEmpty) {
-        title = text;
-        break;
-      }
-    }
-
-    return Chapter.cache(
-      href: href,
-      lines: extractLines(dom, href),
-      title: title ?? '',
-    );
-  }
-
-  static Chapter decode2(String href, ArchiveFile file) {
-    final html = utf8.decode(file.content as List<int>);
-    final dom = html_parser.parse(html);
-
-    String? title;
-    for (final selector in ['title', 'h1', 'h2', 'h3']) {
-      final text = dom.querySelector(selector)?.text.trim();
-      if (text != null &&
-          text.isNotEmpty &&
-          !{'未知', 'Unknown'}.contains(text)) {
-        title = text;
-        break;
-      }
-    }
-
-    final base = Uri(path: href);
-
-    // fix relative Picture.src
-    final lines = extract(dom.body!).map((line) {
-      if (line is Picture) {
-        final nu = base.resolve(line.src);
-        print('${line.src} to ${_normalize(nu.path)}');
-        return Picture(_normalize(nu.path));
-      } else {
-        return line;
-      }
-    }).toList();
-
-    return Chapter.cache(href: href, lines: lines, title: title ?? '');
-  }
-
-  /// TODO: impl with textOf(node)
-  static List<Line> extractLines(Document dom, String href) {
-    final base = Uri(path: href);
-    final ret = <Line>[];
-    for (var p in dom.querySelectorAll('p')) {
-      final t = p.text.trim();
-      if (t.isNotEmpty) {
-        var lang = p.attributes['lang'] ?? detectLang(p.text);
-        ret.add(Line(t, lang));
-      } else {
-        // for (final c in p.children) {
-        //   print('child: ${c.localName}');
-        // }
-        if (p.children.isNotEmpty) {
-          final src = p.querySelector('img')?.attributes['src'];
-          if (src != null && src.isNotEmpty) {
-            final nu = base.resolve(src);
-            ret.add(Picture(_normalize(nu.path)));
-          }
-        }
-      }
-    }
-    return ret;
   }
 
   String _dirName(String path) {
