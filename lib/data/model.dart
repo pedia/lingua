@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:json_annotation/json_annotation.dart';
 
 import '../g.dart';
 
@@ -99,42 +98,46 @@ class ItemListNotifier extends Notifier<ItemList> {
     save();
   }
 
+  final builtin = [
+    const Item(
+      name: 'The Little Prince',
+      path: 'assets/the-little-prince-dual.epub',
+      type: ItemType.assets,
+    ),
+    const Item(
+      name: 'Super Supportive',
+      path: 'assets/super-supportive-dual.epub',
+      type: ItemType.assets,
+    ),
+    const Item(
+      name: 'Paranoid Mage',
+      path: 'assets/paranoid-mage-dual.epub',
+      type: ItemType.assets,
+    ),
+    const Item(
+      name: 'Mother of Learning',
+      path: 'assets/mother-of-learning-dual.epub',
+      type: ItemType.assets,
+    ),
+    if (!bool.fromEnvironment('dart.vm.product'))
+      const Item(name: 'Sample', path: '', type: ItemType.demo),
+    if (!bool.fromEnvironment('dart.vm.product'))
+      const Item(
+        name: 'Debug, 中文',
+        path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
+        type: ItemType.debug,
+      ),
+  ];
+
   Future load() async {
     final jl = gbox.get('items');
     state = jl is Map && jl.isNotEmpty
         ? ItemList.fromJson(jl)
-        : ItemList(
-            items: [
-              const Item(
-                name: 'The Little Prince',
-                path: 'assets/the-little-prince-dual.epub',
-                type: ItemType.assets,
-              ),
-              const Item(
-                name: 'Super Supportive',
-                path: 'assets/super-supportive-dual.epub',
-                type: ItemType.assets,
-              ),
-              const Item(
-                name: 'Paranoid Mage',
-                path: 'assets/paranoid-mage-dual.epub',
-                type: ItemType.assets,
-              ),
-              const Item(
-                name: 'Mother of Learning',
-                path: 'assets/mother-of-learning-dual.epub',
-                type: ItemType.assets,
-              ),
-              if (!bool.fromEnvironment('dart.vm.product'))
-                const Item(name: 'Sample', path: '', type: ItemType.demo),
-              if (!bool.fromEnvironment('dart.vm.product'))
-                const Item(
-                  name: 'Debug, 中文',
-                  path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
-                  type: ItemType.debug,
-                ),
-            ],
-          );
+        : ItemList(items: builtin);
+
+    for (final i in builtin) {
+      if (!state.items.contains(i)) add(i);
+    }
   }
 
   void save() {

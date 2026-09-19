@@ -33,8 +33,14 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
     ),
     SettingItem(
       type: SettingType.choice,
-      key: 'ui.zh-font-size',
-      title: 'Chinese Font Size',
+      key: 'ui.lang',
+      title: 'Language',
+      choices: [('Only English', 'en'), ('Only Chinese', 'zh'), ('All', '')],
+    ),
+    SettingItem(
+      type: SettingType.choice,
+      key: 'ui.font-size',
+      title: 'Font Size',
       choices: [
         ('12', 12),
         ('14', 14),

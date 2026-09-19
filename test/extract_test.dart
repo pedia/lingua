@@ -1,12 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart';
 import 'package:lingua/epub/epub.dart';
-
-List<Chunk> extract(String html) {
-  final dom.Document document = parse(html);
-  return HtmlExtractor().extract(document.body!);
-}
 
 void main() {
   group('HtmlExtractor', () {
@@ -17,7 +10,7 @@ void main() {
       expect(block.lang, '');
       expect(block.headingLevel, isNull);
       expect(block.inlines, hasLength(1));
-      final span = block.inlines.single as TextSpan;
+      final span = block.inlines.single as InlineText;
       expect(span.text, 'Hello world.');
     });
 
@@ -29,7 +22,7 @@ void main() {
     test('collapses whitespace in bare text', () {
       final chunks = extract('<div>  hello\n\n   world \t ! </div>');
       final block = chunks.single as TextBlock;
-      expect((block.inlines.single as TextSpan).text, 'hello world !');
+      expect((block.inlines.single as InlineText).text, 'hello world !');
     });
 
     test('inherits lang from ancestor elements', () {
@@ -47,20 +40,22 @@ void main() {
         final chunks = extract('<h$i>Level $i</h$i>');
         final block = chunks.single as TextBlock;
         expect(block.headingLevel, i, reason: 'for h$i');
-        expect(block.inlines.single is TextSpan, isTrue);
+        expect(block.inlines.single is InlineText, isTrue);
       }
     });
 
     test('falls through default elements and walks children', () {
-      final chunks = extract('<div><section><span><p>deep</p></span></section></div>');
+      final chunks = extract(
+        '<div><section><span><p>deep</p></span></section></div>',
+      );
       expect(chunks, hasLength(1));
-      expect((chunks.single as TextBlock).inlines.single is TextSpan, isTrue);
+      expect((chunks.single as TextBlock).inlines.single is InlineText, isTrue);
     });
 
     group('inline styles', () {
       test('bold', () {
         final chunks = extract('<p><strong>bold</strong> <b>also</b></p>');
-        final spans = (chunks.single as TextBlock).inlines.cast<TextSpan>();
+        final spans = (chunks.single as TextBlock).inlines.cast<InlineText>();
         expect(spans, hasLength(3));
         expect(spans[0].bold, isTrue);
         expect(spans[1].bold, isFalse);
@@ -69,7 +64,7 @@ void main() {
 
       test('italic', () {
         final chunks = extract('<p><em>it</em> <i>also</i></p>');
-        final spans = (chunks.single as TextBlock).inlines.cast<TextSpan>();
+        final spans = (chunks.single as TextBlock).inlines.cast<InlineText>();
         expect(spans[0].italic, isTrue);
         expect(spans[1].italic, isFalse);
         expect(spans[2].italic, isTrue);
@@ -77,13 +72,13 @@ void main() {
 
       test('underline', () {
         final chunks = extract('<p>a<u>u</u></p>');
-        final spans = (chunks.single as TextBlock).inlines.cast<TextSpan>();
+        final spans = (chunks.single as TextBlock).inlines.cast<InlineText>();
         expect(spans[1].underline, isTrue);
       });
 
       test('superscript and subscript', () {
         final chunks = extract('<p>x<sup>2</sup>y<sub>3</sub></p>');
-        final spans = (chunks.single as TextBlock).inlines.cast<TextSpan>();
+        final spans = (chunks.single as TextBlock).inlines.cast<InlineText>();
         expect(spans[1].superscript, isTrue);
         expect(spans[1].subscript, isFalse);
         expect(spans[3].subscript, isTrue);
@@ -91,14 +86,14 @@ void main() {
 
       test('nested styles propagate to children', () {
         final chunks = extract('<p><em><strong>both</strong></em></p>');
-        final span = (chunks.single as TextBlock).inlines.single as TextSpan;
+        final span = (chunks.single as TextBlock).inlines.single as InlineText;
         expect(span.bold, isTrue);
         expect(span.italic, isTrue);
       });
 
       test('br inside paragraph produces newline span', () {
         final chunks = extract('<p>a<br/>b</p>');
-        final spans = (chunks.single as TextBlock).inlines.cast<TextSpan>();
+        final spans = (chunks.single as TextBlock).inlines.cast<InlineText>();
         expect(spans, hasLength(3));
         expect(spans[1].text, '\n');
       });
@@ -107,15 +102,13 @@ void main() {
         final bare = extract('<span>top<br/>and</span>');
         expect(bare, hasLength(3));
         final newline = bare[1] as TextBlock;
-        expect((newline.inlines.single as TextSpan).text, '\n');
+        expect((newline.inlines.single as InlineText).text, '\n');
       });
     });
 
     group('images', () {
       test('block image keeps src, alt and id', () {
-        final chunks = extract(
-          '<img src="cover.jpg" alt="Cover" id="c1" />',
-        );
+        final chunks = extract('<img src="cover.jpg" alt="Cover" id="c1" />');
         final img = chunks.single as BlockImage;
         expect(img.src, 'cover.jpg');
         expect(img.alt, 'Cover');
@@ -135,7 +128,9 @@ void main() {
       });
 
       test('inline image inside paragraph', () {
-        final chunks = extract('<p>before <img src="a.jpg" alt="a"/> after</p>');
+        final chunks = extract(
+          '<p>before <img src="a.jpg" alt="a"/> after</p>',
+        );
         final inlines = (chunks.single as TextBlock).inlines;
         expect(inlines, hasLength(3));
         final inline = inlines[1] as InlineImage;
@@ -156,7 +151,10 @@ void main() {
       test('svg children are walked through', () {
         final chunks = extract('<svg><p>inside svg</p></svg>');
         expect(chunks, hasLength(1));
-        expect((chunks.single as TextBlock).inlines.single is TextSpan, isTrue);
+        expect(
+          (chunks.single as TextBlock).inlines.single is InlineText,
+          isTrue,
+        );
       });
     });
 
@@ -209,7 +207,9 @@ void main() {
       });
 
       test('detects header rows via th', () {
-        final chunks = extract('<table><tr><th>h</th></tr><tr><td>d</td></tr></table>');
+        final chunks = extract(
+          '<table><tr><th>h</th></tr><tr><td>d</td></tr></table>',
+        );
         final table = chunks.single as Table;
         expect(table.rows[0].isHeader, isTrue);
         expect(table.rows[1].isHeader, isFalse);
@@ -225,7 +225,9 @@ void main() {
       });
 
       test('invalid colspan falls back to 1', () {
-        final chunks = extract('<table><tr><td colspan="abc">x</td></tr></table>');
+        final chunks = extract(
+          '<table><tr><td colspan="abc">x</td></tr></table>',
+        );
         final cell = (chunks.single as Table).rows.single.cells.single;
         expect(cell.colspan, 1);
       });
@@ -239,7 +241,7 @@ void main() {
         final link = (chunks.single as TextBlock).inlines.single as Hyperlink;
         expect(link.href, 'ch2.html');
         expect(link.epubType, 'noteref');
-        expect(link.children.single is TextSpan, isTrue);
+        expect(link.children.single is InlineText, isTrue);
       });
 
       test('anchor with id keeps text', () {
@@ -248,7 +250,7 @@ void main() {
         expect(inlines, hasLength(2));
         expect(inlines[0] is Anchor, isTrue);
         expect((inlines[0] as Anchor).id, 'sec1');
-        expect((inlines[1] as TextSpan).text, 'section');
+        expect((inlines[1] as InlineText).text, 'section');
       });
 
       test('anchor recognized via name attribute', () {
@@ -258,13 +260,18 @@ void main() {
 
       test('anchor with nothing just outputs children', () {
         final chunks = extract('<p><a>plain</a></p>');
-        expect((chunks.single as TextBlock).inlines.single is TextSpan, isTrue);
+        expect(
+          (chunks.single as TextBlock).inlines.single is InlineText,
+          isTrue,
+        );
       });
     });
 
     group('math', () {
       test('math block captures outer html', () {
-        final chunks = extract('<p>x</p><math><mfrac><mn>1</mn><mn>2</mn></mfrac></math>');
+        final chunks = extract(
+          '<p>x</p><math><mfrac><mn>1</mn><mn>2</mn></mfrac></math>',
+        );
         final math = chunks[1] as MathBlock;
         expect(math.display, isTrue);
         expect(math.content, contains('mfrac'));
@@ -278,7 +285,13 @@ void main() {
 
     group('ignorable elements', () {
       test('script style title head are dropped', () {
-        for (final tag in ['script', 'style', 'title', 'noscript', 'template']) {
+        for (final tag in [
+          'script',
+          'style',
+          'title',
+          'noscript',
+          'template',
+        ]) {
           final chunks = extract(
             '<div><$tag>hidden</$tag><p>visible</p></div>',
           );
@@ -293,8 +306,9 @@ void main() {
     });
 
     test('unknown element walks into children producing chunks', () {
-      final document = parse('<article><h2>t</h2><img src="i.jpg"/>tail</article>');
-      final chunks = HtmlExtractor().extract(document.body!);
+      final chunks = extract(
+        '<article><h2>t</h2><img src="i.jpg"/>tail</article>',
+      );
       expect(chunks, hasLength(3));
       expect(chunks[0] is TextBlock, isTrue);
       expect(chunks[1] is BlockImage, isTrue);
@@ -304,19 +318,19 @@ void main() {
     group('toString', () {
       test('text block', () {
         expect(
-          TextBlock([TextSpan('hi')]).toString(),
+          TextBlock([InlineText('hi')]).toString(),
           'TextBlock(level: null, inlines: 1)',
         );
         expect(
-          TextBlock([TextSpan('hi')], headingLevel: 2).toString(),
+          TextBlock([InlineText('hi')], headingLevel: 2).toString(),
           'TextBlock(level: 2, inlines: 1)',
         );
       });
 
       test('text span styles', () {
-        expect(TextSpan('x').toString(), 'TextSpan("x")');
+        expect(InlineText('x').toString(), 'TextSpan("x")');
         expect(
-          TextSpan('x', bold: true, italic: true).toString(),
+          InlineText('x', bold: true, italic: true).toString(),
           'TextSpan("x" [b,i])',
         );
       });
@@ -324,7 +338,10 @@ void main() {
       test('images links lists tables', () {
         expect(BlockImage('a.jpg', alt: 'b').toString(), 'BlockImage("a.jpg")');
         expect(Hyperlink('c.html').toString(), 'Hyperlink(c.html)');
-        expect(ListBlock([ListItem([])]).toString(), 'ListBlock(ordered: false, items: 1)');
+        expect(
+          ListBlock([ListItem([])]).toString(),
+          'ListBlock(ordered: false, items: 1)',
+        );
         expect(Table([TableRow([])]).toString(), 'Table(rows: 1)');
       });
     });

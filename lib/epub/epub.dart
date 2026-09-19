@@ -1,4 +1,5 @@
 import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' show parse;
 
 // ─────────────────────────────────────────────────────────────
 // Content Model (short names)
@@ -12,6 +13,8 @@ class TextBlock extends Chunk {
   final int? headingLevel; // 1–6 for <h1>–<h6>, null = normal <p>
 
   TextBlock(this.inlines, {this.lang = '', this.headingLevel});
+  factory TextBlock.single(String text, {String lang = ''}) =>
+      TextBlock([InlineText(text)], lang: lang);
 
   @override
   String toString() =>
@@ -88,7 +91,7 @@ class UnknownBlock extends Chunk {
 
 sealed class Inline {}
 
-class TextSpan extends Inline {
+class InlineText extends Inline {
   final String text;
   final bool bold;
   final bool italic;
@@ -96,7 +99,7 @@ class TextSpan extends Inline {
   final bool superscript;
   final bool subscript;
 
-  TextSpan(
+  InlineText(
     this.text, {
     this.bold = false,
     this.italic = false,
@@ -161,7 +164,7 @@ class HtmlExtractor {
     if (node is dom.Text) {
       final text = _normalize(node.text);
       if (text.isNotEmpty) {
-        output.add(TextBlock([TextSpan(text)], lang: lang));
+        output.add(TextBlock([InlineText(text)], lang: lang));
       }
       return;
     }
@@ -233,7 +236,7 @@ class HtmlExtractor {
         return;
 
       case 'br':
-        output.add(TextBlock([TextSpan('\n')], lang: currentLang));
+        output.add(TextBlock([InlineText('\n')], lang: currentLang));
         return;
 
       default:
@@ -314,7 +317,7 @@ class HtmlExtractor {
     if (node is dom.Text) {
       if (node.text.isNotEmpty) {
         output.add(
-          TextSpan(
+          InlineText(
             node.text,
             bold: bold,
             italic: italic,
@@ -395,7 +398,7 @@ class HtmlExtractor {
     }
 
     if (tag == 'br') {
-      output.add(TextSpan('\n', bold: bold, italic: italic));
+      output.add(InlineText('\n', bold: bold, italic: italic));
       return;
     }
 
@@ -438,4 +441,9 @@ class HtmlExtractor {
     };
     return ignore.contains(tag);
   }
+}
+
+List<Chunk> extract(String html) {
+  final dom.Document document = parse(html);
+  return HtmlExtractor().extract(document.body!);
 }

@@ -14,24 +14,24 @@ class Osfont {
 
   /// Load a system font into Flutter so you can use it with fontFamily
   static Future<String?> loadFont(
-    SystemFont font, {
+    String path, {
     String? customFamilyName,
   }) async {
     final family =
         customFamilyName ??
-        font.fileName.replaceAll(
+        path.split('/').last.replaceAll(
           RegExp(r'\.(ttf|otf|ttc)$', caseSensitive: false),
           '',
         );
 
     try {
-      final bytes = await File(font.path).readAsBytes();
+      final bytes = await File(path).readAsBytes();
       final loader = FontLoader(family);
       loader.addFont(Future.value(ByteData.view(bytes.buffer)));
       await loader.load();
       return family; // now you can use TextStyle(fontFamily: family)
     } catch (e) {
-      debugPrint('Failed to load font ${font.path}: $e');
+      debugPrint('Failed to load font $path: $e');
       return null;
     }
   }

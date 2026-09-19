@@ -199,7 +199,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
                     }
 
                     if (vs[i].voice != null) {
-                      final v = await tts.setVoice(vs[i].voice!);
+                      await tts.setVoice(vs[i].voice!);
                       // debugPrint('setVoice: ${vs[i].voice} -> $v');
                     }
 

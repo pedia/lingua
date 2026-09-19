@@ -37,7 +37,6 @@ Future<void> main() async {
     final openWithAppPlugin = OpenWithApp();
     // Check if app was opened with a file
     String? initialFile = await openWithAppPlugin.getInitialFile();
-    debugPrint("initialFile: $initialFile");
     if (initialFile != null) {
       OpenFile.send(initialFile);
     }

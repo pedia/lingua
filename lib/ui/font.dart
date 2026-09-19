@@ -11,17 +11,38 @@ const fontFamilyFallback = [
   'Roboto',
 ];
 
-/// flutter supported system font
+/// flutter supported system font, return family name
 Future<String?> osFontFamily() async {
   if (Platform.isMacOS) return '.AppleSystemUIFont';
   if (Platform.isIOS) return 'CupertinoSystemDisplay';
   if (Platform.isAndroid) {
     final fl = await Osfont().getAvailableFonts();
     try {
-      // TODO: galaxy, 'NotoSerifCJK-Regular',
-      final font = fl.firstWhere((e) => e.fileName.contains('SECCJK-Regular.ttc') && e.ttcIndex==2);
-      // if Galaxy
-      return await Osfont.loadFont(font, customFamilyName: '.osdefault');
+      // MIUI / HyperOS: MiSans.ttc MiSans-Regular.ttf
+      // ColorOS: OPPOSans.ttc or OPPOSans-Regular.ttf
+      // Vivo: VivoSans.ttc or VivoSans-Regular.ttf
+      // Galaxy, 'NotoSerifCJK-Regular',FlymeSans-Regular.ttf
+      // TODO: sort `fl`
+      final ds = {
+        'seccjk-regular',
+        'misans-regular',
+        'opposans-regular',
+        'vivosans-regular',
+        'flymesans-regular',
+        // 'notosanscjk-regular',
+        // 'notosanscjk',
+        // 'misans',
+        // 'opposans',
+        // 'vivosans',
+        // 'notoserifcjk-regular',
+      };
+      final font = fl.firstWhere(
+        (e) => ds.contains(
+          e.fileName.substring(0, e.fileName.indexOf('.')).toLowerCase(),
+        ),
+      );
+      // debugPrint('font ${font.path}');
+      return await Osfont.loadFont(font.path, customFamilyName: '.osdefault');
     } catch (e) {
       debugPrint('loadFont failed: $e');
       return 'Roboto';
@@ -42,7 +63,7 @@ class FontFrame extends StatelessWidget {
     'Roboto', // Android
   ];
 
-  final demo = """English, is hard? 123.
+  final demo = """English is hard, right? 123.
 「私は、ガラスを食べられますか？」――いいえ！それは私を傷つけません。
 『我能吞下玻璃嗎？』——不，這傷不到我的身體！
 “나는유리를먹을수있습니까?”…… 아니요! 그래도 아프지 않아요.

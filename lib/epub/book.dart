@@ -66,6 +66,7 @@ class ChapterStub implements Chapter {
        _lines = lines,
        file = ArchiveFile.noData('stub');
 
+  @override
   final String href;
 
   @override

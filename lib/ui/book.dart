@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:async';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -63,7 +62,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       _initialized = true;
 
       // ✅ Safe to use ref here
-      lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
+      lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
     }
   }
 
@@ -151,6 +150,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   }
 
   List<Line> get lines {
+    final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
     return widget.book.chapters[progress.chapterIndex].lines
         .where((line) => lang == '' || line.lang == lang)
         .toList();
@@ -320,11 +320,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                     padding: EdgeInsets.all(8),
                     itemCount: lines.length,
                     itemBuilder: (context, i) {
-                      final fontSize = ref.watch(
-                        settingProvider.select(
-                          (m) => m.intOf('ui.zh-font-size', defaults: 18),
-                        ),
-                      );
                       return GestureDetector(
                         onTapUp: scrollToNextPage,
                         onDoubleTap: () {
@@ -332,20 +327,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                             dt.jumpTo(max(0, i - 1)); // dutts.play bug?
                           }
                         },
-                        child: dt.state == Playback.playing && i == dt.index
-                            ? Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.red),
-                                ),
-                                child: Text(
-                                  lines[i].text,
-                                  style: textStyle(
-                                    lines[i].lang,
-                                    fontSize.toDouble(),
-                                  ),
-                                ),
-                              )
-                            : buildLine(lines[i]),
+                        child: buildLine(i),
                       );
                     },
                   ),
@@ -353,7 +335,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               ),
             ),
           ),
-          if (dt.state != Playback.stop) panel(context),
+          if (dt.state != Playback.stop) playbackPanel(context),
         ],
       ),
     );
@@ -391,14 +373,20 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       return;
     }
 
-    roller.animateTo(
-      target,
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeOut,
-    );
+    if (ref.watch(
+      settingProvider.select((m) => m.flag('ui.next-page-animation')),
+    )) {
+      roller.animateTo(
+        target,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+      );
+    } else {
+      roller.jumpTo(target);
+    }
   }
 
-  Widget panel(BuildContext context) {
+  Widget playbackPanel(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
@@ -448,44 +436,31 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     );
   }
 
-  Widget buildLine(Line line) {
+  Widget buildLine(int i) {
+    final line = lines[i];
     if (line is Picture) {
-      return BytesImage(widget.book.files[line.src]?.content);
+      return Image.memory(
+        widget.book.files[line.src]?.content ?? Uint8List.fromList([]),
+        fit: BoxFit.fitHeight,
+      );
     }
-    return Text(line.text, style: textStyle(line.lang, 18));
-  }
-}
 
-class BytesImage extends StatelessWidget {
-  const BytesImage(this.bytes, {super.key});
-  final Uint8List? bytes;
-
-  Future<ui.Image> decode(Uint8List? bytes) {
-    final c = Completer<ui.Image>();
-    if (bytes != null) {
-      ui.decodeImageFromList(bytes, (img) {
-        c.complete(img);
-      });
-    } else {
-      c.completeError('404');
-    }
-    return c.future;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<ui.Image>(
-      future: decode(bytes),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError || !snapshot.hasData) {
-          return const Center(child: Text('Error loading image'));
-        }
-
-        // Pass the resolved dart:ui.Image straight into RawImage
-        return RawImage(image: snapshot.data, fit: BoxFit.fitWidth);
-      },
+    final fontSize = ref.watch(
+      settingProvider.select((m) => m.intOf('ui.font-size', defaults: 18)),
+    );
+    debugPrint('fontSize: $fontSize');
+    return Text(
+      line.text,
+      style: TextStyle(
+        backgroundColor: dt.state == Playback.playing && i == dt.index
+            ? Colors.red
+            : null,
+        fontFamily: '.osdefault', // let platform decide
+        fontFamilyFallback: fontFamilyFallback,
+        fontSize: fontSize.toDouble(),
+        height: 1.55,
+        fontWeight: FontWeight.w400,
+      ),
     );
   }
 }
