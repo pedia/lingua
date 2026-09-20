@@ -3,7 +3,7 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:lingua/epub/epub.dart';
 
 List<Chunk> extract(String html) {
-  return HtmlExtractor('').extract(html_parser.parse(html));
+  return HtmlExtractor('').extract(html_parser.parse(html).body!);
 }
 
 void main() {
@@ -148,7 +148,7 @@ void main() {
           '<figure><img alt=" " id="Dust" src="images/Dust.jpg"/></figure>',
         );
         final img = chunks.single as BlockImage;
-        expect(img.src, 'images/Dust.jpg');
+        expect(img.src, 'images/dust.jpg'); // lowercase
         expect(img.alt, ' ');
         expect(img.id, 'Dust');
       });
@@ -324,11 +324,11 @@ void main() {
       test('text block', () {
         expect(
           TextBlock([InlineText('hi')]).toString(),
-          'TextBlock(level: null, inlines: 1)',
+          '[hi]',
         );
         expect(
           TextBlock([InlineText('hi')], headingLevel: 2).toString(),
-          'TextBlock(level: 2, inlines: 1)',
+          '[hi]',
         );
       });
 

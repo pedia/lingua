@@ -65,8 +65,8 @@ $spine  </spine>
     final body = StringBuffer();
     body.writeln('<h1>${_esc(ch.title)}</h1>');
 
-    for (var i = 0; i < ch.lines.length; i++) {
-      final line = ch.lines[i];
+    for (var i = 0; i < ch.chunks.length; i++) {
+      final line = ch.chunks[i];
       if (line is TextBlock) {
         switch (line.lang) {
           case '':

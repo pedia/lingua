@@ -30,24 +30,6 @@ class BookFrame extends ConsumerStatefulWidget {
 }
 
 class _BookFrameState extends ConsumerState<BookFrame> {
-  /// best font style
-  TextStyle textStyle(String lang, double fontSize) => switch (lang) {
-    'zh' => TextStyle(
-      fontFamily: '.osdefault', // let platform decide
-      fontFamilyFallback: fontFamilyFallback,
-      fontSize: fontSize,
-      height: 1.55,
-      fontWeight: FontWeight.w400,
-    ),
-    'en' || _ => TextStyle(
-      fontFamily: '.osdefault', // let platform decide
-      fontFamilyFallback: fontFamilyFallback,
-      fontSize: fontSize,
-      height: 1.55,
-      fontWeight: FontWeight.w200,
-    ),
-  };
-
   String lang = ''; // TODO: current lang
   late Progress progress;
   Playback playbackState = Playback.stop;
@@ -153,7 +135,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
   List<epub.Chunk> get lines {
     final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-    return widget.book.chapters[progress.chapterIndex].lines
+    return widget.book.chapters[progress.chapterIndex].chunks
         .where((line) => lang == '' || line.lang == lang)
         .toList();
   }
@@ -175,7 +157,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   @override
   Widget build(BuildContext context) {
     final ch = widget.book.chapters[progress.chapterIndex];
-    ch.lines.forEach(print);
+    ch.chunks.forEach(print);
     return Scaffold(
       key: _scaffoldKey,
       drawer: Drawer(
@@ -310,7 +292,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           Expanded(
             child: Scrollbar(
               controller: roller,
-              thumbVisibility: true,
+              // thumbVisibility: true,
               child: SafeArea(
                 child: GestureDetector(
                   behavior: HitTestBehavior
@@ -333,6 +315,22 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                         },
                         child: RichText(
                           text: TextSpan(
+                            style: TextStyle(
+                              fontFamily: '.osdefault', // let platform decide
+                              fontFamilyFallback: fontFamilyFallback,
+                              fontSize: ref
+                                  .watch(
+                                    settingProvider.select(
+                                      (m) =>
+                                          m.intOf('ui.font-size', defaults: 18),
+                                    ),
+                                  )
+                                  .toDouble(),
+                              height: 1.55,
+                              fontWeight: Platform.isMacOS
+                                  ? FontWeight.w200
+                                  : FontWeight.w400,
+                            ),
                             children: [buildChunk(lines[i], context)],
                           ),
                         ),
@@ -482,6 +480,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         child: Container(
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 8.0),
+          // decoration: BoxDecoration(border: Border.all(color: Colors.red)),
           child: Image.memory(
             trapImage(b.src),
             semanticLabel: b.alt,
@@ -500,9 +499,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               final prefix = b.ordered ? '${index + 1}. ' : '- ';
               return Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(prefix, style: Theme.of(context).textTheme.bodyMedium),
+                  Text(prefix),
                   Expanded(
                     child: RichText(
                       text: TextSpan(
@@ -594,6 +593,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           semanticLabel: i.alt,
           errorBuilder: (_, _, _) => const SizedBox.shrink(),
           fit: BoxFit.fitHeight,
+          color: Colors.amber, // debug
         ),
       ),
 
@@ -630,7 +630,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
   /// Helper method to style headings based on the headingLevel (1-6)
   TextStyle? _getHeadingStyle(int? level, BuildContext context) {
-    if (level == null) return Theme.of(context).textTheme.bodyMedium;
+    if (level == null) {
+      final fontSize = ref.read(
+        settingProvider.select((m) => m.intOf('ui.font-size', defaults: 18)),
+      );
+      return Theme.of(
+        context,
+      ).textTheme.bodyMedium?.copyWith(fontSize: fontSize.toDouble());
+    }
 
     final typography = Theme.of(context).textTheme;
     return switch (level) {
@@ -642,37 +649,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       6 => typography.titleSmall?.copyWith(fontWeight: FontWeight.bold),
       _ => typography.bodyMedium,
     };
-  }
-
-  Widget buildLine(int i) {
-    final line = lines[i];
-    return RichText(text: TextSpan(children: [buildChunk(line, context)]));
-    if (line is epub.BlockImage) {
-      return Image.memory(
-        widget.book.files[line.src]?.content ?? Uint8List.fromList([]),
-        fit: BoxFit.fitHeight,
-      );
-    }
-
-    return Text(
-      line.text,
-      style: TextStyle(
-        backgroundColor: dt.state == Playback.playing && i == dt.index
-            ? Colors.red
-            : null,
-        fontFamily: '.osdefault', // let platform decide
-        fontFamilyFallback: fontFamilyFallback,
-        fontSize: ref
-            .watch(
-              settingProvider.select(
-                (m) => m.intOf('ui.font-size', defaults: 18),
-              ),
-            )
-            .toDouble(),
-        height: 1.55,
-        fontWeight: Platform.isMacOS ? FontWeight.w200 : FontWeight.w400,
-      ),
-    );
   }
 
   Uint8List trapImage(String path) {

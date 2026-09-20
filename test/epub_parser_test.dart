@@ -5,11 +5,9 @@ import 'package:archive/archive.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lingua/epub/parser.dart';
 import 'package:lingua/epub/epub.dart';
-
+import 'package:lingua/epub/parser.dart';
 import 'package:lingua/epub/writer.dart';
-import 'package:lingua/epub/text_splitter.dart';
 import 'package:lingua/settings/app_settings.dart';
 
 void main() {
@@ -19,7 +17,8 @@ void main() {
     expect(book.title, 'Test Book');
     expect(book.author, 'Ada');
     expect(book.chapters, hasLength(1));
-    expect(book.chapters.first.lines.first.text, contains('Once upon a time'));
+    expect(book.chapters.first.chunks.first.text, contains('One'));
+    expect(book.chapters.first.chunks[1].text, contains('Once upon a time'));
   });
 
   test('rejects encrypted epubs', () {
@@ -39,7 +38,7 @@ void main() {
         Chapter.cache(
           href: '',
           title: 'One',
-          lines: [
+          chunks: [
             TextBlock.single('Hello world.', lang: 'en'),
             TextBlock.single('你好世界。', lang: 'zh'),
           ],

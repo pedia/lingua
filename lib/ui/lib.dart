@@ -164,7 +164,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               subtitle: e.type != ItemType.debug ? Text(e.path) : null,
               leading: Icon(
                 Icons.library_books,
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).focusColor,
               ),
               onTap: () async {
                 Book? book;
@@ -174,7 +174,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                 } else if (e.type == ItemType.file) {
                   book = await openEpub(e.path);
                 } else if (e.type == ItemType.demo) {
-                  book = sample;
+                  book = sample();
                 }
 
                 if (context.mounted && book != null) {

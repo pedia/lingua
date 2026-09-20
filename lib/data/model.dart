@@ -73,7 +73,7 @@ class ItemListNotifier extends Notifier<ItemList> {
   }
 
   void updateProgress(String path, Progress progress) {
-    print('update $path $progress');
+    print('progress update $progress of $path');
     state = ItemList(
       items: [
         for (final e in state.items)
