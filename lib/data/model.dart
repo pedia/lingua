@@ -156,17 +156,8 @@ final itemsProvider = NotifierProvider<ItemListNotifier, ItemList>(
   name: 'itemsProvider',
 );
 
-class ProgressNotifier extends Notifier<Progress> {
-  @override
-  Progress build() {
-    return Progress();
-  }
-  void update(int chapterIndex) {
-    state = state.copyWith(chapterIndex: chapterIndex);
-  }
-}
-
-final progressProvider = NotifierProvider<ProgressNotifier, Progress>(
-  ProgressNotifier.new,
-  name: 'progressProvider',
+/// scoped provider for Reader Frame
+final currentProgressProvider = StateProvider<Progress?>(
+  name: 'currentProgressProvider',
+  (ref) => null,
 );

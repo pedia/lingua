@@ -15,18 +15,9 @@ class DemoFrame extends StatefulWidget {
 class _DemoFrameState extends State<DemoFrame> {
   final roller = ScrollController();
   Widget render(BuildContext context, List<epub.Chunk> chunks) {
-    return Padding(
-      padding: EdgeInsets.all(8),
-      child: Scrollbar(
-        controller: roller,
-        child: SingleChildScrollView(
-          controller: roller,
-          child: SelectableText.rich(
-            TextSpan(
-              children: chunks.map((c) => buildChunkSpan(c, context)).toList(),
-            ),
-          ),
-        ),
+    return SelectableText.rich(
+      TextSpan(
+        children: chunks.map((c) => buildChunkSpan(c, context)).toList(),
       ),
     );
   }
@@ -218,35 +209,44 @@ class _DemoFrameState extends State<DemoFrame> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: render(context, [
-        epub.TextBlock.single('Single line'),
-        epub.TextBlock([
-          epub.InlineText('Rich support '),
-          epub.InlineText('italic', italic: true),
-          epub.InlineText(' '),
-          epub.InlineText('strong', bold: true),
-          epub.InlineText(' in single line. And links: '),
+      body: Padding(
+        padding: EdgeInsets.all(8),
+        child: Scrollbar(
+          controller: roller,
+          child: SingleChildScrollView(
+            controller: roller,
+            child: render(context, [
+              epub.TextBlock.single('Single line'),
+              epub.TextBlock([
+                epub.InlineText('Rich support '),
+                epub.InlineText('italic', italic: true),
+                epub.InlineText(' '),
+                epub.InlineText('strong', bold: true),
+                epub.InlineText(' in single line. And links: '),
 
-          epub.Hyperlink(
-            'https://flutter.dev',
-            children: [epub.InlineText('Flutter Link')],
+                epub.Hyperlink(
+                  'https://flutter.dev',
+                  children: [epub.InlineText('Flutter Link')],
+                ),
+                epub.InlineText(' E=M·C'),
+                epub.InlineText('2', superscript: true),
+                epub.InlineText('3 ', subscript: true),
+                epub.InlineImage(''),
+              ]),
+              // epub.BlockImage('src'),
+              epub.BlockList([
+                epub.ListItem([epub.TextBlock.single('Male')]),
+                epub.ListItem([epub.TextBlock.single('Animal')]),
+                epub.ListItem([epub.TextBlock.single('Boy')]),
+              ]),
+              epub.BlockImage('src'),
+
+              ...sample().chapters[0].chunks,
+              ...sample().chapters[1].chunks,
+            ]),
           ),
-          epub.InlineText(' E=M·C'),
-          epub.InlineText('2', superscript: true),
-          epub.InlineText('3 ', subscript: true),
-          epub.InlineImage(''),
-        ]),
-        // epub.BlockImage('src'),
-        epub.BlockList([
-          epub.ListItem([epub.TextBlock.single('Male')]),
-          epub.ListItem([epub.TextBlock.single('Animal')]),
-          epub.ListItem([epub.TextBlock.single('Boy')]),
-        ]),
-        epub.BlockImage('src'),
-
-        ...sample().chapters[0].chunks,
-        ...sample().chapters[1].chunks,
-      ]),
+        ),
+      ),
     );
   }
 }

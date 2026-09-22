@@ -549,7 +549,6 @@ class HtmlExtractor {
       'noscript',
       'template',
     };
-    print('ignore check $tag');
     return ignore.contains(tag);
   }
 }

@@ -7,22 +7,17 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../settings/setting.dart';
-import '../ui/setting.dart';
-import '../ui/voice.dart';
+import 'setting.dart';
+import 'voice.dart';
+import 'font.dart';
+import 'chapter_list.dart';
 import '../data/model.dart';
 import '../epub/epub.dart' as epub;
 import '../tts/dualtts.dart';
-import 'font.dart';
 
 class BookFrame extends ConsumerStatefulWidget {
-  const BookFrame({
-    required this.book,
-    required this.progress,
-    required this.id,
-    super.key,
-  });
+  const BookFrame({required this.book, required this.id, super.key});
   final epub.Book book;
-  final Progress progress;
   final int id;
 
   @override
@@ -30,8 +25,6 @@ class BookFrame extends ConsumerStatefulWidget {
 }
 
 class _BookFrameState extends ConsumerState<BookFrame> {
-  String lang = ''; // TODO: current lang
-  late Progress progress;
   Playback playbackState = Playback.stop;
   final dt = DualTts();
   final roller = ScrollController();
@@ -46,7 +39,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       _initialized = true;
 
       // ✅ Safe to use ref here
-      lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
+      // lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
     }
   }
 
@@ -60,7 +53,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   @override
   void initState() {
     super.initState();
-    progress = widget.progress;
 
     // CASE:
     // Not work here(in initState). Move into didChangeDependencies
@@ -73,8 +65,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     // Set drawer opened at first time frame appear
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      roller.jumpTo(progress.offset);
-      _scaffoldKey.currentState?.openDrawer();
+      final p = ref.read(currentProgressProvider);
+      if (p != null) {
+        roller.jumpTo(p.offset);
+      } else {
+        _scaffoldKey.currentState?.openDrawer();
+      }
     });
 
     roller.addListener(() {
@@ -82,7 +78,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     });
   }
 
-  epub.Chapter get chapter => widget.book.chapters[progress.chapterIndex];
+  epub.Chapter get chapter =>
+      widget.book.chapters[ref.read(currentProgressProvider)?.chapterIndex ??
+          0];
 
   @override
   void dispose() {
@@ -90,12 +88,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     /// save progress
     /// `updateProgress` only worked in Future
-    Future(
-      () => _itemsProvider.updateProgress(
-        widget.id,
-        progress.copyWith(offset: offset),
-      ),
-    );
+    Future(() {
+      // TODO:
+      // _itemsProvider.updateProgress(widget.id, offset: offset);
+    });
 
     roller.dispose();
     dt
@@ -110,11 +106,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     }
 
     debugPrint('got dts notify ${dt.state} ${dt.index}');
+    final pp = ref.read(currentProgressProvider.notifier);
 
     if (dt.state != playbackState ||
-        (dt.state != Playback.stop && dt.index != progress.lineIndex)) {
+        (dt.state != Playback.stop && dt.index != pp.state!.lineIndex)) {
       setState(() {
-        progress = progress.copyWith(lineIndex: dt.index);
+        pp.update((_) => pp.state!.copyWith(lineIndex: dt.index));
         playbackState = dt.state;
       });
     }
@@ -122,10 +119,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     // next chapter
     if (dt.state == Playback.playing && dt.index + 1 == lines.length) {
       print('TODO: speak, next chapter');
-      if (progress.chapterIndex + 1 < widget.book.chapters.length) {
-        progress = progress.copyWith(
-          chapterIndex: progress.chapterIndex + 1,
-          lineIndex: 0,
+      if (pp.state!.chapterIndex + 1 < widget.book.chapters.length) {
+        pp.update(
+          (_) => pp.state!.copyWith(
+            chapterIndex: pp.state!.chapterIndex + 1,
+            lineIndex: 0,
+          ),
         );
       }
 
@@ -135,7 +134,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
   List<epub.Chunk> get lines {
     final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-    return widget.book.chapters[progress.chapterIndex].chunks
+    final cci = ref.read(currentProgressProvider)?.chapterIndex ?? 0;
+    return widget.book.chapters[cci].chunks
         .where((line) => lang == '' || line.lang == lang)
         .toList();
   }
@@ -156,16 +156,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
-    // final ch = widget.book.chapters[progress.chapterIndex];
+    final cci = ref.read(currentProgressProvider)?.chapterIndex ?? 0;
     // ch.chunks.forEach(print);
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        // leading: IconButton(
-        //   icon: Icon(Icons.menu),
-        //   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        // ),
-        title: Text(widget.book.chapters[progress.chapterIndex].title),
+        title: Text(widget.book.chapters[cci].title),
         actions: [
           // PopupMenuButton<String>(
           //   tooltip: 'Display language',
@@ -246,54 +242,15 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           ),
         ],
       ),
+      drawer: Drawer(width: 280, child: ChapterList(widget.book, widget.id)),
       body: Column(
         children: [
           Expanded(
             child: Scrollbar(
               controller: roller,
-              // thumbVisibility: true,
-              child: SafeArea(
-                child: ListView.builder(
-                  key: PageStorageKey<String>(
-                    '${widget.book.title} ${progress.chapterIndex}',
-                  ),
-                  controller: roller,
-                  padding: EdgeInsets.all(8),
-                  itemCount: lines.length,
-                  itemBuilder: (context, i) {
-                    return GestureDetector(
-                      onTapUp: scrollToNextPage,
-                      onDoubleTap: () {
-                        if (dt.state == Playback.playing) {
-                          dt.jumpTo(max(0, i - 1)); // dutts.play bug?
-                        }
-                      },
-                      child: SelectableText.rich(
-                        enableInteractiveSelection: false,
-                        TextSpan(
-                          style: TextStyle(
-                            fontFamily: '.osdefault', // let platform decide
-                            fontFamilyFallback: fontFamilyFallback,
-                            fontSize: ref
-                                .watch(
-                                  settingProvider.select(
-                                    (m) =>
-                                        m.intOf('ui.font-size', defaults: 18),
-                                  ),
-                                )
-                                .toDouble(),
-                            height: 1.55,
-                            fontWeight: Platform.isMacOS
-                                ? FontWeight.w200
-                                : FontWeight.w400,
-                          ),
-                          children: [buildChunk(lines[i], context)],
-                        ),
-                        contextMenuBuilder: selectToolbar,
-                      ),
-                    );
-                  },
-                ),
+              child: SingleChildScrollView(
+                controller: roller,
+                child: render(context, widget.book.chapters[cci].chunks),
               ),
             ),
           ),
@@ -306,11 +263,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     );
   }
 
-  void toNextChapter() {
-    if (progress.chapterIndex + 1 < widget.book.chapters.length) {
-      setState(
-        () => progress = progress.copyWith(
-          chapterIndex: progress.chapterIndex + 1,
+  void gotoNextChapter() {
+    final pp = ref.read(currentProgressProvider.notifier);
+    if (pp.state!.chapterIndex + 1 < widget.book.chapters.length) {
+      pp.update(
+        (_) => pp.state!.copyWith(
+          chapterIndex: pp.state!.chapterIndex + 1,
           lineIndex: 0,
         ),
       );
@@ -334,7 +292,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     if (roller.offset == roller.position.maxScrollExtent) {
       debugPrint('next chapter');
-      toNextChapter();
+      gotoNextChapter();
       return;
     }
 
@@ -383,7 +341,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                lang == 'zh' ? 'TTS 中文' : 'TTS EN',
+                ref.read(
+                          settingProvider.select((m) => m.stringOf('ui.lang')),
+                        ) ==
+                        'zh'
+                    ? 'TTS 中文'
+                    : 'TTS EN',
                 textAlign: TextAlign.end,
               ),
             ),
@@ -409,8 +372,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           children: [
             IconButton(
               tooltip: 'Chapters',
-              onPressed: () {},
               icon: const Icon(Icons.menu),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             ),
             IconButton.filled(
               tooltip: switch (dt.state) {
@@ -433,7 +396,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                lang == 'zh' ? 'TTS 中文' : 'TTS EN',
+                ref.read(
+                          settingProvider.select((m) => m.stringOf('ui.lang')),
+                        ) ==
+                        'zh'
+                    ? 'TTS 中文'
+                    : 'TTS EN',
                 textAlign: TextAlign.end,
               ),
             ),
@@ -451,21 +419,16 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     );
   }
 
+  // not used now
   Widget render(BuildContext context, List<epub.Chunk> chunks) {
-    return Padding(
-      padding: EdgeInsets.all(8),
-      child: ListView(
-        children: chunks
-            .map(
-              (c) =>
-                  RichText(text: TextSpan(children: [buildChunk(c, context)])),
-            )
-            .toList(),
+    return SelectableText.rich(
+      TextSpan(
+        children: chunks.map((c) => buildChunkSpan(c, context)).toList(),
       ),
     );
   }
 
-  InlineSpan buildChunk(epub.Chunk chunk, BuildContext context) {
+  InlineSpan buildChunkSpan(epub.Chunk chunk, BuildContext context) {
     return switch (chunk) {
       // 1. TextBlock behaves as a block element by injecting structural spacing
       epub.TextBlock b => WidgetSpan(
@@ -475,15 +438,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             vertical: 6.0,
           ), // Paragraph block spacing
           child: SelectableText.rich(
-            enableInteractiveSelection: false,
-            scrollBehavior: null,
             TextSpan(
               style: _getHeadingStyle(b.headingLevel, context),
               children: b.inlines
                   .map((i) => buildInlineSpan(i, context))
                   .toList(),
             ),
-            contextMenuBuilder: selectToolbar,
           ),
         ),
       ),
@@ -492,12 +452,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         child: Container(
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 8.0),
-          // decoration: BoxDecoration(border: Border.all(color: Colors.red)),
           child: Image.memory(
             trapImage(b.src),
             semanticLabel: b.alt,
             errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
-            fit: BoxFit.fitHeight,
           ),
         ),
       ),
@@ -508,17 +466,16 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: List.generate(b.items.length, (index) {
-              final prefix = b.ordered ? '${index + 1}. ' : '- ';
+              final prefix = b.ordered ? '${index + 1}. ' : '• ·';
               return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(prefix),
+                  Text(prefix, style: Theme.of(context).textTheme.bodyMedium),
                   Expanded(
-                    child: RichText(
-                      text: TextSpan(
+                    child: SelectableText.rich(
+                      TextSpan(
                         children: b.items[index].content
-                            .map((c) => buildChunk(c, context))
+                            .map((c) => buildChunkSpan(c, context))
                             .toList(),
                       ),
                     ),
@@ -543,10 +500,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                 children: row.cells.map((cell) {
                   return Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: RichText(
-                      text: TextSpan(
+                    child: SelectableText.rich(
+                      TextSpan(
                         children: cell.content
-                            .map((c) => buildChunk(c, context))
+                            .map((c) => buildChunkSpan(c, context))
                             .toList(),
                       ),
                     ),
@@ -604,8 +561,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           height: 20,
           semanticLabel: i.alt,
           errorBuilder: (_, _, _) => const SizedBox.shrink(),
-          fit: BoxFit.fitHeight,
-          color: Colors.amber, // debug
         ),
       ),
 
