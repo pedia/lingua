@@ -18,12 +18,12 @@ class BookFrame extends ConsumerStatefulWidget {
   const BookFrame({
     required this.book,
     required this.progress,
-    required this.path,
+    required this.id,
     super.key,
   });
   final epub.Book book;
   final Progress progress;
-  final String path;
+  final int id;
 
   @override
   ConsumerState<BookFrame> createState() => _BookFrameState();
@@ -92,7 +92,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     /// `updateProgress` only worked in Future
     Future(
       () => _itemsProvider.updateProgress(
-        widget.path,
+        widget.id,
         progress.copyWith(offset: offset),
       ),
     );
@@ -143,60 +143,28 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   Future applyVoice(BuildContext context) {
     final m = ProviderScope.containerOf(context).read(settingProvider);
 
-    debugPrint('in apply got setting: $m');
-    print(m.has('tts.en'));
+    // debugPrint('in apply got setting: $m');
+    // print(m.has('tts.en'));
 
     final vs = [
       if (m.has('tts.en')) Voice.from('en', m.objectOf('tts.en')),
       if (m.has('tts.zh')) Voice.from('zh', m.objectOf('tts.zh')),
     ];
-    return dt.apply(vs).then((x) => debugPrint('dualtts inited $vs'));
+    return dt.apply(vs).then((x) => debugPrint('dualtts inited ${vs.length}'));
   }
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
-    final ch = widget.book.chapters[progress.chapterIndex];
-    ch.chunks.forEach(print);
+    // final ch = widget.book.chapters[progress.chapterIndex];
+    // ch.chunks.forEach(print);
     return Scaffold(
       key: _scaffoldKey,
-      drawer: Drawer(
-        child: Scrollbar(
-          child: ListView.builder(
-            primary: true,
-            key: PageStorageKey<String>(widget.book.title),
-            itemCount: widget.book.chapters.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  child: ListTile(
-                    title: Text(widget.book.title),
-                    subtitle: Text(widget.book.author),
-                  ),
-                );
-              }
-              final i = index - 1;
-              return ListTile(
-                selected: i == progress.chapterIndex,
-                title: Text(widget.book.chapters[i].title),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() => progress = Progress(chapterIndex: i));
-                },
-              );
-            },
-          ),
-        ),
-      ),
-
       appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
+        // leading: IconButton(
+        //   icon: Icon(Icons.menu),
+        //   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        // ),
         title: Text(widget.book.chapters[progress.chapterIndex].title),
         actions: [
           // PopupMenuButton<String>(
@@ -226,8 +194,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               _ => 'Play',
             },
             icon: Icon(switch (dt.state) {
-              Playback.playing => Icons.stop,
-              _ => Icons.play_arrow,
+              Playback.playing => Icons.stop_rounded,
+              _ => Icons.play_arrow_rounded,
             }),
             onPressed: () async {
               if (dt.state == Playback.playing) {
@@ -245,28 +213,19 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
           PopupMenuButton<String>(
             tooltip: 'More',
-            onSelected: (String value) async {
-              if (value == 'font') {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (context) => FontFrame()),
-                );
-                return;
-              } else if (value == 'setting') {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (context) => SettingFrame()),
-                );
-                return;
-              }
+            onSelected: (String v) async {
               final f = Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (context) {
-                    return VoiceSettingPage.from(context);
+                  builder: (context) => switch (v) {
+                    'font' => FontFrame(),
+                    'tts-setting' => VoiceSettingPage.from(context),
+                    'setting' || _ => SettingFrame(),
                   },
                 ),
               );
 
               f.then((_) {
-                //   // CASE: get provider in context
+                // CASE: get provider in context
                 //   final m = ProviderScope.containerOf(
                 //     context,
                 //   ).read(settingProvider);
@@ -294,49 +253,46 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               controller: roller,
               // thumbVisibility: true,
               child: SafeArea(
-                child: GestureDetector(
-                  behavior: HitTestBehavior
-                      .opaque, // 👈 Crucial: Captures taps on empty space
-                  onTap: toNextChapter,
-                  child: ListView.builder(
-                    key: PageStorageKey<String>(
-                      '${widget.book.title} ${progress.chapterIndex}',
-                    ),
-                    controller: roller,
-                    padding: EdgeInsets.all(8),
-                    itemCount: lines.length,
-                    itemBuilder: (context, i) {
-                      return GestureDetector(
-                        onTapUp: scrollToNextPage,
-                        onDoubleTap: () {
-                          if (dt.state == Playback.playing) {
-                            dt.jumpTo(max(0, i - 1)); // dutts.play bug?
-                          }
-                        },
-                        child: RichText(
-                          text: TextSpan(
-                            style: TextStyle(
-                              fontFamily: '.osdefault', // let platform decide
-                              fontFamilyFallback: fontFamilyFallback,
-                              fontSize: ref
-                                  .watch(
-                                    settingProvider.select(
-                                      (m) =>
-                                          m.intOf('ui.font-size', defaults: 18),
-                                    ),
-                                  )
-                                  .toDouble(),
-                              height: 1.55,
-                              fontWeight: Platform.isMacOS
-                                  ? FontWeight.w200
-                                  : FontWeight.w400,
-                            ),
-                            children: [buildChunk(lines[i], context)],
-                          ),
-                        ),
-                      );
-                    },
+                child: ListView.builder(
+                  key: PageStorageKey<String>(
+                    '${widget.book.title} ${progress.chapterIndex}',
                   ),
+                  controller: roller,
+                  padding: EdgeInsets.all(8),
+                  itemCount: lines.length,
+                  itemBuilder: (context, i) {
+                    return GestureDetector(
+                      onTapUp: scrollToNextPage,
+                      onDoubleTap: () {
+                        if (dt.state == Playback.playing) {
+                          dt.jumpTo(max(0, i - 1)); // dutts.play bug?
+                        }
+                      },
+                      child: SelectableText.rich(
+                        enableInteractiveSelection: false,
+                        TextSpan(
+                          style: TextStyle(
+                            fontFamily: '.osdefault', // let platform decide
+                            fontFamilyFallback: fontFamilyFallback,
+                            fontSize: ref
+                                .watch(
+                                  settingProvider.select(
+                                    (m) =>
+                                        m.intOf('ui.font-size', defaults: 18),
+                                  ),
+                                )
+                                .toDouble(),
+                            height: 1.55,
+                            fontWeight: Platform.isMacOS
+                                ? FontWeight.w200
+                                : FontWeight.w400,
+                          ),
+                          children: [buildChunk(lines[i], context)],
+                        ),
+                        contextMenuBuilder: selectToolbar,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -344,6 +300,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           if (dt.state != Playback.stop) playbackPanel(context),
         ],
       ),
+      bottomNavigationBar: dt.state == Playback.playing
+          ? playbackPanel(context)
+          : readerPanel(context),
     );
   }
 
@@ -442,6 +401,56 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     );
   }
 
+  Widget readerPanel(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+        child: Row(
+          children: [
+            IconButton(
+              tooltip: 'Chapters',
+              onPressed: () {},
+              icon: const Icon(Icons.menu),
+            ),
+            IconButton.filled(
+              tooltip: switch (dt.state) {
+                Playback.playing => 'Pause',
+                Playback.pause => 'Play',
+                _ => '_',
+              },
+              onPressed: dt.toggle,
+              icon: Icon(switch (dt.state) {
+                Playback.playing => Icons.pause,
+                Playback.pause => Icons.play_arrow,
+                Playback.stop => Icons.stop,
+              }),
+            ),
+            IconButton(
+              tooltip: 'Next sentence',
+              onPressed: () => dt.skip(1),
+              icon: const Icon(Icons.skip_next),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                lang == 'zh' ? 'TTS 中文' : 'TTS EN',
+                textAlign: TextAlign.end,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Translate chapter',
+              onPressed: () {
+                // _translated.remove(_chapter);
+                // _translateChapter(_chapter);
+              },
+              icon: const Icon(Icons.translate),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget render(BuildContext context, List<epub.Chunk> chunks) {
     return Padding(
       padding: EdgeInsets.all(8),
@@ -465,13 +474,16 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           padding: const EdgeInsets.symmetric(
             vertical: 6.0,
           ), // Paragraph block spacing
-          child: RichText(
-            text: TextSpan(
+          child: SelectableText.rich(
+            enableInteractiveSelection: false,
+            scrollBehavior: null,
+            TextSpan(
               style: _getHeadingStyle(b.headingLevel, context),
               children: b.inlines
                   .map((i) => buildInlineSpan(i, context))
                   .toList(),
             ),
+            contextMenuBuilder: selectToolbar,
           ),
         ),
       ),
@@ -649,6 +661,29 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       6 => typography.titleSmall?.copyWith(fontWeight: FontWeight.bold),
       _ => typography.bodyMedium,
     };
+  }
+
+  AdaptiveTextSelectionToolbar selectToolbar(
+    BuildContext context,
+    EditableTextState editableTextState,
+  ) {
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: editableTextState.contextMenuAnchors,
+      buttonItems: [
+        ...editableTextState.contextMenuButtonItems, // Copy, Select all, …
+        ContextMenuButtonItem(
+          label: 'Highlight',
+          onPressed: () {
+            final value = editableTextState.textEditingValue;
+            final sel = value.selection;
+            if (!sel.isValid || sel.isCollapsed) return;
+            final selected = value.text.substring(sel.start, sel.end);
+            debugPrint('Highlight: $selected');
+            ContextMenuController.removeAny();
+          },
+        ),
+      ],
+    );
   }
 
   Uint8List trapImage(String path) {

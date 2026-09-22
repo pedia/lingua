@@ -58,3 +58,60 @@ adb -s 192.168.31.105:38761 shell cat /system/etc/fonts.xml
 - Galaxy
 SECCJK-Regular.ttc # OneUI
 NotoSerifCJK-Regular.ttc
+
+#
+How to implement prev/next page read mode in a flutter EPUB reader?
+- Tap at the bottom of screen to go to next page,
+- scroll up/down
+- text is selectable and show a menu
+Explain the concept first
+
+git@github.com:Ohgyuchan/flutter_epub_viewer_kit.git
+
+- low quality
+epubx 
+git@github.com:ScerIO/packages.flutter.git
+git@github.com:Mamasodikov/cosmos_epub.git
+git@github.com:chenkaiHere/flutter_book_reader.git
+  only simple text
+
+
+# 
+GestureDetector(
+    behavior: HitTestBehavior
+        .opaque, // 👈 Crucial: Captures taps on empty space
+    onTap: toNextChapter,
+    child:
+
+
+drawer: Drawer(
+        child: Scrollbar(
+          child: ListView.builder(
+            primary: true,
+            key: PageStorageKey<String>(widget.book.title),
+            itemCount: widget.book.chapters.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  child: ListTile(
+                    title: Text(widget.book.title),
+                    subtitle: Text(widget.book.author),
+                  ),
+                );
+              }
+              final i = index - 1;
+              return ListTile(
+                selected: i == progress.chapterIndex,
+                title: Text(widget.book.chapters[i].title),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => progress = Progress(chapterIndex: i));
+                },
+              );
+            },
+          ),
+        ),
+      )

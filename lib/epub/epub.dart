@@ -231,7 +231,6 @@ class HtmlExtractor {
   }
 
   void _walk(dom.Node node, List<Chunk> output, {required String lang}) {
-    print('enter walk ${node is dom.Text}');
     if (node is dom.Text) {
       final text = _normalize(node.text);
       if (text.isNotEmpty) {

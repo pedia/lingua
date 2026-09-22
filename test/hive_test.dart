@@ -41,6 +41,7 @@ void main() {
     gbox = await Hive.openBox('app', path: '.');
 
     final a = Item(
+      id: 100,
       name: 'The Little Prince',
       path: 'assets/the-little-prince-dual.epub',
       type: ItemType.assets,

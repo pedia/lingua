@@ -34,6 +34,7 @@ enum ItemType { assets, file, demo, debug }
 abstract class Item with _$Item {
   @JsonSerializable(explicitToJson: true)
   const factory Item({
+    required int id,
     required ItemType type,
     required String path,
     required String name,
@@ -72,12 +73,12 @@ class ItemListNotifier extends Notifier<ItemList> {
     state = state.copyWith(items: [target, ...state.items]);
   }
 
-  void updateProgress(String path, Progress progress) {
-    print('progress update $progress of $path');
+  void updateProgress(int id, Progress progress) {
+    print('progress update $progress of $id');
     state = ItemList(
       items: [
         for (final e in state.items)
-          if (e.path == path) e.copyWith(progress: progress) else e,
+          if (e.id == id) e.copyWith(progress: progress) else e,
       ],
     );
     save();
@@ -86,43 +87,48 @@ class ItemListNotifier extends Notifier<ItemList> {
   /// Move `target` to 1st place
   void touch(Item target) {
     state = state.copyWith(
-      items: [target, ...state.items.where((e) => e.path != target.path)],
+      items: [target, ...state.items.where((e) => e.id != target.id)],
     );
     save();
   }
 
   void remove(Item target) {
     state = state.copyWith(
-      items: state.items.where((e) => e.path != target.path).toList(),
+      items: state.items.where((e) => e.id != target.id).toList(),
     );
     save();
   }
 
   final builtin = [
     const Item(
+      id: 1,
       name: 'The Little Prince',
       path: 'assets/the-little-prince-dual.epub',
       type: ItemType.assets,
     ),
     const Item(
+      id: 2,
       name: 'Super Supportive',
       path: 'assets/super-supportive-dual.epub',
       type: ItemType.assets,
     ),
     const Item(
+      id: 3,
       name: 'Paranoid Mage',
       path: 'assets/paranoid-mage-dual.epub',
       type: ItemType.assets,
     ),
     const Item(
+      id: 4,
       name: 'Mother of Learning',
       path: 'assets/mother-of-learning-dual.epub',
       type: ItemType.assets,
     ),
     if (!bool.fromEnvironment('dart.vm.product'))
-      const Item(name: 'Sample', path: '', type: ItemType.demo),
+      const Item(id: 5, name: 'Sample', path: '', type: ItemType.demo),
     if (!bool.fromEnvironment('dart.vm.product'))
       const Item(
+        id: 6,
         name: 'Debug, 中文',
         path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
         type: ItemType.debug,
@@ -148,4 +154,19 @@ class ItemListNotifier extends Notifier<ItemList> {
 final itemsProvider = NotifierProvider<ItemListNotifier, ItemList>(
   ItemListNotifier.new,
   name: 'itemsProvider',
+);
+
+class ProgressNotifier extends Notifier<Progress> {
+  @override
+  Progress build() {
+    return Progress();
+  }
+  void update(int chapterIndex) {
+    state = state.copyWith(chapterIndex: chapterIndex);
+  }
+}
+
+final progressProvider = NotifierProvider<ProgressNotifier, Progress>(
+  ProgressNotifier.new,
+  name: 'progressProvider',
 );

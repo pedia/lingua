@@ -18,6 +18,7 @@ Future<void> main() async {
 
   final docs = await getApplicationDocumentsDirectory();
   gbox = await Hive.openBox('all', path: docs.path);
+  gid = gbox.get('gid', defaultValue: 10);
 
   if (Platform.isMacOS) {
     MacosFileOpenHandler.instance.listen(

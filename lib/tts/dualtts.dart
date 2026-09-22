@@ -142,7 +142,7 @@ class DualTts extends ChangeNotifier {
         }
         if (v.voice != null) await tts.setVoice(v.voice!);
       } else {
-        debugPrint('voices mess ${ss.length} ${line.lang}');
+        debugPrint('voices[${line.lang}] not found, total:${ss.length}');
       }
 
       await tts.speak(line.text);

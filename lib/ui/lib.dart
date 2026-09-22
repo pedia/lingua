@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:lingua/g.dart';
 import 'package:universal_io/universal_io.dart';
 
 import 'package:path_provider/path_provider.dart';
@@ -13,6 +14,8 @@ import 'font.dart';
 import 'setting.dart';
 import 'voice.dart';
 import 'demo.dart';
+import '../silver.dart';
+import '../page.dart';
 
 import '../data/model.dart';
 import '../data/sample.dart';
@@ -73,7 +76,14 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
       debugPrint('lib got $fn');
       ref
           .read(itemsProvider.notifier)
-          .add(Item(type: ItemType.file, path: fn, name: p.basename(fn)));
+          .add(
+            Item(
+              id: nextId(),
+              type: ItemType.file,
+              path: fn,
+              name: p.basename(fn),
+            ),
+          );
 
       // setState(
       //   () => items.add(
@@ -106,7 +116,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('bilingualism 📘'), // 📖📕📚📘📙
+        title: Text('📘 Bilingualism'), // 📖📕📚📘📙
         actions: [
           IconButton(
             icon: Icon(Icons.library_add, size: 36),
@@ -131,6 +141,8 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                   builder: (context) => switch (cv) {
                     'font' => FontFrame(),
                     'setting' => SettingFrame(),
+                    'search' => SilverFrame(),
+                    'page' => PageFrame(),
                     'tts-setting' => VoiceSettingPage.from(context),
                     'demo' => DemoFrame(),
                     _ => FontFrame(),
@@ -140,7 +152,8 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
             },
             itemBuilder: (BuildContext context) => const [
               PopupMenuItem(value: 'setting', child: Text('Setting')),
-              PopupMenuItem(value: 'search', child: Text('Search')),
+              PopupMenuItem(value: 'search', child: Text('Silver Demo')),
+              PopupMenuItem(value: 'page', child: Text('Page Demo')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
               PopupMenuItem(value: 'font', child: Text('Font Demo')),
@@ -158,9 +171,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           itemBuilder: (context, index) {
             final e = items[index];
             return ListTile(
-              title: e.type == ItemType.debug
-                  ? Text('${e.name} $fontName')
-                  : Text(e.name),
+              title: Text('${e.name} ${e.id}'),
               subtitle: e.type != ItemType.debug ? Text(e.path) : null,
               leading: Icon(
                 Icons.library_books,
@@ -182,7 +193,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                     MaterialPageRoute<void>(
                       builder: (_) => BookFrame(
                         book: book!,
-                        path: e.path,
+                        id: e.id,
                         progress: e.progress,
                       ),
                     ),

@@ -343,6 +343,7 @@ class __$ProgressCopyWithImpl<$Res> implements _$ProgressCopyWith<$Res> {
 
 /// @nodoc
 mixin _$Item {
+  int get id;
   ItemType get type;
   String get path;
   String get name;
@@ -363,6 +364,7 @@ mixin _$Item {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is Item &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.path, path) || other.path == path) &&
             (identical(other.name, name) || other.name == name) &&
@@ -372,11 +374,11 @@ mixin _$Item {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, type, path, name, progress);
+  int get hashCode => Object.hash(runtimeType, id, type, path, name, progress);
 
   @override
   String toString() {
-    return 'Item(type: $type, path: $path, name: $name, progress: $progress)';
+    return 'Item(id: $id, type: $type, path: $path, name: $name, progress: $progress)';
   }
 }
 
@@ -385,7 +387,13 @@ abstract mixin class $ItemCopyWith<$Res> {
   factory $ItemCopyWith(Item value, $Res Function(Item) _then) =
       _$ItemCopyWithImpl;
   @useResult
-  $Res call({ItemType type, String path, String name, Progress progress});
+  $Res call({
+    int id,
+    ItemType type,
+    String path,
+    String name,
+    Progress progress,
+  });
 
   $ProgressCopyWith<$Res> get progress;
 }
@@ -402,6 +410,7 @@ class _$ItemCopyWithImpl<$Res> implements $ItemCopyWith<$Res> {
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? type = null,
     Object? path = null,
     Object? name = null,
@@ -409,6 +418,10 @@ class _$ItemCopyWithImpl<$Res> implements $ItemCopyWith<$Res> {
   }) {
     return _then(
       _self.copyWith(
+        id: null == id
+            ? _self.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as int,
         type: null == type
             ? _self.type
             : type // ignore: cast_nullable_to_non_nullable
@@ -532,6 +545,7 @@ extension ItemPatterns on Item {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
     TResult Function(
+      int id,
       ItemType type,
       String path,
       String name,
@@ -543,7 +557,13 @@ extension ItemPatterns on Item {
     final _that = this;
     switch (_that) {
       case _Item() when $default != null:
-        return $default(_that.type, _that.path, _that.name, _that.progress);
+        return $default(
+          _that.id,
+          _that.type,
+          _that.path,
+          _that.name,
+          _that.progress,
+        );
       case _:
         return orElse();
     }
@@ -564,13 +584,25 @@ extension ItemPatterns on Item {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(ItemType type, String path, String name, Progress progress)
+    TResult Function(
+      int id,
+      ItemType type,
+      String path,
+      String name,
+      Progress progress,
+    )
     $default,
   ) {
     final _that = this;
     switch (_that) {
       case _Item():
-        return $default(_that.type, _that.path, _that.name, _that.progress);
+        return $default(
+          _that.id,
+          _that.type,
+          _that.path,
+          _that.name,
+          _that.progress,
+        );
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -591,6 +623,7 @@ extension ItemPatterns on Item {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
     TResult? Function(
+      int id,
       ItemType type,
       String path,
       String name,
@@ -601,7 +634,13 @@ extension ItemPatterns on Item {
     final _that = this;
     switch (_that) {
       case _Item() when $default != null:
-        return $default(_that.type, _that.path, _that.name, _that.progress);
+        return $default(
+          _that.id,
+          _that.type,
+          _that.path,
+          _that.name,
+          _that.progress,
+        );
       case _:
         return null;
     }
@@ -613,6 +652,7 @@ extension ItemPatterns on Item {
 @JsonSerializable(explicitToJson: true)
 class _Item implements Item {
   const _Item({
+    required this.id,
     required this.type,
     required this.path,
     required this.name,
@@ -620,6 +660,8 @@ class _Item implements Item {
   });
   factory _Item.fromJson(Map<String, dynamic> json) => _$ItemFromJson(json);
 
+  @override
+  final int id;
   @override
   final ItemType type;
   @override
@@ -648,6 +690,7 @@ class _Item implements Item {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _Item &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.path, path) || other.path == path) &&
             (identical(other.name, name) || other.name == name) &&
@@ -657,11 +700,11 @@ class _Item implements Item {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, type, path, name, progress);
+  int get hashCode => Object.hash(runtimeType, id, type, path, name, progress);
 
   @override
   String toString() {
-    return 'Item(type: $type, path: $path, name: $name, progress: $progress)';
+    return 'Item(id: $id, type: $type, path: $path, name: $name, progress: $progress)';
   }
 }
 
@@ -671,7 +714,13 @@ abstract mixin class _$ItemCopyWith<$Res> implements $ItemCopyWith<$Res> {
       __$ItemCopyWithImpl;
   @override
   @useResult
-  $Res call({ItemType type, String path, String name, Progress progress});
+  $Res call({
+    int id,
+    ItemType type,
+    String path,
+    String name,
+    Progress progress,
+  });
 
   @override
   $ProgressCopyWith<$Res> get progress;
@@ -689,6 +738,7 @@ class __$ItemCopyWithImpl<$Res> implements _$ItemCopyWith<$Res> {
   @override
   @pragma('vm:prefer-inline')
   $Res call({
+    Object? id = null,
     Object? type = null,
     Object? path = null,
     Object? name = null,
@@ -696,6 +746,10 @@ class __$ItemCopyWithImpl<$Res> implements _$ItemCopyWith<$Res> {
   }) {
     return _then(
       _Item(
+        id: null == id
+            ? _self.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as int,
         type: null == type
             ? _self.type
             : type // ignore: cast_nullable_to_non_nullable

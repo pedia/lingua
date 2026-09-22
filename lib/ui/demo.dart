@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../epub/epub.dart' as epub;
+import '../data/sample.dart';
 
 class DemoFrame extends StatefulWidget {
   const DemoFrame({super.key});
@@ -11,17 +13,20 @@ class DemoFrame extends StatefulWidget {
 }
 
 class _DemoFrameState extends State<DemoFrame> {
+  final roller = ScrollController();
   Widget render(BuildContext context, List<epub.Chunk> chunks) {
     return Padding(
       padding: EdgeInsets.all(8),
-      child: ListView(
-        children: chunks
-            .map(
-              (c) => RichText(
-                text: TextSpan(children: [buildChunkSpan(c, context)]),
-              ),
-            )
-            .toList(),
+      child: Scrollbar(
+        controller: roller,
+        child: SingleChildScrollView(
+          controller: roller,
+          child: SelectableText.rich(
+            TextSpan(
+              children: chunks.map((c) => buildChunkSpan(c, context)).toList(),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -35,8 +40,8 @@ class _DemoFrameState extends State<DemoFrame> {
           padding: const EdgeInsets.symmetric(
             vertical: 6.0,
           ), // Paragraph block spacing
-          child: RichText(
-            text: TextSpan(
+          child: SelectableText.rich(
+            TextSpan(
               style: _getHeadingStyle(b.headingLevel, context),
               children: b.inlines
                   .map((i) => buildInlineSpan(i, context))
@@ -70,8 +75,8 @@ class _DemoFrameState extends State<DemoFrame> {
                 children: [
                   Text(prefix, style: Theme.of(context).textTheme.bodyMedium),
                   Expanded(
-                    child: RichText(
-                      text: TextSpan(
+                    child: SelectableText.rich(
+                      TextSpan(
                         children: b.items[index].content
                             .map((c) => buildChunkSpan(c, context))
                             .toList(),
@@ -98,8 +103,8 @@ class _DemoFrameState extends State<DemoFrame> {
                 children: row.cells.map((cell) {
                   return Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: RichText(
-                      text: TextSpan(
+                    child: SelectableText.rich(
+                      TextSpan(
                         children: cell.content
                             .map((c) => buildChunkSpan(c, context))
                             .toList(),
@@ -238,6 +243,9 @@ class _DemoFrameState extends State<DemoFrame> {
           epub.ListItem([epub.TextBlock.single('Boy')]),
         ]),
         epub.BlockImage('src'),
+
+        ...sample().chapters[0].chunks,
+        ...sample().chapters[1].chunks,
       ]),
     );
   }
@@ -247,7 +255,11 @@ final lab = Uint8List.fromList([
   137, 80, 78, 71, 13, 10, 26, 10, // PNG Signature (8 bytes)
   0, 0, 0, 13, 73, 72, 68, 82, // IHDR chunk length & type (8 bytes)
   0, 0, 0, 1, 0, 0, 0, 1, // Width: 1, Height: 1 (8 bytes)
-  1,0,0,0,0, // Bit depth (1), color type, compression, filter, interlace (5 bytes)
+  1,
+  0,
+  0,
+  0,
+  0, // Bit depth (1), color type, compression, filter, interlace (5 bytes)
   55, 110, 242, 5, // IHDR CRC (4 bytes)
   0, 0, 0, 10, 73, 68, 65, 84, // IDAT chunk length & type (8 bytes)
   8, 215, 99, 96, 0, 0, 0, 2, 0, 1, // Compressed image data (10 bytes)

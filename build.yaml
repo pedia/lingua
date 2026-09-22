@@ -28,3 +28,5 @@ targets:
           union_key: type
           union_value_case: pascal
           format: true
+        generate_for:
+          - lib/data/model.dart
