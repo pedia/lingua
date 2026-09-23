@@ -41,6 +41,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
       type: SettingType.choice,
       key: 'ui.font-size',
       title: 'Font Size',
+      description: 'Font size in reader view',
       choices: [
         ('12', 12),
         ('14', 14),
@@ -81,7 +82,7 @@ class Tile extends ConsumerWidget {
       SettingType.builder => item.builder!(context, ref),
       SettingType.bool => SwitchListTile(
         title: Text(item.title),
-        subtitle: Text(item.description ?? ''),
+        subtitle: item.description == null ? null : Text(item.description!),
         value: v ?? item.defaults,
         onChanged: (v) {
           ref.read(settingProvider.notifier).put(item.key, v);
@@ -89,7 +90,7 @@ class Tile extends ConsumerWidget {
       ),
       SettingType.choice => ListTile(
         title: Text(item.title),
-        subtitle: Text(item.description ?? ''),
+        subtitle: item.description == null ? null : Text(item.description!),
         trailing: DropdownButton<Object>(
           key: Key(item.key),
           value: v,
@@ -111,12 +112,12 @@ class Tile extends ConsumerWidget {
           '${v ?? item.defaults}',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
-        subtitle: Text(item.description ?? ''),
+        subtitle: item.description == null ? null : Text(item.description!),
       ),
       SettingType.readonly => ListTile(
         title: Text(item.title),
         trailing: Text('$v', style: Theme.of(context).textTheme.bodyLarge),
-        subtitle: Text(item.description ?? ''),
+        subtitle: item.description == null ? null : Text(item.description!),
       ),
 
       SettingType.title => Padding(

@@ -256,7 +256,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
                 Flexible(
                   flex: 3,
                   child: Slider(
-                    divisions: 5,
+                    divisions: 10,
                     value: vs[i].volume ?? 1.0,
                     min: 0.0,
                     max: 1.0,

@@ -22,7 +22,7 @@ endif
 # flutter build apk, remove: android-arm,android-x86_64
 # flutter build apk --release --target-platform android-arm64
 
-lib/modle.g.dart: lib/modle.dart
+lib/data/modle.g.dart: lib/data/modle.dart
 	dart run build_runner build --force-jit
 
 

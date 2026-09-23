@@ -590,7 +590,7 @@ class ChapterStub implements Chapter {
   @override
   String get title {
     if (_title == null) {
-      _parse();
+      _parse(onlyTitle: true);
     }
     return _title ?? '';
   }
@@ -598,7 +598,7 @@ class ChapterStub implements Chapter {
   @override
   List<Chunk> get chunks {
     if (_chunks == null) {
-      _parse();
+      _parse(onlyTitle: false);
     }
     return _chunks!;
   }
@@ -606,26 +606,28 @@ class ChapterStub implements Chapter {
   String? _title;
   List<Chunk>? _chunks;
 
-  void _parse() {
+  void _parse({bool onlyTitle = true}) {
     final html = utf8.decode(file.content);
     final dom = parse(html);
 
-    /// title
-    String? title;
-    for (final selector in ['title', 'h1', 'h2', 'h3']) {
-      final text = dom.querySelector(selector)?.text.trim();
-      if (text != null &&
-          text.isNotEmpty &&
-          !{'未知', 'Unknown'}.contains(text)) {
-        title = text;
-        break;
+    if (_title == null) {
+      /// title
+      for (final selector in ['title', 'h1', 'h2', 'h3']) {
+        final text = dom.querySelector(selector)?.text.trim();
+        if (text != null &&
+            text.isNotEmpty &&
+            !{'未知', 'Unknown'}.contains(text)) {
+          _title = text;
+          break;
+        }
       }
     }
-    _title = title;
 
-    /// chunks
-    final chs = HtmlExtractor(href).extract(dom.body!);
-    _chunks = chs;
+    if (!onlyTitle && _chunks == null) {
+      /// chunks
+      final chs = HtmlExtractor(href).extract(dom.body!);
+      _chunks = chs;
+    }
   }
 
   final ArchiveFile file;

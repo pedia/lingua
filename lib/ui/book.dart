@@ -40,6 +40,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
       // ✅ Safe to use ref here
       // lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
+      _progress = ref.read(currentProgressProvider.notifier).state!;
     }
   }
 
@@ -48,7 +49,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// - ScrollController.addListener
   /// - dispose Future
   late final ItemListNotifier _itemsProvider;
-  double offset = 0;
+  late final Progress _progress;
+  double _offset = 0;
 
   @override
   void initState() {
@@ -74,7 +76,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     });
 
     roller.addListener(() {
-      offset = roller.offset;
+      _offset = roller.offset;
     });
   }
 
@@ -89,8 +91,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     /// save progress
     /// `updateProgress` only worked in Future
     Future(() {
-      // TODO:
-      // _itemsProvider.updateProgress(widget.id, offset: offset);
+      _itemsProvider.updateProgress(
+        widget.id,
+        _progress.copyWith(offset: _offset),
+      );
     });
 
     roller.dispose();
@@ -106,23 +110,23 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     }
 
     debugPrint('got dts notify ${dt.state} ${dt.index}');
-    final pp = ref.read(currentProgressProvider.notifier);
+    final cpp = ref.read(currentProgressProvider.notifier);
 
     if (dt.state != playbackState ||
-        (dt.state != Playback.stop && dt.index != pp.state!.lineIndex)) {
-      setState(() {
-        pp.update((_) => pp.state!.copyWith(lineIndex: dt.index));
-        playbackState = dt.state;
-      });
+        (dt.state != Playback.stop && dt.index != cpp.state!.lineIndex)) {
+      _progress = _progress.copyWith(lineIndex: dt.index);
+      cpp.update((_) => _progress);
+
+      setState(() => playbackState = dt.state);
     }
 
     // next chapter
     if (dt.state == Playback.playing && dt.index + 1 == lines.length) {
       print('TODO: speak, next chapter');
-      if (pp.state!.chapterIndex + 1 < widget.book.chapters.length) {
-        pp.update(
-          (_) => pp.state!.copyWith(
-            chapterIndex: pp.state!.chapterIndex + 1,
+      if (cpp.state!.chapterIndex + 1 < widget.book.chapters.length) {
+        cpp.update(
+          (_) => cpp.state!.copyWith(
+            chapterIndex: cpp.state!.chapterIndex + 1,
             lineIndex: 0,
           ),
         );
@@ -156,7 +160,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
-    final cci = ref.read(currentProgressProvider)?.chapterIndex ?? 0;
+    final cci = ref.watch(currentProgressProvider)?.chapterIndex ?? 0;
     // ch.chunks.forEach(print);
     return Scaffold(
       key: _scaffoldKey,
@@ -246,11 +250,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       body: Column(
         children: [
           Expanded(
-            child: Scrollbar(
-              controller: roller,
-              child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.all(8),
+              child: Scrollbar(
                 controller: roller,
-                child: render(context, widget.book.chapters[cci].chunks),
+                child: SingleChildScrollView(
+                  controller: roller,
+                  child: render(context, widget.book.chapters[cci].chunks),
+                ),
               ),
             ),
           ),
@@ -264,14 +271,13 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   }
 
   void gotoNextChapter() {
-    final pp = ref.read(currentProgressProvider.notifier);
-    if (pp.state!.chapterIndex + 1 < widget.book.chapters.length) {
-      pp.update(
-        (_) => pp.state!.copyWith(
-          chapterIndex: pp.state!.chapterIndex + 1,
-          lineIndex: 0,
-        ),
+    final cpp = ref.read(currentProgressProvider.notifier);
+    if (cpp.state!.chapterIndex + 1 < widget.book.chapters.length) {
+      _progress = _progress.copyWith(
+        chapterIndex: cpp.state!.chapterIndex + 1,
+        lineIndex: 0,
       );
+      cpp.update((_) => _progress);
     } else {
       debugPrint('book end');
     }
