@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import 'dart:math';
 import '../epub/epub.dart';
 
 class Voice {
@@ -87,15 +88,15 @@ class DualTts extends ChangeNotifier {
 
   final tts = FlutterTts();
   final Map<String, Voice> ss = {};
-  List<Chunk> lines = const [];
+  List<Chunk> chunks = const [];
   int index = 0;
   Playback state = Playback.stop;
 
   bool get inited => ss.isNotEmpty;
 
   void load(List<Chunk> next, {int startAt = 0}) {
-    lines = next;
-    index = startAt.clamp(0, next.isEmpty ? 0 : next.length - 1);
+    chunks = next;
+    index = max(0, startAt);
     notifyListeners();
   }
 
@@ -110,7 +111,7 @@ class DualTts extends ChangeNotifier {
   }
 
   void jumpTo(int nextIndex) async {
-    if (lines.isEmpty || nextIndex > lines.length - 1 || nextIndex < 0) {
+    if (chunks.isEmpty || nextIndex > chunks.length - 1 || nextIndex < 0) {
       return;
     }
 
@@ -120,15 +121,15 @@ class DualTts extends ChangeNotifier {
   }
 
   Future<void> play() async {
-    if (lines.isEmpty || state == Playback.playing) {
+    if (chunks.isEmpty || state == Playback.playing) {
       return;
     }
     state = Playback.playing;
     notifyListeners();
-    while (state == Playback.playing && index < lines.length) {
+    while (state == Playback.playing && index < chunks.length) {
       notifyListeners();
-      final line = lines[index];
-      final v = ss[line.lang];
+      final line = chunks[index];
+      final v = ss[line.lang == '' ? 'zh' : line.lang];
       if (v != null) {
         await tts.setSpeechRate(v.rate);
         debugPrint('rate: ${v.rate}');
@@ -149,7 +150,7 @@ class DualTts extends ChangeNotifier {
       if (state == Playback.stop) {
         break;
       }
-      if (index < lines.length - 1) {
+      if (index < chunks.length - 1) {
         index += 1;
       } else {
         state = Playback.stop;
@@ -167,7 +168,7 @@ class DualTts extends ChangeNotifier {
   Future<void> stop() async {
     state == Playback.stop;
     await tts.stop();
-    lines.clear();
+    chunks.clear();
     notifyListeners();
   }
 
@@ -180,12 +181,12 @@ class DualTts extends ChangeNotifier {
   }
 
   Future<void> skip(int delta) async {
-    if (lines.isEmpty) {
+    if (chunks.isEmpty) {
       return;
     }
     final wasPlaying = state;
     await pause();
-    index = (index + delta).clamp(0, lines.length - 1);
+    index = (index + delta).clamp(0, chunks.length - 1);
     notifyListeners();
     if (wasPlaying == Playback.playing) {
       await play();

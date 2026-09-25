@@ -13,7 +13,6 @@ import 'book.dart';
 import 'font.dart';
 import 'setting.dart';
 import 'voice.dart';
-import 'demo.dart';
 import '../silver.dart';
 import '../page.dart';
 
@@ -109,17 +108,28 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
     return const EpubParser().parseBytes(await file.readAsBytes());
   }
 
+  Widget? boxImage(String key) {
+    final cb = gbox.get(key);
+    if (cb != null) {
+      return Image.memory(cb, width: 48, fit: BoxFit.fitWidth);
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = ref.watch(itemsProvider).items;
-    final fontName = DefaultTextStyle.of(context).style.fontFamily;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('📘 Bilingualism'), // 📖📕📚📘📙
+        // title: Text('📘 Bilingualism'), // 📖📕📚📘📙
         actions: [
           IconButton(
-            icon: Icon(Icons.library_add, size: 36),
+            icon: Icon(
+              Icons.library_add,
+              color: Theme.of(context).iconTheme.color,
+            ),
             onPressed: () async {
               final result = await FilePicker.pickFiles(
                 type: FileType.custom,
@@ -144,7 +154,6 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                     'search' => SilverFrame(),
                     'page' => PageFrame(),
                     'tts-setting' => VoiceSettingPage.from(context),
-                    'demo' => DemoFrame(),
                     _ => FontFrame(),
                   },
                 ),
@@ -157,7 +166,6 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
               PopupMenuItem(value: 'font', child: Text('Font Demo')),
-              PopupMenuItem(value: 'demo', child: Text('Rich Text')),
             ],
             child: Icon(Icons.more_vert, size: 36),
           ),
@@ -172,11 +180,8 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
             final e = items[index];
             return ListTile(
               title: Text('${e.name} ${e.id}'),
-              subtitle: e.type != ItemType.debug ? Text(e.path) : null,
-              leading: Icon(
-                Icons.library_books,
-                color: Theme.of(context).focusColor,
-              ),
+              // subtitle: e.type != ItemType.debug ? Text(e.path) : null,
+              leading: boxImage('icon-${e.id}'),
               onTap: () async {
                 Book? book;
                 if (e.type == ItemType.assets) {
@@ -186,6 +191,14 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                   book = await openEpub(e.path);
                 } else if (e.type == ItemType.demo) {
                   book = sample();
+                }
+
+                // book cover image thumbnail
+                if (book != null && gbox.get('icon-${e.id}') == null) {
+                  final cb = book.coverBytes;
+                  if (cb != null) {
+                    gbox.put('icon-${e.id}', iconify(cb));
+                  }
                 }
 
                 if (context.mounted && book != null) {
@@ -208,6 +221,18 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
             );
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.library_add),
+        onPressed: () {
+          // final anchorContext = AnchorKey.forId(
+          //   staticAnchorKey,
+          //   "bottom",
+          // )?.currentContext;
+          // if (anchorContext != null) {
+          //   Scrollable.ensureVisible(anchorContext);
+          // }
+        },
       ),
     );
   }

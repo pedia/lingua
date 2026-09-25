@@ -25,6 +25,7 @@ more function
   TTS Engine
     Stop
     Bottom control panel?
+  
   Selectable
   Tap item entering inline edit mode
     How to save?
@@ -69,17 +70,16 @@ Explain the concept first
 git@github.com:Ohgyuchan/flutter_epub_viewer_kit.git
 
 - low quality
-epubx 
+epubx
 git@github.com:ScerIO/packages.flutter.git
 git@github.com:Mamasodikov/cosmos_epub.git
 git@github.com:chenkaiHere/flutter_book_reader.git
-  only simple text
+  only pure text
 
 
-# 
+# legacy code
 GestureDetector(
-    behavior: HitTestBehavior
-        .opaque, // 👈 Crucial: Captures taps on empty space
+    behavior: HitTestBehavior.opaque, // 👈 Crucial: Captures taps on empty space
     onTap: toNextChapter,
     child:
 

@@ -333,10 +333,10 @@ void main() {
       });
 
       test('text span styles', () {
-        expect(InlineText('x').toString(), 'TextSpan("x")');
+        expect(InlineText('x').toString(), 'x');
         expect(
           InlineText('x', bold: true, italic: true).toString(),
-          'TextSpan("x" [b,i])',
+          '*_x_*',
         );
       });
 
@@ -359,14 +359,16 @@ void main() {
           <img src="cover.jpg" alt="Cover" />
           <ul><li>one</li><li>two</li></ul>
           <table><tr><th>key</th><td>value</td></tr></table>
+          <p class="TX">And of <i>course</i> he hadn’t thought to warn Navani.</p>
         </div>
       ''');
-      expect(chunks, hasLength(5));
+      expect(chunks, hasLength(6));
       expect((chunks[0] as TextBlock).headingLevel, 1);
       expect(chunks[1] is TextBlock, isTrue);
       expect(chunks[2] is BlockImage, isTrue);
       expect(chunks[3] is BlockList, isTrue);
       expect(chunks[4] is Table, isTrue);
+      expect(chunks[5].toString(), '[And of _course_ he hadn’t thought to warn Navani.]');
     });
   });
 }

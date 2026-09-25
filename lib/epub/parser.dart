@@ -22,8 +22,6 @@ class EpubParser {
       files[_normalize(file.name)] = file;
     }
 
-    // print(files);
-
     if (files.keys.any((name) => name.endsWith('meta-inf/encryption.xml'))) {
       throw const DrmEpubException();
     }
@@ -58,8 +56,51 @@ class EpubParser {
       manifest[id] = _normalize('$opfDir$href');
     }
 
+    String? cover = manifest['cover'];
+    if (cover == null) {
+      // A. EPUB 3 cover-image
+      for (final item in opf.findAllElements('item')) {
+        final props = item.getAttribute('properties') ?? '';
+        if (props.contains('cover-image')) {
+          cover = item.getAttribute('href');
+        }
+      }
+    }
+
+    if (cover == null) {
+      // B. meta name="cover"
+      final coverMeta = opf
+          .findAllElements('meta')
+          .where((m) => m.getAttribute('name') == 'cover');
+      if (coverMeta.isNotEmpty) {
+        final coverId = coverMeta.first.getAttribute('content');
+        if (coverId != null) {
+          final item = opf
+              .findAllElements('item')
+              .where((i) => i.getAttribute('id') == coverId);
+          if (item.isNotEmpty) {
+            cover = item.first.getAttribute('href');
+          }
+        }
+      }
+    }
+
+    if (cover == null) {
+      // C. First image fallback
+      for (final item in opf.findAllElements('item')) {
+        final mediaType = item.getAttribute('media-type') ?? '';
+        if (mediaType.startsWith('image/')) {
+          cover = item.getAttribute('href');
+        }
+      }
+    }
+
+    if (cover != null) {
+      cover = Uri(path: opfPath).resolve(cover).path.toLowerCase();
+    }
+
     final chapters = <Chapter>[];
-    var index = 1;
+    // Read spine
     for (final itemRef in opf.findAllElements('itemref')) {
       final idRef = itemRef.getAttribute('idref');
       if (idRef == null) {
@@ -74,11 +115,7 @@ class EpubParser {
         continue;
       }
 
-      // TODO: check first 2 chapter empty or use nav
-      if (index < 2) {}
-
       chapters.add(Chapter.from(href, file));
-      index += 1;
     }
 
     if (chapters.isEmpty) {
@@ -93,6 +130,7 @@ class EpubParser {
       language: language.split('-').first.toLowerCase(),
       chapters: chapters,
       files: files,
+      cover: cover,
     );
   }
 

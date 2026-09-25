@@ -1,19 +1,34 @@
-import 'dart:math';
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_html/flutter_html.dart' as hw;
+import 'package:archive/archive.dart';
 
 import '../settings/setting.dart';
 import 'setting.dart';
+import 'hwext.dart';
 import 'voice.dart';
 import 'font.dart';
 import 'chapter_list.dart';
 import '../data/model.dart';
 import '../epub/epub.dart' as epub;
 import '../tts/dualtts.dart';
+
+class ArchiveProvider extends HwProvider {
+  ArchiveProvider(String base, this.files) : base = Uri(path: base);
+  final Uri base;
+  final Map<String, ArchiveFile> files;
+
+  @override
+  Uint8List bytes(String path) {
+    debugPrint('$path => ${base.resolve(path).path}');
+    final fp = base.resolve(path).path.toLowerCase();
+
+    return files[fp]?.content ?? Uint8List.fromList([]);
+  }
+}
 
 class BookFrame extends ConsumerStatefulWidget {
   const BookFrame({required this.book, required this.id, super.key});
@@ -49,7 +64,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// - ScrollController.addListener
   /// - dispose Future
   late final ItemListNotifier _itemsProvider;
-  late final Progress _progress;
+  Progress? _progress;
   double _offset = 0;
 
   @override
@@ -88,14 +103,16 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   void dispose() {
     // _settings.removeListener(_onSettings);
 
-    /// save progress
+    /// Save progress with newest scroll offset
     /// `updateProgress` only worked in Future
-    Future(() {
-      _itemsProvider.updateProgress(
-        widget.id,
-        _progress.copyWith(offset: _offset),
-      );
-    });
+    if (_progress != null) {
+      Future(() {
+        _itemsProvider.updateProgress(
+          widget.id,
+          _progress!.copyWith(offset: _offset),
+        );
+      });
+    }
 
     roller.dispose();
     dt
@@ -114,7 +131,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     if (dt.state != playbackState ||
         (dt.state != Playback.stop && dt.index != cpp.state!.lineIndex)) {
-      _progress = _progress.copyWith(lineIndex: dt.index);
+      _progress = _progress?.copyWith(lineIndex: dt.index);
       cpp.update((_) => _progress);
 
       setState(() => playbackState = dt.state);
@@ -161,7 +178,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   @override
   Widget build(BuildContext context) {
     final cci = ref.watch(currentProgressProvider)?.chapterIndex ?? 0;
-    // ch.chunks.forEach(print);
+    final ch = widget.book.chapters[cci];
+
+    final fs = ref.watch(
+      settingProvider.select((m) => m.intOf('ui.font-size', defaults: 14)),
+    );
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -247,33 +269,45 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         ],
       ),
       drawer: Drawer(width: 280, child: ChapterList(widget.book, widget.id)),
-      body: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(8),
-              child: Scrollbar(
-                controller: roller,
-                child: SingleChildScrollView(
-                  controller: roller,
-                  child: render(context, widget.book.chapters[cci].chunks),
-                ),
-              ),
-            ),
+      body: SelectionArea(
+        contextMenuBuilder: selectToolbar,
+        child: SingleChildScrollView(
+          controller: roller,
+          child: hw.Html(
+            data: ch.content,
+            style: {"p": hw.Style(fontSize: hw.FontSize(fs.toDouble()))},
+            extensions: [Img(ArchiveProvider(ch.href, widget.book.files))],
           ),
-          if (dt.state != Playback.stop) playbackPanel(context),
-        ],
+        ),
       ),
-      bottomNavigationBar: dt.state == Playback.playing
-          ? playbackPanel(context)
-          : readerPanel(context),
+      // Column(
+      //   children: [
+      //     Expanded(
+      //       child: Padding(
+      //         padding: EdgeInsets.all(8),
+      //         child: Scrollbar(
+      //           controller: roller,
+      //           child: SingleChildScrollView(
+      //             controller: roller,
+      //             child: render(context, widget.book.chapters[cci].chunks),
+      //           ),
+      //         ),
+      //       ),
+      //     ),
+      //     if (dt.state != Playback.stop) playbackPanel(context),
+      //   ],
+      // ),
+      // TODO: think
+      // bottomNavigationBar: dt.state == Playback.playing
+      //     ? playbackPanel(context)
+      //     : readerPanel(context),
     );
   }
 
   void gotoNextChapter() {
     final cpp = ref.read(currentProgressProvider.notifier);
     if (cpp.state!.chapterIndex + 1 < widget.book.chapters.length) {
-      _progress = _progress.copyWith(
+      _progress = _progress?.copyWith(
         chapterIndex: cpp.state!.chapterIndex + 1,
         lineIndex: 0,
       );
@@ -425,208 +459,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     );
   }
 
-  // not used now
-  Widget render(BuildContext context, List<epub.Chunk> chunks) {
-    return SelectableText.rich(
-      TextSpan(
-        children: chunks.map((c) => buildChunkSpan(c, context)).toList(),
-      ),
-    );
-  }
-
-  InlineSpan buildChunkSpan(epub.Chunk chunk, BuildContext context) {
-    return switch (chunk) {
-      // 1. TextBlock behaves as a block element by injecting structural spacing
-      epub.TextBlock b => WidgetSpan(
-        child: Container(
-          width: double.infinity, // Forces it to take up a block layout width
-          padding: const EdgeInsets.symmetric(
-            vertical: 6.0,
-          ), // Paragraph block spacing
-          child: SelectableText.rich(
-            TextSpan(
-              style: _getHeadingStyle(b.headingLevel, context),
-              children: b.inlines
-                  .map((i) => buildInlineSpan(i, context))
-                  .toList(),
-            ),
-          ),
-        ),
-      ),
-
-      epub.BlockImage b => WidgetSpan(
-        child: Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Image.memory(
-            trapImage(b.src),
-            semanticLabel: b.alt,
-            errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
-          ),
-        ),
-      ),
-
-      epub.BlockList b => WidgetSpan(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0, top: 4.0, bottom: 4.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(b.items.length, (index) {
-              final prefix = b.ordered ? '${index + 1}. ' : '• ·';
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(prefix, style: Theme.of(context).textTheme.bodyMedium),
-                  Expanded(
-                    child: SelectableText.rich(
-                      TextSpan(
-                        children: b.items[index].content
-                            .map((c) => buildChunkSpan(c, context))
-                            .toList(),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-          ),
-        ),
-      ),
-
-      epub.Table t => WidgetSpan(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Table(
-            border: TableBorder.all(color: Colors.grey.shade300),
-            children: t.rows.map((row) {
-              return TableRow(
-                decoration: BoxDecoration(
-                  color: row.isHeader ? Colors.grey.shade100 : null,
-                ),
-                children: row.cells.map((cell) {
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: SelectableText.rich(
-                      TextSpan(
-                        children: cell.content
-                            .map((c) => buildChunkSpan(c, context))
-                            .toList(),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-
-      epub.MathBlock b => WidgetSpan(
-        child: Container(
-          width: double.infinity,
-          alignment: b.display ? Alignment.center : Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
-            b.content,
-            style: const TextStyle(fontStyle: FontStyle.italic),
-          ),
-        ),
-      ),
-
-      epub.UnknownBlock b => WidgetSpan(
-        child: Text(
-          '[Unknown tag: ${b.tag}]',
-          style: const TextStyle(color: Colors.red),
-        ),
-      ),
-    };
-  }
-
-  /// Transforms an [Inline] element into an [InlineSpan].
-  InlineSpan buildInlineSpan(epub.Inline inline, BuildContext context) {
-    return switch (inline) {
-      epub.InlineText i => TextSpan(
-        text: i.text,
-        style: TextStyle(
-          fontWeight: i.bold ? FontWeight.bold : null,
-          fontStyle: i.italic ? FontStyle.italic : null,
-          decoration: i.underline ? TextDecoration.underline : null,
-          // Handle superscript and subscript using fontFeatures
-          fontFeatures: [
-            if (i.superscript) const FontFeature.superscripts(),
-            if (i.subscript) const FontFeature.subscripts(),
-          ],
-        ),
-      ),
-
-      epub.InlineImage i => WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        child: Image.memory(
-          trapImage(i.src),
-          width: 20, // Inline image constraints
-          height: 20,
-          semanticLabel: i.alt,
-          errorBuilder: (_, _, _) => const SizedBox.shrink(),
-        ),
-      ),
-
-      epub.Hyperlink h => TextSpan(
-        style: const TextStyle(
-          color: Colors.blue,
-          decoration: TextDecoration.underline,
-        ),
-        // Simple tap handler setup
-        recognizer: TapGestureRecognizer()
-          ..onTap = () {
-            debugPrint('Navigating to: \${h.href}');
-          },
-        children: h.children
-            .map((child) => buildInlineSpan(child, context))
-            .toList(),
-      ),
-
-      epub.Anchor a => WidgetSpan(
-        // Invisible target placeholder for deep-linking/scrolling targets
-        child: SizedBox.shrink(key: ValueKey(a.id)),
-      ),
-
-      epub.MathInline m => WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        // Substitute with your math rendering package (e.g., flutter_math_fork)
-        child: Text(
-          m.content,
-          style: const TextStyle(fontStyle: FontStyle.italic),
-        ),
-      ),
-    };
-  }
-
-  /// Helper method to style headings based on the headingLevel (1-6)
-  TextStyle? _getHeadingStyle(int? level, BuildContext context) {
-    if (level == null) {
-      final fontSize = ref.read(
-        settingProvider.select((m) => m.intOf('ui.font-size', defaults: 18)),
-      );
-      return Theme.of(
-        context,
-      ).textTheme.bodyMedium?.copyWith(fontSize: fontSize.toDouble());
-    }
-
-    final typography = Theme.of(context).textTheme;
-    return switch (level) {
-      1 => typography.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-      2 => typography.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-      3 => typography.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-      4 => typography.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-      5 => typography.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-      6 => typography.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-      _ => typography.bodyMedium,
-    };
-  }
-
   AdaptiveTextSelectionToolbar selectToolbar(
     BuildContext context,
-    EditableTextState editableTextState,
+    SelectableRegionState editableTextState,
   ) {
     return AdaptiveTextSelectionToolbar.buttonItems(
       anchors: editableTextState.contextMenuAnchors,
@@ -645,11 +480,5 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         ),
       ],
     );
-  }
-
-  Uint8List trapImage(String path) {
-    final b = widget.book.files[path]?.content;
-    debugPrint('image $path ${b?.length}');
-    return b ?? Uint8List.fromList([]);
   }
 }

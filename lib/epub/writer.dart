@@ -67,13 +67,12 @@ $spine  </spine>
 
     for (var i = 0; i < ch.chunks.length; i++) {
       final line = ch.chunks[i];
-      if (line is TextBlock) {
-        switch (line.lang) {
-          case '':
-            body.writeln('<p>${_esc(line.text)}</p>');
-          default:
-            body.writeln('<p lang=${line.lang}>${_esc(line.text)}</p>');
-        }
+
+      switch (line.lang) {
+        case '':
+          body.writeln('<p>${_esc(line.text)}</p>');
+        default:
+          body.writeln('<p lang=${line.lang}>${_esc(line.text)}</p>');
       }
     }
     return '''<?xml version="1.0" encoding="utf-8"?>

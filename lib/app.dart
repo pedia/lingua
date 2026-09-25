@@ -12,7 +12,17 @@ class LinguaApp extends ConsumerWidget {
   final String? family;
 
   ThemeData buildTheme(Brightness brightness) {
-    final base = ThemeData(brightness: brightness, useMaterial3: true);
+    final base = ThemeData(
+      brightness: brightness,
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: brightness,
+      ),
+      iconTheme: IconThemeData(
+        color: ColorScheme.fromSeed(seedColor: Colors.blue).primary,
+      ),
+    );
 
     final textTheme = base.textTheme
         .apply(

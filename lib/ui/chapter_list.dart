@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../epub/epub.dart' as epub;
 import '../data/model.dart';
+import '../../g.dart';
 
 class ChapterList extends ConsumerStatefulWidget {
   const ChapterList(this.book, this.id, {super.key});
@@ -14,20 +15,22 @@ class ChapterList extends ConsumerStatefulWidget {
 }
 
 class _ChapterListState extends ConsumerState<ChapterList> {
-  final roller = ItemScrollController();
+  // not work for 0.3.8 final roller = ScrollController();
+  final isroller = ItemScrollController();
   @override
   Widget build(BuildContext context) {
-    final pp = ref.watch(currentProgressProvider.notifier);
+    final cpp = ref.watch(currentProgressProvider.notifier);
     return ScrollablePositionedList.builder(
-      itemScrollController: roller,
+      itemScrollController: isroller,
       key: PageStorageKey<int>(widget.id),
-      initialScrollIndex: pp.state?.chapterIndex ?? 0,
+      initialScrollIndex: cpp.state?.chapterIndex ?? 0,
       itemCount: widget.book.chapters.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
           return DrawerHeader(
             decoration: BoxDecoration(color: Theme.of(context).primaryColor),
             child: ListTile(
+              leading: boxImage('icon-${widget.id}'),
               title: Text(widget.book.title),
               subtitle: Text(widget.book.author),
             ),
@@ -35,13 +38,13 @@ class _ChapterListState extends ConsumerState<ChapterList> {
         }
         final i = index - 1;
         return ListTile(
-          selected: i == pp.state?.chapterIndex,
+          selected: i == cpp.state?.chapterIndex,
           title: Text(widget.book.chapters[i].title),
           onTap: () {
             Navigator.pop(context);
             ref
                 .read(currentProgressProvider.notifier)
-                .update((_) => pp.state?.copyWith(chapterIndex: i));
+                .update((_) => cpp.state?.copyWith(chapterIndex: i));
           },
         );
       },

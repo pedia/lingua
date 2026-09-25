@@ -4,7 +4,6 @@ import 'package:html/parser.dart' show parse;
 import '../epub/epub.dart';
 
 Book sample() {
-  final cs = HtmlExtractor('foo/bar/a.html').extract(complex.body!);
   return Book(
     title: 'Sample',
     author: 'dev',
@@ -13,83 +12,65 @@ Book sample() {
         href: "",
         title: "Chapter 1",
         chunks: [
-          TextBlock(
-            [InlineText('🌸 Romance & Longing')],
-            headingLevel: 2,
-            lang: 'en',
-          ),
-          TextBlock.single(
-            'If I know what love is, it is because of you.',
-            lang: 'en',
-          ),
-          TextBlock.single(
+          Chunk('🌸 Romance & Longing', lang: 'en'),
+          Chunk('If I know what love is, it is because of you.', lang: 'en'),
+          Chunk(
             '愿得一人心，白首不相离。 (May I win a heart, and never part until our hair turns white.',
             lang: "zh",
           ),
-          TextBlock.single(
+          Chunk(
             'I love you not only for what you are, but for what I am when I am with you.',
             lang: 'en',
           ),
-          TextBlock.single('我爱你不仅因为你的样子，还因为和你在一起时我的样子。', lang: 'zh'),
-          TextBlock.single(
+          Chunk('我爱你不仅因为你的样子，还因为和你在一起时我的样子。', lang: 'zh'),
+          Chunk(
             'In the book of life, you are my favorite chapter.',
             lang: 'en',
           ),
-          TextBlock.single('在生命这本长卷里，你是我最喜欢的篇章。', lang: 'zh'),
-          TextBlock(
-            [InlineText('🍂 Solitude & Reflection')],
-            headingLevel: 2,
-            lang: 'en',
-          ),
-          TextBlock.single('The quiet mind is the best companion.', lang: 'en'),
-          TextBlock.single('独处是灵魂的清欢。 (Solitude is the pure joy of the soul.)'),
-          TextBlock.single(
+          Chunk('在生命这本长卷里，你是我最喜欢的篇章。', lang: 'zh'),
+          Chunk('🍂 Solitude & Reflection', lang: 'en'),
+          Chunk('The quiet mind is the best companion.', lang: 'en'),
+          Chunk('独处是灵魂的清欢。 (Solitude is the pure joy of the soul.)'),
+          Chunk(
             'Time tempers everything, leaving only the truest behind.',
             lang: 'en',
           ),
-          TextBlock.single('岁月洗尽铅华，留下最真的情意。', lang: 'zh'),
-          TextBlock.single(
+          Chunk('岁月洗尽铅华，留下最真的情意。', lang: 'zh'),
+          Chunk(
             'We are all travelers in the wilderness of this world, and the best we can find in our travels is an honest friend.',
             lang: 'en',
           ),
-          TextBlock.single('我们都是尘世的旅人，旅途中最美的际遇，莫过于遇到懂你的人。', lang: 'zh'),
-          TextBlock.single(
+          Chunk('我们都是尘世的旅人，旅途中最美的际遇，莫过于遇到懂你的人。', lang: 'zh'),
+          Chunk(
             'There is a crack in everything, that\'s how the light gets in.',
             lang: 'en',
           ),
 
-          TextBlock(
-            [InlineText('✨ Hope & Resilience')],
-            headingLevel: 2,
-            lang: 'en',
-          ),
-          TextBlock.single('万物皆有裂痕，那是光照进来的地方。', lang: 'zh'),
-          TextBlock.single(
-            'May you find hidden treasures wherever you go.',
-            lang: 'en',
-          ),
-          TextBlock.single('愿你行囊饱满，所到之处皆有惊喜。', lang: 'zh'),
-          TextBlock.single(
+          Chunk('✨ Hope & Resilience', lang: 'en'),
+          Chunk('万物皆有裂痕，那是光照进来的地方。', lang: 'zh'),
+          Chunk('May you find hidden treasures wherever you go.', lang: 'en'),
+          Chunk('愿你行囊饱满，所到之处皆有惊喜。', lang: 'zh'),
+          Chunk(
             'The flower that blooms in adversity is the rarest and most beautiful of all.',
             lang: 'en',
           ),
-          TextBlock.single('逆境中绽放的花朵，最是难得，也最是美丽。', lang: 'zh'),
-          TextBlock.single(
+          Chunk('逆境中绽放的花朵，最是难得，也最是美丽。', lang: 'zh'),
+          Chunk(
             'The mountain remains still while the river flows endlessly.',
             lang: 'en',
           ),
-          TextBlock.single('青山依旧在，绿水长流不息。', lang: 'zh'),
-          TextBlock.single(
+          Chunk('青山依旧在，绿水长流不息。', lang: 'zh'),
+          Chunk(
             'Live as beautifully as summer flowers and die as quietly as autumn leaves.',
             lang: 'en',
           ),
-          TextBlock.single(
+          Chunk(
             '生如夏花之绚烂，死如秋叶之静美。 (Adapted from Rabindranath Tagore\'s Stray Birds)',
             lang: 'zh',
           ),
         ],
       ),
-      Chapter.cache(title: 'Features', href: 'foo/bar/a.html', chunks: cs),
+      Chapter.cache(title: 'Features', href: 'foo/bar/a.html', chunks: []),
     ],
     files: {
       'foo/images/00001.png': ArchiveFile.bytes('00001.png', note),
