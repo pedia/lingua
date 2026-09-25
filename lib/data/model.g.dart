@@ -19,12 +19,13 @@ Map<String, dynamic> _$ProgressToJson(_Progress instance) => <String, dynamic>{
 };
 
 _Item _$ItemFromJson(Map<String, dynamic> json) => _Item(
-  id: (json['id'] as num? ?? nextId()).toInt(),
+  id: (json['id'] as num).toInt(),
   type: $enumDecode(_$ItemTypeEnumMap, json['type']),
   path: json['path'] as String,
-  name: json['name'] as String,
+  name: json['name'] as String?,
+  author: json['author'] as String?,
   progress: json['progress'] == null
-      ? const Progress()
+      ? null
       : Progress.fromJson((json['progress'] as Map).cast<String, dynamic>()),
 );
 
@@ -33,7 +34,8 @@ Map<String, dynamic> _$ItemToJson(_Item instance) => <String, dynamic>{
   'type': _$ItemTypeEnumMap[instance.type]!,
   'path': instance.path,
   'name': instance.name,
-  'progress': instance.progress.toJson(),
+  'author': instance.author,
+  'progress': instance.progress?.toJson(),
 };
 
 const _$ItemTypeEnumMap = {

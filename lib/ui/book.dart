@@ -55,7 +55,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
       // ✅ Safe to use ref here
       // lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-      _progress = ref.read(currentProgressProvider.notifier).state!;
+      _progress = ref.read(currentProgressProvider.notifier).state;
     }
   }
 
@@ -107,9 +107,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     /// `updateProgress` only worked in Future
     if (_progress != null) {
       Future(() {
-        _itemsProvider.updateProgress(
+        _itemsProvider.update(
           widget.id,
-          _progress!.copyWith(offset: _offset),
+          progress: _progress!.copyWith(offset: _offset),
         );
       });
     }

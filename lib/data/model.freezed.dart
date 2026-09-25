@@ -346,8 +346,9 @@ mixin _$Item {
   int get id;
   ItemType get type;
   String get path;
-  String get name;
-  Progress get progress;
+  String? get name;
+  String? get author;
+  Progress? get progress;
 
   /// Create a copy of Item
   /// with the given fields replaced by the non-null parameter values.
@@ -368,17 +369,19 @@ mixin _$Item {
             (identical(other.type, type) || other.type == type) &&
             (identical(other.path, path) || other.path == path) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.author, author) || other.author == author) &&
             (identical(other.progress, progress) ||
                 other.progress == progress));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, type, path, name, progress);
+  int get hashCode =>
+      Object.hash(runtimeType, id, type, path, name, author, progress);
 
   @override
   String toString() {
-    return 'Item(id: $id, type: $type, path: $path, name: $name, progress: $progress)';
+    return 'Item(id: $id, type: $type, path: $path, name: $name, author: $author, progress: $progress)';
   }
 }
 
@@ -391,11 +394,12 @@ abstract mixin class $ItemCopyWith<$Res> {
     int id,
     ItemType type,
     String path,
-    String name,
-    Progress progress,
+    String? name,
+    String? author,
+    Progress? progress,
   });
 
-  $ProgressCopyWith<$Res> get progress;
+  $ProgressCopyWith<$Res>? get progress;
 }
 
 /// @nodoc
@@ -413,8 +417,9 @@ class _$ItemCopyWithImpl<$Res> implements $ItemCopyWith<$Res> {
     Object? id = null,
     Object? type = null,
     Object? path = null,
-    Object? name = null,
-    Object? progress = null,
+    Object? name = freezed,
+    Object? author = freezed,
+    Object? progress = freezed,
   }) {
     return _then(
       _self.copyWith(
@@ -430,14 +435,18 @@ class _$ItemCopyWithImpl<$Res> implements $ItemCopyWith<$Res> {
             ? _self.path
             : path // ignore: cast_nullable_to_non_nullable
                   as String,
-        name: null == name
+        name: freezed == name
             ? _self.name
             : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        progress: null == progress
+                  as String?,
+        author: freezed == author
+            ? _self.author
+            : author // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        progress: freezed == progress
             ? _self.progress
             : progress // ignore: cast_nullable_to_non_nullable
-                  as Progress,
+                  as Progress?,
       ),
     );
   }
@@ -446,8 +455,12 @@ class _$ItemCopyWithImpl<$Res> implements $ItemCopyWith<$Res> {
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $ProgressCopyWith<$Res> get progress {
-    return $ProgressCopyWith<$Res>(_self.progress, (value) {
+  $ProgressCopyWith<$Res>? get progress {
+    if (_self.progress == null) {
+      return null;
+    }
+
+    return $ProgressCopyWith<$Res>(_self.progress!, (value) {
       return _then(_self.copyWith(progress: value));
     });
   }
@@ -548,8 +561,9 @@ extension ItemPatterns on Item {
       int id,
       ItemType type,
       String path,
-      String name,
-      Progress progress,
+      String? name,
+      String? author,
+      Progress? progress,
     )?
     $default, {
     required TResult orElse(),
@@ -562,6 +576,7 @@ extension ItemPatterns on Item {
           _that.type,
           _that.path,
           _that.name,
+          _that.author,
           _that.progress,
         );
       case _:
@@ -588,8 +603,9 @@ extension ItemPatterns on Item {
       int id,
       ItemType type,
       String path,
-      String name,
-      Progress progress,
+      String? name,
+      String? author,
+      Progress? progress,
     )
     $default,
   ) {
@@ -601,6 +617,7 @@ extension ItemPatterns on Item {
           _that.type,
           _that.path,
           _that.name,
+          _that.author,
           _that.progress,
         );
       case _:
@@ -626,8 +643,9 @@ extension ItemPatterns on Item {
       int id,
       ItemType type,
       String path,
-      String name,
-      Progress progress,
+      String? name,
+      String? author,
+      Progress? progress,
     )?
     $default,
   ) {
@@ -639,6 +657,7 @@ extension ItemPatterns on Item {
           _that.type,
           _that.path,
           _that.name,
+          _that.author,
           _that.progress,
         );
       case _:
@@ -655,8 +674,9 @@ class _Item implements Item {
     required this.id,
     required this.type,
     required this.path,
-    required this.name,
-    this.progress = const Progress(),
+    this.name,
+    this.author,
+    this.progress,
   });
   factory _Item.fromJson(Map<String, dynamic> json) => _$ItemFromJson(json);
 
@@ -667,10 +687,11 @@ class _Item implements Item {
   @override
   final String path;
   @override
-  final String name;
+  final String? name;
   @override
-  @JsonKey()
-  final Progress progress;
+  final String? author;
+  @override
+  final Progress? progress;
 
   /// Create a copy of Item
   /// with the given fields replaced by the non-null parameter values.
@@ -694,17 +715,19 @@ class _Item implements Item {
             (identical(other.type, type) || other.type == type) &&
             (identical(other.path, path) || other.path == path) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.author, author) || other.author == author) &&
             (identical(other.progress, progress) ||
                 other.progress == progress));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, type, path, name, progress);
+  int get hashCode =>
+      Object.hash(runtimeType, id, type, path, name, author, progress);
 
   @override
   String toString() {
-    return 'Item(id: $id, type: $type, path: $path, name: $name, progress: $progress)';
+    return 'Item(id: $id, type: $type, path: $path, name: $name, author: $author, progress: $progress)';
   }
 }
 
@@ -718,12 +741,13 @@ abstract mixin class _$ItemCopyWith<$Res> implements $ItemCopyWith<$Res> {
     int id,
     ItemType type,
     String path,
-    String name,
-    Progress progress,
+    String? name,
+    String? author,
+    Progress? progress,
   });
 
   @override
-  $ProgressCopyWith<$Res> get progress;
+  $ProgressCopyWith<$Res>? get progress;
 }
 
 /// @nodoc
@@ -741,8 +765,9 @@ class __$ItemCopyWithImpl<$Res> implements _$ItemCopyWith<$Res> {
     Object? id = null,
     Object? type = null,
     Object? path = null,
-    Object? name = null,
-    Object? progress = null,
+    Object? name = freezed,
+    Object? author = freezed,
+    Object? progress = freezed,
   }) {
     return _then(
       _Item(
@@ -758,14 +783,18 @@ class __$ItemCopyWithImpl<$Res> implements _$ItemCopyWith<$Res> {
             ? _self.path
             : path // ignore: cast_nullable_to_non_nullable
                   as String,
-        name: null == name
+        name: freezed == name
             ? _self.name
             : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        progress: null == progress
+                  as String?,
+        author: freezed == author
+            ? _self.author
+            : author // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        progress: freezed == progress
             ? _self.progress
             : progress // ignore: cast_nullable_to_non_nullable
-                  as Progress,
+                  as Progress?,
       ),
     );
   }
@@ -774,8 +803,12 @@ class __$ItemCopyWithImpl<$Res> implements _$ItemCopyWith<$Res> {
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $ProgressCopyWith<$Res> get progress {
-    return $ProgressCopyWith<$Res>(_self.progress, (value) {
+  $ProgressCopyWith<$Res>? get progress {
+    if (_self.progress == null) {
+      return null;
+    }
+
+    return $ProgressCopyWith<$Res>(_self.progress!, (value) {
       return _then(_self.copyWith(progress: value));
     });
   }

@@ -180,7 +180,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
             final e = items[index];
             return ListTile(
               title: Text('${e.name} ${e.id}'),
-              // subtitle: e.type != ItemType.debug ? Text(e.path) : null,
+              subtitle: e.author != null ? Text(e.author!) : null,
               leading: boxImage('icon-${e.id}'),
               onTap: () async {
                 Book? book;
@@ -201,13 +201,25 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                   }
                 }
 
+                print("${e.id}: ${book?.author}");
+
+                if (book != null &&
+                    book.author.isNotEmpty &&
+                    e.author == null) {
+                  ref
+                      .read(itemsProvider.notifier)
+                      .update(e.id, author: book.author, name: book.title);
+                }
+
                 if (context.mounted && book != null) {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => ProviderScope(
                         overrides: [
                           currentProgressProvider.overrideWith(
-                            (_) => e.progress,
+                            (_) =>
+                                e.progress ??
+                                Progress(chapterIndex: 0, lineIndex: 0),
                           ),
                         ],
                         child: BookFrame(book: book!, id: e.id),

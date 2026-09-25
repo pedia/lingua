@@ -17,11 +17,11 @@ abstract class Progress with _$Progress {
 
   const Progress._();
 
-  factory Progress.fromJson(Map<String, Object?> json) =>
+  factory Progress.fromJson(Map<String, dynamic> json) =>
       _$ProgressFromJson(json);
 
   @override
-  Map<String, Object?> toJson() => _$ProgressToJson(this as _Progress);
+  Map<String, dynamic> toJson() => _$ProgressToJson(this as _Progress);
 
   @override
   String toString() =>
@@ -37,12 +37,12 @@ abstract class Item with _$Item {
     required int id,
     required ItemType type,
     required String path,
-    required String name,
-    @Default(Progress()) Progress progress,
+    String? name,
+    String? author,
+    Progress? progress,
   }) = _Item;
 
-  factory Item.fromJson(Map json) =>
-      _$ItemFromJson(json.cast<String, dynamic>());
+  factory Item.fromJson(Map<String, dynamic> json) => _$ItemFromJson(json);
 
   @override
   Map<String, dynamic> toJson() => _$ItemToJson(this as _Item);
@@ -53,11 +53,11 @@ abstract class ItemList with _$ItemList {
   @JsonSerializable(explicitToJson: true)
   const factory ItemList({@Default([]) List<Item> items}) = _ItemList;
 
-  factory ItemList.fromJson(Map json) =>
-      _$ItemListFromJson(json.cast<String, dynamic>());
+  factory ItemList.fromJson(Map<String, dynamic> json) =>
+      _$ItemListFromJson(json);
 
   @override
-  Map<String, Object?> toJson() => _$ItemListToJson(this as _ItemList);
+  Map<String, dynamic> toJson() => _$ItemListToJson(this as _ItemList);
 }
 
 class ItemListNotifier extends Notifier<ItemList> {
@@ -73,12 +73,15 @@ class ItemListNotifier extends Notifier<ItemList> {
     state = state.copyWith(items: [target, ...state.items]);
   }
 
-  void updateProgress(int id, Progress progress) {
-    print('progress update $progress of $id');
+  void update(int id, {Progress? progress, String? author, String? name}) {
+    print('item($id) update $progress $author');
     state = ItemList(
       items: [
         for (final e in state.items)
-          if (e.id == id) e.copyWith(progress: progress) else e,
+          if (e.id == id)
+            e.copyWith(progress: progress, author: author, name: name)
+          else
+            e,
       ],
     );
     save();
@@ -138,7 +141,7 @@ class ItemListNotifier extends Notifier<ItemList> {
   Future load() async {
     final jl = gbox.get('items');
     state = jl is Map && jl.isNotEmpty
-        ? ItemList.fromJson(jl)
+        ? ItemList.fromJson(jl.cast<String, dynamic>())
         : ItemList(items: builtin);
 
     for (final i in builtin) {
