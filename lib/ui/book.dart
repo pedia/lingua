@@ -118,7 +118,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       setState(() => playbackState = dt.state);
     }
 
-    // (dt.state != Playback.stop && dt.index != _progress.lineIndex)) {
+    if (dt.state == Playback.playing) {
+      setState(() => _progress = _progress.copyWith(lineIndex: dt.index));
+    }
 
     // next chapter
     if (dt.state == Playback.playing && dt.index + 1 == lines.length) {

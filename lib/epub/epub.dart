@@ -61,10 +61,30 @@ class ChapterStub implements Chapter {
   }
 
   @override
-  String get content => utf8.decode(file.content);
+  String get content => file.name == 'stub' && _chunks != null
+      ? toHtml()
+      : utf8.decode(file.content);
 
   String? _title;
   List<Chunk>? _chunks;
+
+  /// chunks to html
+  String toHtml() {
+    final buf = StringBuffer();
+    buf.writeln('<title>${_esc(title)}</title>');
+    buf.writeln('<body>');
+    _chunks?.forEach((c) => buf.writeln('<p>${_esc(c.text)}</p>'));
+    buf.writeln('</body>');
+    return buf.toString();
+  }
+
+  String _esc(String value) {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+  }
 
   void _parse({bool onlyTitle = true}) {
     final html = utf8.decode(file.content);

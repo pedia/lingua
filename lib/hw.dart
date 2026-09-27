@@ -127,7 +127,17 @@ class HtmlWidgetState extends State<HtmlWidget> {
     for (var i = 0; i < es.length; i++) {
       rs.add(
         WidgetSpan(
-          child: Container(key: newKey('$i'), child: Text.rich(trans(es[i]))),
+          child: Text.rich(
+            trans(es[i]),
+            key: newKey('$i'),
+            style: widget.initialIndex == i
+                ? TextStyle(
+                    backgroundColor:
+                        TextSelectionTheme.of(context).selectionColor ??
+                        Colors.blue.withValues(alpha: 0.4),
+                  )
+                : null,
+          ),
         ),
       );
       rs.add(TextSpan(text: '\n'));
