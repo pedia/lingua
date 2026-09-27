@@ -8,7 +8,7 @@ import '../settings/setting.dart';
 import 'setting.dart';
 import 'voice.dart';
 import 'font.dart';
-import '../htow.dart';
+import '../hw.dart';
 import 'chapter_list.dart';
 import '../data/model.dart';
 import '../epub/epub.dart' as epub;

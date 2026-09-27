@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart';
 
-import 'package:lingua/htow.dart';
+import 'package:lingua/hw.dart';
 
 void main() {
   testWidgets('html2widget', (WidgetTester tester) async {
