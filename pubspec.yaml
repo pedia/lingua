@@ -11,36 +11,36 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.8
-  archive:
-  xml: ^6.5.0
-  html: ^0.15.5
+  # change 'any' to current version
+  # ```flutter pub upgrade --tighten```
+  #
+  cupertino_icons: ^1.0.9
+  archive: ^4.3.0
+  xml: ^6.6.1
+  html: ^0.15.7
   flutter_tts: ^4.2.5
   file_picker: ^11.0.3
-  path_provider: any
-  path: any
-  shared_preferences: ^2.5.3
-  translator_plus: any
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  shared_preferences: ^2.5.5
+  translator_plus: ^1.0.1
   # local_translation: any
   flutter_riverpod: ^2.6.1
-  go_router: any
-  macos_file_open_handler: any
+  go_router: ^17.5.0
+  macos_file_open_handler: ^0.1.0
   # receive_sharing_intent: 1.8.1
-  open_with_app: any
+  open_with_app: ^0.0.1
   universal_io: ^2.3.1
   scrollable_positioned_list: ^0.3.8
   hive_ce: ^2.20.0
-  meta: any
+  meta: ^1.17.0
   device_info_plus: ^12.4.0
   osfont:
     path: osfont
-  json_annotation: any
-  freezed_annotation: any
+  json_annotation: ^4.12.0
+  freezed_annotation: ^3.1.0
   metrics: ^0.2.2
   image: ^4.10.1
-  # flutter_html:
-  #   path: flutter_html
-  # flutter_widget_from_html: ^0.17.4
 
 dev_dependencies:
   flutter_test:
@@ -48,8 +48,8 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   build_runner: ^2.15.1
-  json_serializable: any
-  freezed: any
+  json_serializable: ^6.14.1
+  freezed: ^3.2.5
 
 
 flutter:

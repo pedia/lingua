@@ -49,8 +49,10 @@ class Item {
   final Progress? progress;
   final double percent;
 
-  String get subtitle =>
-      [if (author != null) author, '${percent.toStringAsFixed(0)}%'].join(' ');
+  String get subtitle => [
+    if (author != null) author,
+    if (percent > 0) '${percent.toStringAsFixed(0)}%',
+  ].join(' ');
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
     id: (json['id'] as num).toInt(),
@@ -192,7 +194,7 @@ class ItemListNotifier extends Notifier<List<Item>> {
   void save() {
     final js = state.map((i) => i.toJson()).toList();
     gbox.put('items2', js);
-    print('saved ${js[0]}');
+    // print('saved ${js[0]}');
   }
 }
 

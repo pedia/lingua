@@ -16,6 +16,7 @@ import 'voice.dart';
 import '../silver.dart';
 import '../page.dart';
 import '../demo.dart';
+import '../hive.dart';
 
 import '../data/model.dart';
 import '../data/sample.dart';
@@ -143,6 +144,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                     'search' => SilverFrame(),
                     'page' => PageFrame(),
                     'demo' => DemoFrame(),
+                    'hive' => HiveFrame(),
                     'tts-setting' => VoiceSettingPage.from(context),
                     _ => FontFrame(),
                   },
@@ -157,6 +159,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               PopupMenuItem(value: 'setting', child: Text('Setting')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
+              PopupMenuItem(value: 'hive', child: Text('Hive Console')),
               PopupMenuItem(value: 'scan', child: Text('Scan')),
             ],
             child: Icon(Icons.more_vert, size: 36),
@@ -248,7 +251,9 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
 
     final items = ref.read(itemsProvider);
 
-    booksDir.list().listen((e) {
+    int c = 0;
+
+    await for (final e in booksDir.list()) {
       if (e.path.endsWith('.epub')) {
         if (!items.any((i) => i.path == e.path)) {
           ref
@@ -261,8 +266,15 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                   name: p.basename(e.path).replaceAll('.epub', ''),
                 ),
               );
+          c += 1;
         }
       }
-    });
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$c added')));
+    }
   }
 }
