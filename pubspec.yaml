@@ -38,9 +38,9 @@ dependencies:
   freezed_annotation: any
   metrics: ^0.2.2
   image: ^4.10.1
-  flutter_html:
-    path: flutter_html
-  flutter_widget_from_html: ^0.17.4
+  # flutter_html:
+  #   path: flutter_html
+  # flutter_widget_from_html: ^0.17.4
 
 dev_dependencies:
   flutter_test:

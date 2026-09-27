@@ -152,7 +152,7 @@ class HtmlWidgetState extends State<HtmlWidget> {
         final t = _removeUnnecessaryWhitespace(c.text ?? '');
         if (children.isEmpty && c.text != null) {
           text = t;
-          forceInlineHeight ??= fontSize(e.localName ?? '');
+          if (t != ' ') forceInlineHeight ??= fontSize(e.localName ?? '');
         } else {
           children.add(TextSpan(text: t));
         }
