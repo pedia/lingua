@@ -3,20 +3,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_html/flutter_html.dart' as hw;
+// import 'package:flutter_html/flutter_html.dart' as fh;
+// import 'package:flutter_widget_from_html/flutter_widget_from_html.dart' as fw;
 import 'package:archive/archive.dart';
 
 import '../settings/setting.dart';
 import 'setting.dart';
-import 'hwext.dart';
+import 'fhext.dart';
 import 'voice.dart';
 import 'font.dart';
+import '../htow.dart';
 import 'chapter_list.dart';
 import '../data/model.dart';
 import '../epub/epub.dart' as epub;
 import '../tts/dualtts.dart';
 
-class ArchiveProvider extends HwProvider {
+class ArchiveProvider extends FileProvider {
   ArchiveProvider(String base, this.files) : base = Uri(path: base);
   final Uri base;
   final Map<String, ArchiveFile> files;
@@ -84,14 +86,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final p = ref.read(currentProgressProvider);
       if (p != null) {
-        roller.jumpTo(p.offset);
+        // roller.jumpTo(p.offset);
       } else {
         _scaffoldKey.currentState?.openDrawer();
       }
-    });
-
-    roller.addListener(() {
-      _offset = roller.offset;
     });
   }
 
@@ -269,16 +267,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         ],
       ),
       drawer: Drawer(width: 280, child: ChapterList(widget.book, widget.id)),
-      body: SelectionArea(
-        contextMenuBuilder: selectToolbar,
-        child: SingleChildScrollView(
-          controller: roller,
-          child: hw.Html(
-            data: ch.content,
-            style: {"p": hw.Style(fontSize: hw.FontSize(fs.toDouble()))},
-            extensions: [Img(ArchiveProvider(ch.href, widget.book.files))],
-          ),
-        ),
+      body: HtmlWidget.from(
+        ch.content,
+        initialIndex: cci,
+        provider: ArchiveProvider(ch.href, widget.book.files),
       ),
       // Column(
       //   children: [

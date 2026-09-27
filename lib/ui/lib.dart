@@ -15,6 +15,7 @@ import 'setting.dart';
 import 'voice.dart';
 import '../silver.dart';
 import '../page.dart';
+import '../demo.dart';
 
 import '../data/model.dart';
 import '../data/sample.dart';
@@ -127,20 +128,13 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
         actions: [
           IconButton(
             icon: Icon(
-              Icons.library_add,
+              Icons.developer_mode,
               color: Theme.of(context).iconTheme.color,
             ),
             onPressed: () async {
-              final result = await FilePicker.pickFiles(
-                type: FileType.custom,
-                allowedExtensions: const ['epub'],
-                allowMultiple: true,
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (context) => PageFrame()),
               );
-              if (result?.files != null) {
-                for (final file in result!.files) {
-                  OpenFile.send(file.path!);
-                }
-              }
             },
           ),
           PopupMenuButton<String>(
@@ -153,6 +147,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                     'setting' => SettingFrame(),
                     'search' => SilverFrame(),
                     'page' => PageFrame(),
+                    'demo' => DemoFrame(),
                     'tts-setting' => VoiceSettingPage.from(context),
                     _ => FontFrame(),
                   },
@@ -160,12 +155,13 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               );
             },
             itemBuilder: (BuildContext context) => const [
+              PopupMenuItem(value: 'search', child: Text('debug:Silver')),
+              PopupMenuItem(value: 'page', child: Text('debug:Page')),
+              PopupMenuItem(value: 'demo', child: Text('debug:Demo')),
+              PopupMenuItem(value: 'font', child: Text('debug:Font')),
               PopupMenuItem(value: 'setting', child: Text('Setting')),
-              PopupMenuItem(value: 'search', child: Text('Silver Demo')),
-              PopupMenuItem(value: 'page', child: Text('Page Demo')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
-              PopupMenuItem(value: 'font', child: Text('Font Demo')),
             ],
             child: Icon(Icons.more_vert, size: 36),
           ),
@@ -179,7 +175,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           itemBuilder: (context, index) {
             final e = items[index];
             return ListTile(
-              title: Text('${e.name} ${e.id}'),
+              title: Text('${e.name ?? ''} ${e.id}'),
               subtitle: e.author != null ? Text(e.author!) : null,
               leading: boxImage('icon-${e.id}'),
               onTap: () async {
@@ -236,14 +232,17 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.library_add),
-        onPressed: () {
-          // final anchorContext = AnchorKey.forId(
-          //   staticAnchorKey,
-          //   "bottom",
-          // )?.currentContext;
-          // if (anchorContext != null) {
-          //   Scrollable.ensureVisible(anchorContext);
-          // }
+        onPressed: () async {
+          final result = await FilePicker.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: const ['epub'],
+            allowMultiple: true,
+          );
+          if (result?.files != null) {
+            for (final file in result!.files) {
+              OpenFile.send(file.path!);
+            }
+          }
         },
       ),
     );

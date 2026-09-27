@@ -80,12 +80,18 @@ Book sample() {
 }
 
 final note = Uint8List.fromList([
-  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, //
-  0, 0, 0, 32, 0, 0, 0, 32, 1, 3, 0, 0, 0, 73, 180, 232, 183,
-  0, 0, 0, 3, 80, 76, 84, 69, 255, 0, 0, 25, 226, 9, 55, 0, 0,
-  0, 12, 73, 68, 65, 84, 120, 218, 99, 96, 24, 220, 0, 0, 0, 160,
-  0, 1, 142, 251, 177, 180, 0, 0, 0, 0, 73, 69, 78, 68, 174, 62, //
-  96, 130,
+  137, 80, 78, 71, 13, 10, 26, 10, // PNG Signature
+  0, 0, 0, 13, 73, 72, 68, 82, // IHDR Header
+  0, 0, 0, 8, 0, 0, 0, 8, // Width (8px), Height (8px)
+  8, 2, 0, 0, 0, // 8-bit, TrueColor RGB, No Filter
+  75, 109, 41, 220, // Validated IHDR CRC
+  0, 0, 0, 20, 73, 68, 65, 84, // IDAT Header (20 bytes of data)
+  120, 156, 99, 100, 96, 248, 207, 128, // Compressed image pixel payload
+  13, 48, 97, 21, 29, 180, 18, 0,
+  203, 67, 1, 15,
+  86, 36, 140, 186, // Validated IDAT CRC
+  0, 0, 0, 0, 73, 69, 78, 68, // IEND End of Image
+  174, 66, 96, 130, // Validated IEND CRC
 ]);
 
 final complex = parse('''
@@ -94,9 +100,12 @@ final complex = parse('''
 <p class="calibre8"><span class="calibre11">尽管美国的禁酒令在20世纪20年
 代被废除，但自行车还是促成了美国人酒精消费行为的持久性改变——美国的一些县至今仍然流
 行“干型酒”。
-        <sup class="calibre22"><a href="part0039.html#footnote-39-65" type="noteref" class="calibre"> <img alt="“干型酒”的含糖量在4g/L以下。美国人一般更偏爱糖分更多的“半干型酒”。" class="epub-footnote" src="../images/00001.png" zy-footnote="“干型酒”的含糖量在4g/L以下。美国人一般更偏爱糖分更多的“半干型酒”。"/></a></sup></span></p>
+        <sup class="calibre22"><a href="part0039.html#footnote-39-65" type="noteref" class="calibre"> <img alt="“干型酒”的含糖量在4g/L以下。美国人一般更偏爱糖分更多的“半干型酒”。" class="epub-footnote" src="../images/00001.png" zy-footnote="“干型酒”的含糖量在4g/L以下。美国人一般更偏爱糖分更多的“半干型酒”。"/></a></sup>
+</span></p>
 
-<aside id="footnote-39-65" type="footnote" class="calibre"><ol class="duokan-footnote-content"><li class="duokan-footnote-item">“干型酒”的含糖量在4g/L以下。美国人一般更偏爱糖分更多的“半干型酒”。</li>
+<aside id="footnote-39-65" type="footnote" class="calibre">
+<ol class="duokan-footnote-content">
+<li class="duokan-footnote-item">“干型酒”的含糖量在4g/L以下。美国人一般更偏爱糖分更多的“半干型酒”。</li>
 </ol>
 </aside>
 
