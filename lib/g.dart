@@ -45,6 +45,5 @@ Widget? boxImage(String key) {
   if (cb != null) {
     return Image.memory(cb, width: 48, fit: BoxFit.fitWidth);
   }
-
   return null;
 }

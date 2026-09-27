@@ -14,21 +14,30 @@ abstract class FileProvider {
 
 /// Html to Widget
 class HtmlWidget extends StatefulWidget {
-  const HtmlWidget(this.doc, {this.provider, this.initialIndex = 0, super.key});
+  const HtmlWidget(
+    this.doc, {
+    this.provider,
+    this.initialIndex = 0,
+    this.scrollNotify,
+    super.key,
+  });
   final dom.Document doc;
   final int initialIndex; // top index
   final FileProvider? provider; // top index
+  final Function(double offset, int lineIndex)? scrollNotify;
 
   factory HtmlWidget.from(
     String html, {
     FileProvider? provider,
     int initialIndex = 0,
     Key? key,
+    Function(double offset, int lineIndex)? scrollNotify,
   }) => HtmlWidget(
     dom.parse(html),
     provider: provider,
     initialIndex: initialIndex,
     key: key,
+    scrollNotify: scrollNotify,
   );
 
   @override
@@ -85,6 +94,8 @@ class HtmlWidgetState extends State<HtmlWidget> {
       );
       firstVisibleIdx = idx;
     }
+
+    widget.scrollNotify?.call(roller.offset, firstVisibleIdx ?? 0);
   }
 
   /// top level WidgetSpan: 'index' => GlogalKey

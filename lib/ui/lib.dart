@@ -109,18 +109,9 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
     return const EpubParser().parseBytes(await file.readAsBytes());
   }
 
-  Widget? boxImage(String key) {
-    final cb = gbox.get(key);
-    if (cb != null) {
-      return Image.memory(cb, width: 48, fit: BoxFit.fitWidth);
-    }
-
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final items = ref.watch(itemsProvider).items;
+    final items = ref.watch(itemsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -175,7 +166,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           itemBuilder: (context, index) {
             final e = items[index];
             return ListTile(
-              title: Text('${e.name ?? ''} ${e.id}'),
+              title: Text(e.name ?? p.basename(e.path).replaceAll('.epub', '')),
               subtitle: e.author != null ? Text(e.author!) : null,
               leading: boxImage('icon-${e.id}'),
               onTap: () async {

@@ -30,75 +30,106 @@ abstract class Progress with _$Progress {
 
 enum ItemType { assets, file, demo, debug }
 
-@freezed
-abstract class Item with _$Item {
-  @JsonSerializable(explicitToJson: true)
-  const factory Item({
-    required int id,
-    required ItemType type,
-    required String path,
+class Item {
+  const Item({
+    required this.id,
+    required this.type,
+    required this.path,
+    this.name,
+    this.author,
+    this.progress,
+    this.percent = 0,
+  });
+
+  final int id;
+  final ItemType type;
+  final String path;
+  final String? name;
+  final String? author;
+  final Progress? progress;
+  final double percent;
+
+  factory Item.fromJson(Map<String, dynamic> json) => Item(
+    id: (json['id'] as num).toInt(),
+    type: json['type'] is int
+        ? ItemType.values[json['type'] as int]
+        : ItemType.values[[
+            'assets',
+            'file',
+            'demo',
+            'debug',
+          ].indexOf(json['type'] as String)],
+    path: json['path'] as String,
+    name: json['name'] as String?,
+    author: json['author'] as String?,
+    progress: json['progress'] == null
+        ? null
+        : Progress.fromJson((json['progress'] as Map).cast<String, dynamic>()),
+    percent: (json['percent'] as num?)?.toDouble() ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'type': type.index,
+    'path': path,
+    'name': name,
+    'author': author,
+    'progress': progress?.toJson(),
+    'percent': percent,
+  };
+
+  Item copyWith({
+    int? id,
+    ItemType? type,
+    String? path,
     String? name,
     String? author,
     Progress? progress,
-  }) = _Item;
-
-  factory Item.fromJson(Map<String, dynamic> json) => _$ItemFromJson(json);
-
-  @override
-  Map<String, dynamic> toJson() => _$ItemToJson(this as _Item);
+    double? percent,
+  }) => Item(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    path: path ?? this.path,
+    name: name ?? this.name,
+    author: author ?? this.author,
+    progress: progress ?? this.progress,
+    percent: percent ?? this.percent,
+  );
 }
 
-@freezed
-abstract class ItemList with _$ItemList {
-  @JsonSerializable(explicitToJson: true)
-  const factory ItemList({@Default([]) List<Item> items}) = _ItemList;
-
-  factory ItemList.fromJson(Map<String, dynamic> json) =>
-      _$ItemListFromJson(json);
-
+class ItemListNotifier extends Notifier<List<Item>> {
   @override
-  Map<String, dynamic> toJson() => _$ItemListToJson(this as _ItemList);
-}
-
-class ItemListNotifier extends Notifier<ItemList> {
-  @override
-  ItemList build() {
+  List<Item> build() {
     Future.microtask(() => load());
 
-    return ItemList();
+    return [];
   }
 
   /// add means, put it at 1st place
   void add(Item target) {
-    state = state.copyWith(items: [target, ...state.items]);
+    state = [target, ...state];
   }
 
   void update(int id, {Progress? progress, String? author, String? name}) {
     print('item($id) update $progress $author');
-    state = ItemList(
-      items: [
-        for (final e in state.items)
-          if (e.id == id)
-            e.copyWith(progress: progress, author: author, name: name)
-          else
-            e,
-      ],
-    );
+    state = [
+      for (final e in state)
+        if (e.id == id)
+          e.copyWith(progress: progress, author: author, name: name)
+        else
+          e,
+    ];
     save();
   }
 
   /// Move `target` to 1st place
   void touch(Item target) {
-    state = state.copyWith(
-      items: [target, ...state.items.where((e) => e.id != target.id)],
-    );
+    state = [target, ...state.where((e) => e.id != target.id)];
     save();
   }
 
   void remove(Item target) {
-    state = state.copyWith(
-      items: state.items.where((e) => e.id != target.id).toList(),
-    );
+    state = state.where((e) => e.id != target.id).toList();
     save();
   }
 
@@ -140,21 +171,24 @@ class ItemListNotifier extends Notifier<ItemList> {
 
   Future load() async {
     final jl = gbox.get('items');
-    state = jl is Map && jl.isNotEmpty
-        ? ItemList.fromJson(jl.cast<String, dynamic>())
-        : ItemList(items: builtin);
+    state = (jl is List && jl.isNotEmpty)
+        ? [
+            for (final i in jl)
+              Item.fromJson((i as Map).cast<String, dynamic>()),
+          ]
+        : builtin;
 
     for (final i in builtin) {
-      if (!state.items.contains(i)) add(i);
+      if (!state.contains(i)) add(i);
     }
   }
 
   void save() {
-    gbox.put('items', state.toJson());
+    gbox.put('items', state.map((i) => i.toJson()).toList());
   }
 }
 
-final itemsProvider = NotifierProvider<ItemListNotifier, ItemList>(
+final itemsProvider = NotifierProvider<ItemListNotifier, List<Item>>(
   ItemListNotifier.new,
   name: 'itemsProvider',
 );

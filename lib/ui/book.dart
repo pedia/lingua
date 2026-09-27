@@ -1,15 +1,11 @@
 import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:flutter_html/flutter_html.dart' as fh;
-// import 'package:flutter_widget_from_html/flutter_widget_from_html.dart' as fw;
 import 'package:archive/archive.dart';
 
 import '../settings/setting.dart';
 import 'setting.dart';
-import 'fhext.dart';
 import 'voice.dart';
 import 'font.dart';
 import '../htow.dart';
@@ -258,6 +254,9 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         chapter.content,
         initialIndex: _progress.lineIndex,
         provider: ArchiveProvider(chapter.href, widget.book.files),
+        scrollNotify: (offset, lineIndex) {
+          _progress = _progress.copyWith(offset: offset, lineIndex: lineIndex);
+        },
       ),
       // Column(
       //   children: [

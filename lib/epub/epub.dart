@@ -71,8 +71,7 @@ class ChapterStub implements Chapter {
     final dom = parse(html);
 
     if (_title == null) {
-      // first p is fallback
-      for (final selector in ['title', 'h1', 'h2', 'h3', 'p']) {
+      for (final selector in ['title', 'h1', 'h2', 'h3']) {
         final text = dom.querySelector(selector)?.text.trim();
         if (text != null &&
             text.isNotEmpty &&
