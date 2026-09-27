@@ -43,7 +43,7 @@ class HiveFrame extends StatelessWidget {
                       Navigator.push(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => ValueFrame(k: k, v: v),
+                          builder: (context) => ValueDetail(k: k, v: v),
                         ),
                       );
                     },
@@ -59,8 +59,8 @@ class HiveFrame extends StatelessWidget {
   }
 }
 
-class ValueFrame extends StatelessWidget {
-  const ValueFrame({required this.k, required this.v, super.key});
+class ValueDetail extends StatelessWidget {
+  const ValueDetail({required this.k, required this.v, super.key});
 
   final String k;
   final dynamic v;
@@ -68,7 +68,6 @@ class ValueFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      // A CustomScrollView is required for slivers to work together
       child: CustomScrollView(
         slivers: <Widget>[
           CupertinoSliverNavigationBar(largeTitle: Text(k)),
