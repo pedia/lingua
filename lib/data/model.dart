@@ -158,9 +158,3 @@ final itemsProvider = NotifierProvider<ItemListNotifier, ItemList>(
   ItemListNotifier.new,
   name: 'itemsProvider',
 );
-
-/// scoped provider for Reader Frame
-final currentProgressProvider = StateProvider<Progress?>(
-  name: 'currentProgressProvider',
-  (ref) => null,
-);

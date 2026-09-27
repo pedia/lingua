@@ -33,9 +33,15 @@ class ArchiveProvider extends FileProvider {
 }
 
 class BookFrame extends ConsumerStatefulWidget {
-  const BookFrame({required this.book, required this.id, super.key});
+  const BookFrame({
+    required this.book,
+    required this.id,
+    required this.progress,
+    super.key,
+  });
   final epub.Book book;
   final int id;
+  final Progress progress;
 
   @override
   ConsumerState<BookFrame> createState() => _BookFrameState();
@@ -57,7 +63,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
       // ✅ Safe to use ref here
       // lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-      _progress = ref.read(currentProgressProvider.notifier).state;
     }
   }
 
@@ -66,12 +71,13 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// - ScrollController.addListener
   /// - dispose Future
   late final ItemListNotifier _itemsProvider;
-  Progress? _progress;
+  late Progress _progress;
   double _offset = 0;
 
   @override
   void initState() {
     super.initState();
+    _progress = widget.progress;
 
     // CASE:
     // Not work here(in initState). Move into didChangeDependencies
@@ -84,33 +90,20 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     // Set drawer opened at first time frame appear
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final p = ref.read(currentProgressProvider);
-      if (p != null) {
-        // roller.jumpTo(p.offset);
-      } else {
+      if (_progress.chapterIndex == 0) {
         _scaffoldKey.currentState?.openDrawer();
       }
     });
   }
 
-  epub.Chapter get chapter =>
-      widget.book.chapters[ref.read(currentProgressProvider)?.chapterIndex ??
-          0];
+  epub.Chapter get chapter => widget.book.chapters[_progress.chapterIndex];
 
   @override
   void dispose() {
-    // _settings.removeListener(_onSettings);
-
     /// Save progress with newest scroll offset
-    /// `updateProgress` only worked in Future
-    if (_progress != null) {
-      Future(() {
-        _itemsProvider.update(
-          widget.id,
-          progress: _progress!.copyWith(offset: _offset),
-        );
-      });
-    }
+    Future(() {
+      _itemsProvider.update(widget.id, progress: _progress);
+    });
 
     roller.dispose();
     dt
@@ -125,36 +118,23 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     }
 
     debugPrint('got dts notify ${dt.state} ${dt.index}');
-    final cpp = ref.read(currentProgressProvider.notifier);
 
-    if (dt.state != playbackState ||
-        (dt.state != Playback.stop && dt.index != cpp.state!.lineIndex)) {
-      _progress = _progress?.copyWith(lineIndex: dt.index);
-      cpp.update((_) => _progress);
-
+    if (dt.state != playbackState) {
       setState(() => playbackState = dt.state);
     }
+
+    // (dt.state != Playback.stop && dt.index != _progress.lineIndex)) {
 
     // next chapter
     if (dt.state == Playback.playing && dt.index + 1 == lines.length) {
       print('TODO: speak, next chapter');
-      if (cpp.state!.chapterIndex + 1 < widget.book.chapters.length) {
-        cpp.update(
-          (_) => cpp.state!.copyWith(
-            chapterIndex: cpp.state!.chapterIndex + 1,
-            lineIndex: 0,
-          ),
-        );
-      }
-
       // TODO: How to play next
     }
   }
 
   List<epub.Chunk> get lines {
     final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-    final cci = ref.read(currentProgressProvider)?.chapterIndex ?? 0;
-    return widget.book.chapters[cci].chunks
+    return widget.book.chapters[_progress.chapterIndex].chunks
         .where((line) => lang == '' || line.lang == lang)
         .toList();
   }
@@ -175,9 +155,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
-    final cci = ref.watch(currentProgressProvider)?.chapterIndex ?? 0;
-    final ch = widget.book.chapters[cci];
-
     final fs = ref.watch(
       settingProvider.select((m) => m.intOf('ui.font-size', defaults: 14)),
     );
@@ -185,7 +162,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(widget.book.chapters[cci].title),
+        title: Text(chapter.title),
         actions: [
           // PopupMenuButton<String>(
           //   tooltip: 'Display language',
@@ -266,11 +243,21 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           ),
         ],
       ),
-      drawer: Drawer(width: 280, child: ChapterList(widget.book, widget.id)),
+      drawer: Drawer(
+        width: 280,
+        child: ChapterList(
+          id: widget.id,
+          book: widget.book,
+          chapterIndex: _progress.chapterIndex,
+          onChange: (i) => setState(
+            () => _progress = Progress(chapterIndex: i, lineIndex: 0),
+          ),
+        ),
+      ),
       body: HtmlWidget.from(
-        ch.content,
-        initialIndex: cci,
-        provider: ArchiveProvider(ch.href, widget.book.files),
+        chapter.content,
+        initialIndex: _progress.lineIndex,
+        provider: ArchiveProvider(chapter.href, widget.book.files),
       ),
       // Column(
       //   children: [
@@ -297,13 +284,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   }
 
   void gotoNextChapter() {
-    final cpp = ref.read(currentProgressProvider.notifier);
-    if (cpp.state!.chapterIndex + 1 < widget.book.chapters.length) {
-      _progress = _progress?.copyWith(
-        chapterIndex: cpp.state!.chapterIndex + 1,
-        lineIndex: 0,
+    if (_progress.chapterIndex + 1 < widget.book.chapters.length) {
+      setState(
+        () => _progress = _progress.copyWith(
+          chapterIndex: _progress.chapterIndex + 1,
+          lineIndex: 0,
+        ),
       );
-      cpp.update((_) => _progress);
+      ref.read(itemsProvider.notifier).update(widget.id, progress: _progress);
     } else {
       debugPrint('book end');
     }

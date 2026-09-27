@@ -30,10 +30,10 @@ class _DemoFrameState extends State<DemoFrame> {
   <p><a href="#long">goto <i>italic</i> long</a></p>
   <p><a href="#long">goto long</a></p>
   <p>$small</p>
-  <p><img src="note" width="64" height="64" alt="alt"></p>
+  <p>inline image<img src="note" width="64" height="64" alt="alt"></p>
   <p><img src="note" width="400" height="400" alt="alt"></p>
   <p id="long">$long</p>
-  <p>- End -</p>
+  <p><span>- End -</span></p>
 </body>''';
 
     return Scaffold(

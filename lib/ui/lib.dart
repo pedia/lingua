@@ -210,15 +210,12 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                 if (context.mounted && book != null) {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => ProviderScope(
-                        overrides: [
-                          currentProgressProvider.overrideWith(
-                            (_) =>
-                                e.progress ??
-                                Progress(chapterIndex: 0, lineIndex: 0),
-                          ),
-                        ],
-                        child: BookFrame(book: book!, id: e.id),
+                      builder: (_) => BookFrame(
+                        id: e.id,
+                        book: book!,
+                        progress:
+                            e.progress ??
+                            Progress(chapterIndex: 0, lineIndex: 0),
                       ),
                     ),
                   );
