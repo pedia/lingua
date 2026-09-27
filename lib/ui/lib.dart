@@ -44,7 +44,7 @@ class OpenFile {
     final src = File(fp);
 
     final appDir = await getApplicationDocumentsDirectory();
-    final booksDir = Directory('${appDir.path}/books');
+    final booksDir = Directory(p.join(appDir.path, 'books'));
 
     if (!await booksDir.exists()) {
       await booksDir.create(recursive: true);
@@ -81,7 +81,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               id: nextId(),
               type: ItemType.file,
               path: fn,
-              name: p.basename(fn),
+              name: p.basename(fn).replaceAll('.epub', ''),
             ),
           );
 
@@ -131,6 +131,10 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           PopupMenuButton<String>(
             tooltip: 'More',
             onSelected: (String cv) async {
+              if (cv == 'scan') {
+                scan();
+                return;
+              }
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (context) => switch (cv) {
@@ -153,6 +157,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               PopupMenuItem(value: 'setting', child: Text('Setting')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
+              PopupMenuItem(value: 'scan', child: Text('Scan')),
             ],
             child: Icon(Icons.more_vert, size: 36),
           ),
@@ -165,9 +170,10 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final e = items[index];
+            // print('lib build $index author: ${e.author}');
             return ListTile(
-              title: Text(e.name ?? p.basename(e.path).replaceAll('.epub', '')),
-              subtitle: e.author != null ? Text(e.author!) : null,
+              title: Text(e.name!),
+              subtitle: Text(e.subtitle),
               leading: boxImage('icon-${e.id}'),
               onTap: () async {
                 Book? book;
@@ -212,7 +218,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                   );
                 }
 
-                ref.read(itemsProvider.notifier).touch(e);
+                ref.read(itemsProvider.notifier).touch(e.id);
               },
             );
           },
@@ -234,5 +240,29 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
         },
       ),
     );
+  }
+
+  void scan() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final booksDir = Directory(p.join(appDir.path, 'books'));
+
+    final items = ref.read(itemsProvider);
+
+    booksDir.list().listen((e) {
+      if (e.path.endsWith('.epub')) {
+        if (!items.any((i) => i.path == e.path)) {
+          ref
+              .read(itemsProvider.notifier)
+              .add(
+                Item(
+                  id: nextId(),
+                  type: ItemType.file,
+                  path: e.path,
+                  name: p.basename(e.path).replaceAll('.epub', ''),
+                ),
+              );
+        }
+      }
+    });
   }
 }

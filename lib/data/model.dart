@@ -49,6 +49,9 @@ class Item {
   final Progress? progress;
   final double percent;
 
+  String get subtitle =>
+      [if (author != null) author, '${percent.toStringAsFixed(0)}%'].join(' ');
+
   factory Item.fromJson(Map<String, dynamic> json) => Item(
     id: (json['id'] as num).toInt(),
     type: json['type'] is int
@@ -122,14 +125,17 @@ class ItemListNotifier extends Notifier<List<Item>> {
     save();
   }
 
-  /// Move `target` to 1st place
-  void touch(Item target) {
-    state = [target, ...state.where((e) => e.id != target.id)];
+  /// Move target to 1st place
+  void touch(int id) {
+    state = [
+      state.where((e) => e.id == id).first,
+      ...state.where((e) => e.id != id),
+    ];
     save();
   }
 
-  void remove(Item target) {
-    state = state.where((e) => e.id != target.id).toList();
+  void remove(int id) {
+    state = state.where((e) => e.id != id).toList();
     save();
   }
 
@@ -170,7 +176,7 @@ class ItemListNotifier extends Notifier<List<Item>> {
   ];
 
   Future load() async {
-    final jl = gbox.get('items');
+    final jl = gbox.get('items2');
     state = (jl is List && jl.isNotEmpty)
         ? [
             for (final i in jl)
@@ -184,7 +190,9 @@ class ItemListNotifier extends Notifier<List<Item>> {
   }
 
   void save() {
-    gbox.put('items', state.map((i) => i.toJson()).toList());
+    final js = state.map((i) => i.toJson()).toList();
+    gbox.put('items2', js);
+    print('saved ${js[0]}');
   }
 }
 
