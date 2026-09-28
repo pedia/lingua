@@ -1,11 +1,84 @@
+import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import 'dart:math';
 import '../epub/epub.dart';
 
-class Voice {
-  Voice({
+extension StringMidExtension on String {
+  String mid(String startDelimiter, [String? endDelimiter]) {
+    int startIndex = 0;
+
+    // Only search if the start delimiter is not empty
+    if (startDelimiter.isNotEmpty) {
+      int foundIndex = indexOf(startDelimiter);
+      if (foundIndex == -1) return "";
+      startIndex = foundIndex + startDelimiter.length;
+    }
+
+    if (endDelimiter == null) {
+      return substring(startIndex);
+    }
+
+    int endIndex = indexOf(endDelimiter, startIndex);
+    if (endIndex == -1) return "";
+
+    return substring(startIndex, endIndex);
+  }
+}
+
+/// {name: Arthur, quality: default, locale: en-GB, gender: male, identifier: com.apple.ttsbundle.siri_Arthur_en-GB_compact}
+class Voice extends UnmodifiableMapView<String, String> {
+  Voice(super.map);
+
+  bool get valid => this['gender'] != 'unspecified';
+
+  /// is match en, zh, es, jp, kr?
+  bool match(String lang) {
+    return this['locale']?.mid('', '-') == lang;
+    // return switch (lang) {
+    //   'en' => <String>{'en-US', 'en-AU', 'en-GB'}.contains(this['locale']),
+    //   'zh' => <String>{'zh-TW', 'zh-CN', 'zh-HK'}.contains(this['locale']),
+    //   _ => false,
+    // };
+  }
+
+  // Karen(Premium),F,TW
+  String get title => [
+    this['name'],
+    if (this['quality'] != null)
+      switch (this['quality']) {
+        'premium' => '(Premium)',
+        'enhanced' => '(Enhanced)',
+        _ => '',
+      },
+
+    ',',
+    this['locale']?.mid('-'),
+
+    if (this['gender'] != null) ',',
+    if (this['gender'] != null)
+      switch (this['gender']) {
+        'female' => 'F',
+        'male' => 'M',
+        _ => '',
+      },
+  ].join('');
+
+  @override
+  bool operator ==(Object other) =>
+      other is Voice &&
+      this['name'] == other['name'] &&
+      this['locale'] == other['locale'] &&
+      this['identifier'] == other['identifier'];
+
+  @override
+  int get hashCode =>
+      Object.hash(this['name'], this['locale'], this['identifier']);
+}
+
+class EngineSetting {
+  EngineSetting({
     required this.lang,
     required this.language,
     this.rate = 0.5,
@@ -13,22 +86,22 @@ class Voice {
     this.volume,
     this.voice,
   });
-  final String lang; // hardcode: en, zh, es
+  final String lang; // hardcode: en, zh, es, jp, kr
   final String language; // in engine en-US
   final double rate;
   final double pitch;
   final double? volume;
-  final Map<String, String>? voice; // {"name": "Samantha", "locale": "en-US"}
+  final Voice? voice;
 
-  Voice copyWith({
+  EngineSetting copyWith({
     String? lang,
     String? language,
     double? rate,
     double? pitch,
     double? volume,
-    Map<String, String>? voice,
+    Voice? voice,
   }) {
-    return Voice(
+    return EngineSetting(
       lang: lang ?? this.lang,
       language: language ?? this.language,
       rate: rate ?? this.rate,
@@ -38,15 +111,15 @@ class Voice {
     );
   }
 
-  static Voice from(String lang, Map m) {
-    return Voice(
+  static EngineSetting from(String lang, Map m) {
+    return EngineSetting(
       lang: lang,
       language: m['language'] ?? '',
       rate: m['rate'],
       pitch: m['pitch'],
       volume: m['volume'],
       voice: m['voice'] != null
-          ? (m['voice'] as Map).cast<String, String>()
+          ? Voice((m['voice'] as Map).cast<String, String>())
           : null,
     );
   }
@@ -63,18 +136,6 @@ class Voice {
   String get title =>
       <String, String>{'en': 'English', 'zh': 'Chinese'}[lang] ?? '';
 
-  // quality: premium
-  String get name => displayVoice(voice ?? {});
-
-  static String displayVoice(Map<String, String> m) {
-    final n = m['name'] ?? '';
-    final q = m['quality'] ?? '';
-    if (q == 'premium') {
-      return '$n(Premium)';
-    }
-    return n;
-  }
-
   @override
   String toString() =>
       '$lang/$language vol:${volume?.toStringAsFixed(2)} rate:${rate.toStringAsFixed(2)} pitch:${pitch.toStringAsFixed(2)} $voice';
@@ -87,7 +148,7 @@ class DualTts extends ChangeNotifier {
   DualTts();
 
   final tts = FlutterTts();
-  final Map<String, Voice> ss = {};
+  final Map<String, EngineSetting> ss = {};
   List<Chunk> chunks = const [];
   int index = 0;
   Playback state = Playback.stop;
@@ -101,7 +162,7 @@ class DualTts extends ChangeNotifier {
   }
 
   // apply voice setting
-  Future<void> apply(List<Voice> vs) async {
+  Future<void> apply(List<EngineSetting> vs) async {
     for (var v in vs) {
       ss[v.lang] = v;
     }
@@ -146,6 +207,7 @@ class DualTts extends ChangeNotifier {
         debugPrint('voices[${line.lang}] not found, total:${ss.length}');
       }
 
+      debugPrint('$line');
       await tts.speak(line.text);
       if (state == Playback.stop) {
         break;

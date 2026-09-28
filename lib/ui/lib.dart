@@ -12,7 +12,7 @@ import 'package:file_picker/file_picker.dart';
 import 'book.dart';
 import 'font.dart';
 import 'setting.dart';
-import 'voice.dart';
+import 'voice_setting.dart';
 import '../silver.dart';
 import '../page.dart';
 import '../demo.dart';
@@ -145,7 +145,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                     'page' => PageFrame(),
                     'demo' => DemoFrame(),
                     'hive' => HiveFrame(),
-                    'tts-setting' => VoiceSettingPage.from(context),
+                    'voice' => EngineSettingPage.from(context),
                     _ => FontFrame(),
                   },
                 ),
@@ -158,7 +158,10 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               PopupMenuItem(value: 'font', child: Text('debug:Font')),
               PopupMenuItem(value: 'setting', child: Text('Setting')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
-              PopupMenuItem(value: 'tts-setting', child: Text('TTS Setting')),
+              PopupMenuItem(
+                value: 'voice',
+                child: Text('Voice Setting'),
+              ),
               PopupMenuItem(value: 'hive', child: Text('Hive Console')),
               PopupMenuItem(value: 'scan', child: Text('Scan')),
             ],

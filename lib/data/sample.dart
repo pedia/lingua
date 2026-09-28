@@ -14,9 +14,10 @@ Book sample() {
         chunks: [
           Chunk('🌸 Romance & Longing', lang: 'en'),
           Chunk('If I know what love is, it is because of you.', lang: 'en'),
+          Chunk('愿得一人心，白首不相离。', lang: "zh"),
           Chunk(
-            '愿得一人心，白首不相离。 (May I win a heart, and never part until our hair turns white.',
-            lang: "zh",
+            'May I win a heart, and never part until our hair turns white.',
+            lang: 'en',
           ),
           Chunk(
             'I love you not only for what you are, but for what I am when I am with you.',
@@ -30,7 +31,8 @@ Book sample() {
           Chunk('在生命这本长卷里，你是我最喜欢的篇章。', lang: 'zh'),
           Chunk('🍂 Solitude & Reflection', lang: 'en'),
           Chunk('The quiet mind is the best companion.', lang: 'en'),
-          Chunk('独处是灵魂的清欢。 (Solitude is the pure joy of the soul.)'),
+          Chunk('独处是灵魂的清欢。', lang: 'zh'),
+          Chunk('Solitude is the pure joy of the soul.', lang: 'en'),
           Chunk(
             'Time tempers everything, leaving only the truest behind.',
             lang: 'en',
@@ -64,10 +66,8 @@ Book sample() {
             'Live as beautifully as summer flowers and die as quietly as autumn leaves.',
             lang: 'en',
           ),
-          Chunk(
-            '生如夏花之绚烂，死如秋叶之静美。 (Adapted from Rabindranath Tagore\'s Stray Birds)',
-            lang: 'zh',
-          ),
+          Chunk('生如夏花之绚烂，死如秋叶之静美。', lang: 'zh'),
+          Chunk('Adapted from Rabindranath Tagore\'s Stray Birds', lang: 'en'),
         ],
       ),
       Chapter.cache(title: 'Features', href: 'foo/bar/a.html', chunks: []),

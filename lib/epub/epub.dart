@@ -9,6 +9,8 @@ class Chunk {
   Chunk(this.text, {this.lang = ''});
   final String text;
   final String lang;
+  @override
+  String toString() => '$lang: $text';
 }
 
 abstract class Chapter {

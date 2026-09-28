@@ -6,14 +6,14 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../settings/setting.dart';
 import '../tts/dualtts.dart';
 
-class VoiceSettingPage extends StatefulWidget {
-  const VoiceSettingPage(this.vs, {super.key});
-  final List<Voice> vs;
+class EngineSettingPage extends StatefulWidget {
+  const EngineSettingPage(this.ess, {super.key});
+  final List<EngineSetting> ess;
 
-  factory VoiceSettingPage.from(BuildContext context) {
+  factory EngineSettingPage.from(BuildContext context) {
     final m = ProviderScope.containerOf(context).read(settingProvider);
-    return VoiceSettingPage([
-      Voice.from(
+    return EngineSettingPage([
+      EngineSetting.from(
         'en',
         m.of('tts.en') ??
             {
@@ -23,7 +23,7 @@ class VoiceSettingPage extends StatefulWidget {
               'voice': {'locale': 'en-US', 'name': 'Samantha'},
             },
       ),
-      Voice.from(
+      EngineSetting.from(
         'zh',
         m.of('tts.zh') ??
             {
@@ -37,31 +37,33 @@ class VoiceSettingPage extends StatefulWidget {
   }
 
   @override
-  State<VoiceSettingPage> createState() => _VoiceSettingPageState();
+  State<EngineSettingPage> createState() => _EngineSettingPageState();
 }
 
-class _VoiceSettingPageState extends State<VoiceSettingPage> {
+class _EngineSettingPageState extends State<EngineSettingPage> {
   final tts = FlutterTts();
-  final List<Map<String, String>> allves =
-      []; // engine support voices, item like: {"name": "Karen", "locale": "en-AU"}
-  List<Voice> vs = [];
+
+  /// engine support voices, item like: {"name": "Karen", "locale": "en-AU"}
+  final List<Voice> allvoices = [];
+  List<EngineSetting> ess = [];
 
   @override
   void initState() {
     super.initState();
-    setState(() => vs = widget.vs);
+    setState(() => ess = widget.ess);
 
     tts.getVoices.then((x) {
       final list = (x as List).cast<Map>();
-      final typed = list.map((e) => Map<String, String>.from(e)).where((e) {
-        return e['locale'] == 'en-US' ||
-            e['locale'] == 'zh-TW' ||
-            // exclude gender: unspecified
-            e['gender'] != 'unspecified';
-      });
+      final typed = list
+          .map((e) => Voice(Map<String, String>.from(e)))
+          .where((e) => e.valid)
+          .toList();
 
-      setState(() => allves.addAll(typed));
-      debugPrint('engine voices: $typed');
+      setState(() => allvoices.addAll(typed));
+      debugPrint('engine voices:');
+      for (final v in typed) {
+        print(v);
+      }
     });
   }
 
@@ -72,16 +74,16 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
   }
 
   Widget chooseVoice(BuildContext context, int i) {
-    return PopupMenuButton<Map<String, String>>(
+    return PopupMenuButton<Voice>(
       tooltip: 'Choose voice',
-      initialValue: vs[i].voice,
+      // TODO: initialValue: vs[i].voice,
       onSelected: (v) {
-        setState(() => vs[i] = vs[i].copyWith(voice: v));
+        setState(() => ess[i] = ess[i].copyWith(voice: v));
       },
       itemBuilder: (BuildContext context) {
-        return allves
+        return allvoices
             .where((e) {
-              if (e['locale'] != vs[i].language) {
+              if (e['locale'] != ess[i].language) {
                 return false;
               }
               // exclude gender: unspecified
@@ -92,50 +94,30 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
               // com.apple.speech.synthesis.voice.Fred
               return true;
             })
-            .map(
-              (e) => PopupMenuItem<Map<String, String>>(
-                value: e,
-                child: Text(Voice.displayVoice(e)),
-              ),
-            )
+            .map((e) => PopupMenuItem<Voice>(value: e, child: Text(e.title)))
             .toList();
       },
       child: TextButton(
         onPressed: null, // disabled because PopupMenuButton handles the tap
-        child: Text(vs[i].name, style: Theme.of(context).textTheme.labelLarge),
+        child: Text(
+          ess[i].title,
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
       ),
     );
   }
 
   Widget chooseVoiceDropdown(BuildContext context, int i) {
-    return DropdownButton<WrapKey>(
-      key: Key(vs[i].lang),
-      value: WrapKey(vs[i].voice).containedIn(allves)
-          ? WrapKey(vs[i].voice)
-          : null,
+    return DropdownButton<Voice>(
+      key: Key(ess[i].lang),
+      value: ess[i].voice,
       underline: null,
       onChanged: (v) {
-        setState(() => vs[i] = vs[i].copyWith(voice: v!.m));
+        setState(() => ess[i] = ess[i].copyWith(voice: v));
       },
-      items: allves
-          .where((e) {
-            if (e['locale'] != vs[i].language) {
-              return false;
-            }
-            // exclude gender: unspecified
-            if (e['gender'] == 'unspecified') {
-              return false;
-            }
-
-            // com.apple.speech.synthesis.voice.Fred
-            return true;
-          })
-          .map(
-            (e) => DropdownMenuItem<WrapKey>(
-              value: WrapKey(e),
-              child: Text(Voice.displayVoice(e)),
-            ),
-          )
+      items: allvoices
+          .where((e) => e.match(ess[i].lang) && e.valid)
+          .map((e) => DropdownMenuItem<Voice>(value: e, child: Text(e.title)))
           .toList(),
     );
   }
@@ -150,7 +132,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
         final m = ProviderScope.containerOf(
           context,
         ).read(settingProvider.notifier);
-        for (final v in vs) {
+        for (final v in ess) {
           m.put('tts.${v.lang}', v.toSetting());
           debugPrint('$v');
         }
@@ -160,7 +142,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
         body: Padding(
           padding: EdgeInsets.all(16),
           child: ListView(
-            children: List.generate(vs.length, (i) => card(context, i)),
+            children: List.generate(ess.length, (i) => card(context, i)),
           ),
         ),
       ),
@@ -177,7 +159,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  vs[i].title,
+                  ess[i].title,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 // Expanded(),
@@ -185,29 +167,29 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
                   onPressed: () async {
                     await tts.stop();
                     await tts.awaitSpeakCompletion(true);
-                    await tts.setSpeechRate(vs[i].rate);
-                    await tts.setPitch(vs[i].pitch);
-                    if (vs[i].volume != null) {
-                      await tts.setVolume(vs[i].volume!);
+                    await tts.setSpeechRate(ess[i].rate);
+                    await tts.setPitch(ess[i].pitch);
+                    if (ess[i].volume != null) {
+                      await tts.setVolume(ess[i].volume!);
                     }
 
                     // setLanguage must before setVoice
                     try {
-                      await tts.setLanguage(vs[i].language);
+                      await tts.setLanguage(ess[i].language);
                     } catch (e) {
                       debugPrint('setLanguage failed: $e');
                     }
 
-                    if (vs[i].voice != null) {
-                      await tts.setVoice(vs[i].voice!);
+                    if (ess[i].voice != null) {
+                      await tts.setVoice(ess[i].voice!);
                       // debugPrint('setVoice: ${vs[i].voice} -> $v');
                     }
 
                     final m = {
                       'zh': '你好,选择体验更好的语音合成引擎 say something in English',
-                      'en': 'Hello, I am focus on bilingualism',
+                      'en': 'Hello, I am focus on english speaking',
                     };
-                    final s = m[vs[i].lang] ?? m['en']!;
+                    final s = m[ess[i].lang] ?? m['en']!;
 
                     tts.speak(s);
                   },
@@ -221,7 +203,7 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Flexible(flex: 1, child: Text('Voice')),
-                Flexible(flex: 1, child: chooseVoiceDropdown(context, i)),
+                Flexible(flex: 2, child: chooseVoiceDropdown(context, i)),
               ],
             ),
 
@@ -230,16 +212,16 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
               children: [
                 Flexible(
                   flex: 1,
-                  child: Text('Rate ${vs[i].rate.toStringAsFixed(2)}'),
+                  child: Text('Rate ${ess[i].rate.toStringAsFixed(2)}'),
                 ),
                 Flexible(
                   flex: 3,
                   child: Slider(
-                    value: vs[i].rate,
+                    value: ess[i].rate,
                     min: 0.0,
                     max: 1.0,
                     onChanged: (val) {
-                      setState(() => vs[i] = vs[i].copyWith(rate: val));
+                      setState(() => ess[i] = ess[i].copyWith(rate: val));
                     },
                   ),
                 ),
@@ -251,17 +233,17 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
               children: [
                 Flexible(
                   flex: 1,
-                  child: Text('Volume ${vs[i].volume?.toStringAsFixed(2)}'),
+                  child: Text('Volume ${ess[i].volume?.toStringAsFixed(2)}'),
                 ),
                 Flexible(
                   flex: 3,
                   child: Slider(
                     divisions: 10,
-                    value: vs[i].volume ?? 1.0,
+                    value: ess[i].volume ?? 1.0,
                     min: 0.0,
                     max: 1.0,
                     onChanged: (val) {
-                      setState(() => vs[i] = vs[i].copyWith(volume: val));
+                      setState(() => ess[i] = ess[i].copyWith(volume: val));
                     },
                   ),
                 ),
@@ -272,17 +254,17 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
               children: [
                 Flexible(
                   flex: 1,
-                  child: Text('Pitch ${vs[i].pitch.toStringAsFixed(2)}'),
+                  child: Text('Pitch ${ess[i].pitch.toStringAsFixed(2)}'),
                 ),
                 Flexible(
                   flex: 3,
                   child: Slider(
                     divisions: 10,
-                    value: vs[i].pitch,
+                    value: ess[i].pitch,
                     min: 0.5,
                     max: 2.0,
                     onChanged: (val) {
-                      setState(() => vs[i] = vs[i].copyWith(pitch: val));
+                      setState(() => ess[i] = ess[i].copyWith(pitch: val));
                     },
                   ),
                 ),
@@ -292,26 +274,5 @@ class _VoiceSettingPageState extends State<VoiceSettingPage> {
         ),
       ),
     );
-  }
-}
-
-/// Map<String, String> cannot be compared?
-class WrapKey {
-  WrapKey(this.m);
-  final Map<String, String>? m;
-
-  @override
-  bool operator ==(Object other) => other is WrapKey && mapEquals(m, other.m);
-
-  @override
-  int get hashCode => Object.hashAll(m?.entries ?? []);
-
-  bool containedIn(List<Map> list) {
-    for (final o in list) {
-      if (mapEquals(m, o)) {
-        return true;
-      }
-    }
-    return false;
   }
 }

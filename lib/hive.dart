@@ -11,7 +11,7 @@ class HiveFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoApp(
       debugShowCheckedModeBanner: false,
-      theme: CupertinoThemeData(brightness: Brightness.light),
+      theme: CupertinoThemeData(brightness: Brightness.dark),
       home: CupertinoPageScaffold(
         // A CustomScrollView is required for slivers to work together
         child: CustomScrollView(

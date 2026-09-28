@@ -6,7 +6,7 @@ import 'package:archive/archive.dart';
 
 import '../settings/setting.dart';
 import 'setting.dart';
-import 'voice.dart';
+import 'voice_setting.dart';
 import 'font.dart';
 import '../hw.dart';
 import 'chapter_list.dart';
@@ -143,8 +143,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     // print(m.has('tts.en'));
 
     final vs = [
-      if (m.has('tts.en')) Voice.from('en', m.objectOf('tts.en')),
-      if (m.has('tts.zh')) Voice.from('zh', m.objectOf('tts.zh')),
+      if (m.has('tts.en')) EngineSetting.from('en', m.objectOf('tts.en')),
+      if (m.has('tts.zh')) EngineSetting.from('zh', m.objectOf('tts.zh')),
     ];
     return dt.apply(vs).then((x) => debugPrint('dualtts inited ${vs.length}'));
   }
@@ -212,7 +212,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                 MaterialPageRoute<void>(
                   builder: (context) => switch (v) {
                     'font' => FontFrame(),
-                    'tts-setting' => VoiceSettingPage.from(context),
+                    'tts-setting' => EngineSettingPage.from(context),
                     'setting' || _ => SettingFrame(),
                   },
                 ),

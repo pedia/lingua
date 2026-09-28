@@ -29,7 +29,7 @@ class SilverFrame extends StatelessWidget {
                   (context, index) => RichText(
                     text: TextSpan(children: [TextSpan(text: 'Item #$index')]),
                   ),
-                  childCount: 40,
+                  childCount: 140,
                 ),
               ),
             ],

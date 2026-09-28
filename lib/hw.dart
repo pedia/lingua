@@ -22,6 +22,7 @@ class HtmlWidget extends StatefulWidget {
     super.key,
   });
   final dom.Document doc;
+  // TODO: add active item
   final int initialIndex; // top index
   final FileProvider? provider; // top index
   final Function(double offset, int lineIndex)? scrollNotify;
@@ -105,17 +106,15 @@ class HtmlWidgetState extends State<HtmlWidget> {
   @override
   Widget build(BuildContext context) {
     final body = widget.doc.body ?? dom.Element.tag('body');
-    return SelectionArea(
-      child: SingleChildScrollView(
-        controller: roller,
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(8),
-          child: Text.rich(
-            TextSpan(
-              mouseCursor: SystemMouseCursors.text,
-              children: topBlocks(body.children),
-            ),
+    return SingleChildScrollView(
+      controller: roller,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(8),
+        child: Text.rich(
+          TextSpan(
+            mouseCursor: SystemMouseCursors.text,
+            children: topBlocks(body.children),
           ),
         ),
       ),
