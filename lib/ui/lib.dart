@@ -14,7 +14,7 @@ import 'font.dart';
 import 'setting.dart';
 import 'voice_setting.dart';
 import '../silver.dart';
-import '../page.dart';
+import '../rich.dart';
 import '../demo.dart';
 import '../hive.dart';
 
@@ -142,7 +142,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                     'font' => FontFrame(),
                     'setting' => SettingFrame(),
                     'search' => SilverFrame(),
-                    'page' => PageFrame(),
+                    'rich' => PageFrame(),
                     'demo' => DemoFrame(),
                     'hive' => HiveFrame(),
                     'voice' => EngineSettingPage.from(context),
@@ -152,17 +152,17 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               );
             },
             itemBuilder: (BuildContext context) => const [
-              PopupMenuItem(value: 'search', child: Text('debug:Silver')),
-              PopupMenuItem(value: 'page', child: Text('debug:Page')),
-              PopupMenuItem(value: 'demo', child: Text('debug:Demo')),
-              PopupMenuItem(value: 'font', child: Text('debug:Font')),
+              PopupMenuItem(value: 'search', child: Text('Silver(Debug)')),
+              PopupMenuItem(value: 'rich', child: Text('RichText(Debug)')),
+              PopupMenuItem(value: 'demo', child: Text('HtmlWidget Demo(Debug)')),
+              PopupMenuItem(value: 'font', child: Text('Font(Debug)')),
               PopupMenuItem(value: 'setting', child: Text('Setting')),
               PopupMenuItem(value: 'replace', child: Text('Replace')),
               PopupMenuItem(
                 value: 'voice',
                 child: Text('Voice Setting'),
               ),
-              PopupMenuItem(value: 'hive', child: Text('Hive Console')),
+              PopupMenuItem(value: 'hive', child: Text('Hive Console(Debug)')),
               PopupMenuItem(value: 'scan', child: Text('Scan')),
             ],
             child: Icon(Icons.more_vert, size: 36),

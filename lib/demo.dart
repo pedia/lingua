@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:html/parser.dart' as dom;
 import 'hw.dart';
 import 'data/sample.dart';
@@ -37,8 +38,11 @@ class _DemoFrameState extends State<DemoFrame> {
 </body>''';
 
     return Scaffold(
-      appBar: AppBar(title: Text('debug:html tr demo')),
-      body: HtmlWidget(dom.parse(h), initialIndex: 11),
+      appBar: AppBar(title: Text('HtmlWidget Demo(Debug)')),
+      body: SelectableRegion(
+        selectionControls: materialTextSelectionHandleControls,
+        child: HtmlWidget(dom.parse(h), initialIndex: 11),
+      ),
     );
   }
 }

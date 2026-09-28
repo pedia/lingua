@@ -15,7 +15,7 @@ class SilverFrame extends StatelessWidget {
             controller: roller,
             slivers: [
               const SliverAppBar(
-                title: Text('Scroll Up to Show Me'),
+                title: Text('Material Silver, Scroll Up'),
                 // Disappears on scroll down, reveals immediately on scroll up
                 floating: true,
                 // Snaps fully open with a slight upward swipe (highly recommended)
@@ -26,9 +26,13 @@ class SilverFrame extends StatelessWidget {
               ),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => RichText(
-                    text: TextSpan(children: [TextSpan(text: 'Item #$index')]),
-                  ),
+                  (context, index) =>
+                      // CupertinoListTile(context,
+                      RichText(
+                        text: TextSpan(
+                          children: [TextSpan(text: 'Item #$index')],
+                        ),
+                      ),
                   childCount: 140,
                 ),
               ),
@@ -41,9 +45,7 @@ class SilverFrame extends StatelessWidget {
             // color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(
-                  25,
-                ), // 2026 Flutter syntax / safe opacity
+                color: Colors.black.withAlpha(25),
                 blurRadius: 10,
                 offset: const Offset(0, -2),
               ),

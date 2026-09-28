@@ -18,7 +18,7 @@ class HiveFrame extends StatelessWidget {
           slivers: <Widget>[
             // 1. The Cupertino Sliver AppBar
             CupertinoSliverNavigationBar(
-              largeTitle: Text('HiveBox Console'),
+              largeTitle: Text('Hive Console(Debug)'),
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: null, // Add your action here

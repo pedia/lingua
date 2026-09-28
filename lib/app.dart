@@ -6,7 +6,7 @@ import 'settings/setting.dart';
 import 'ui/font.dart';
 
 import 'ui/lib.dart';
-import 'page.dart';
+import 'rich.dart';
 
 class LinguaApp extends ConsumerWidget {
   const LinguaApp({this.family, super.key});
