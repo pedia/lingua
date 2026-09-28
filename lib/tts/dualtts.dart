@@ -1,6 +1,8 @@
 import 'dart:collection';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 import 'dart:math';
 import '../epub/epub.dart';
@@ -31,7 +33,8 @@ extension StringMidExtension on String {
 class Voice extends UnmodifiableMapView<String, String> {
   Voice(super.map);
 
-  bool get valid => this['gender'] != 'unspecified';
+  bool get valid =>
+      this['gender'] != 'unspecified' && !this['name']!.contains('network');
 
   /// is match en, zh, es, jp, kr?
   bool match(String lang) {
@@ -45,11 +48,15 @@ class Voice extends UnmodifiableMapView<String, String> {
 
   // Karen(Premium),F,TW
   String get title => [
-    this['name'],
+    // fr-ca-x-caa-local => caa
+    this['name']!.split('-').length == 5
+        ? this['name']!.split('-')[3]
+        : this['name'],
     if (this['quality'] != null)
       switch (this['quality']) {
         'premium' => '(Premium)',
         'enhanced' => '(Enhanced)',
+        'high' => '(High)',
         _ => '',
       },
 
@@ -152,6 +159,20 @@ class DualTts extends ChangeNotifier {
   List<Chunk> chunks = const [];
   int index = 0;
   Playback state = Playback.stop;
+
+  /// TODO: brand specif tts engine or google
+  Future<void> setEngine() async {
+    if (Platform.isAndroid) {
+      final info = await DeviceInfoPlugin().deviceInfo;
+
+      //  {physicalRamSize: 7462, type: user, manufacturer: samsung, freeDiskSize: 193618276352, bootloader: A1760ZHS7CZH2, fingerprint: samsung/a17xzh/a17x:16/BP4A.251205.006/A1760ZHS7CZH2_OZS7CZH2:user/release-keys, host: SWDK3912, isLowRamDevice: false, model: SM-A1760, id: BP4A.251205.006, brand: samsung, hardware: s5e8535, product: a17xzh, totalDiskSize: 239475884032, supportedAbis: [arm64-v8a, armeabi-v7a, armeabi], supported32BitAbis: [armeabi-v7a, armeabi], display: BP4A.251205.006.A1760ZHS7CZH2, isPhysicalDevice: true, version: {baseOS: samsung/a17xzh/a17x:16/BP4A.251205.006/A1760ZHU5CZE9_OZS5CZE9:user/release-keys, securityPatch: 2026-08-05, sdkInt: 36, release: 16, codename: REL, previewSdkInt: 0, incremental: A1760ZHS7CZH2}, systemFeatures: [android.hardware.sensor.proximity, com.google.android.feature.CONTEXTUAL_SEARCH, com.samsung.android.sdk.camera.processor, com.google.android.feature.GEMINI_EXPERIENCE, com.sec.feature.motionrecognition_service, android.hardware.telephony.ims.s
+      if (info.data['brand'] == 'samsung') {
+        await tts.setEngine("com.samsung.SMT");
+      } else {
+        await tts.setEngine("com.google.android.tts");
+      }
+    }
+  }
 
   bool get inited => ss.isNotEmpty;
 

@@ -117,3 +117,30 @@ drawer: Drawer(
           ),
         ),
       )
+
+
+// CASE: get provider in context
+//   final m = ProviderScope.containerOf(
+//     context,
+//   ).read(settingProvider);
+
+// PopupMenuButton<String>(
+//   tooltip: 'Display language',
+//   initialValue: lang,
+//   onSelected: (String val) {
+//     ref.watch(settingProvider.notifier).put('ui.lang', val);
+//     setState(() => lang = val);
+//     // TODO: reset index
+//     // roller.ensureVisible
+//   },
+//   itemBuilder: (BuildContext context) => const [
+//     PopupMenuItem(value: 'en', child: Text('Only English')),
+//     PopupMenuItem(value: 'zh', child: Text('Only Chinese')),
+//     PopupMenuItem(value: '', child: Text('All')),
+//   ],
+//   child: Text(switch (lang) {
+//     'en' => 'EN',
+//     'zh' => 'ZH',
+//     '' || _ => 'ALL',
+//   }),
+// ),

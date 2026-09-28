@@ -67,7 +67,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// - dispose Future
   late final ItemListNotifier _itemsProvider;
   late Progress _progress;
-  double _offset = 0;
 
   @override
   void initState() {
@@ -161,27 +160,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       appBar: AppBar(
         title: Text(chapter.title),
         actions: [
-          // PopupMenuButton<String>(
-          //   tooltip: 'Display language',
-          //   initialValue: lang,
-          //   onSelected: (String val) {
-          //     ref.watch(settingProvider.notifier).put('ui.lang', val);
-          //     setState(() => lang = val);
-          //     // TODO: reset index
-          //     // roller.ensureVisible
-          //   },
-          //   itemBuilder: (BuildContext context) => const [
-          //     PopupMenuItem(value: 'en', child: Text('Only English')),
-          //     PopupMenuItem(value: 'zh', child: Text('Only Chinese')),
-          //     PopupMenuItem(value: '', child: Text('All')),
-          //   ],
-          //   child: Text(switch (lang) {
-          //     'en' => 'EN',
-          //     'zh' => 'ZH',
-          //     '' || _ => 'ALL',
-          //   }),
-          // ),
-          // SizedBox(width: 20),
           IconButton(
             tooltip: switch (dt.state) {
               Playback.playing => 'Stop',
@@ -251,35 +229,26 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           ),
         ),
       ),
-      body: HtmlWidget.from(
-        chapter.content,
-        initialIndex: _progress.lineIndex,
-        provider: ArchiveProvider(chapter.href, widget.book.files),
-        scrollNotify: (offset, lineIndex) {
-          _progress = _progress.copyWith(offset: offset, lineIndex: lineIndex);
-        },
+      body: SelectableRegion(
+        selectionControls: materialTextSelectionHandleControls,
+        child: HtmlWidget.from(
+          chapter.content,
+          initialIndex: _progress.lineIndex,
+          provider: ArchiveProvider(chapter.href, widget.book.files),
+          scrollNotify: (offset, lineIndex) {
+            _progress = _progress.copyWith(
+              offset: offset,
+              lineIndex: lineIndex,
+            );
+          },
+          clicklNotify: (lineIndex) {
+            if (playbackState == Playback.pause ||
+                playbackState == Playback.playing) {
+              dt.jumpTo(lineIndex);
+            }
+          },
+        ),
       ),
-      // Column(
-      //   children: [
-      //     Expanded(
-      //       child: Padding(
-      //         padding: EdgeInsets.all(8),
-      //         child: Scrollbar(
-      //           controller: roller,
-      //           child: SingleChildScrollView(
-      //             controller: roller,
-      //             child: render(context, widget.book.chapters[cci].chunks),
-      //           ),
-      //         ),
-      //       ),
-      //     ),
-      //     if (dt.state != Playback.stop) playbackPanel(context),
-      //   ],
-      // ),
-      // TODO: think
-      // bottomNavigationBar: dt.state == Playback.playing
-      //     ? playbackPanel(context)
-      //     : readerPanel(context),
     );
   }
 
@@ -305,10 +274,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       0.0,
       roller.position.maxScrollExtent,
     );
-
-    // debugPrint(
-    //   'offset: ${roller.offset} h: $viewportHeight max: ${roller.position.maxScrollExtent}',
-    // );
 
     if (roller.offset == roller.position.maxScrollExtent) {
       debugPrint('next chapter');

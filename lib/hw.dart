@@ -18,27 +18,34 @@ class HtmlWidget extends StatefulWidget {
     this.doc, {
     this.provider,
     this.initialIndex = 0,
+    this.activeIndex,
     this.scrollNotify,
+    this.clicklNotify,
     super.key,
   });
   final dom.Document doc;
-  // TODO: add active item
-  final int initialIndex; // top index
-  final FileProvider? provider; // top index
+  final int initialIndex;
+  final int? activeIndex;
+  final FileProvider? provider;
   final Function(double offset, int lineIndex)? scrollNotify;
+  final Function(int lineIndex)? clicklNotify;
 
   factory HtmlWidget.from(
     String html, {
     FileProvider? provider,
     int initialIndex = 0,
+    int? activeIndex,
     Key? key,
     Function(double offset, int lineIndex)? scrollNotify,
+    Function(int lineIndex)? clicklNotify,
   }) => HtmlWidget(
     dom.parse(html),
     provider: provider,
     initialIndex: initialIndex,
+    activeIndex: activeIndex,
     key: key,
     scrollNotify: scrollNotify,
+    clicklNotify: clicklNotify,
   );
 
   @override
@@ -127,11 +134,11 @@ class HtmlWidgetState extends State<HtmlWidget> {
       rs.add(
         WidgetSpan(
           child: Text.rich(
-            trans(es[i]),
+            clickable(trans(es[i]), i),
             key: newKey('$i'),
-            style: widget.initialIndex == i
-                ? // CASES: selection style
-                  TextStyle(
+            // CASES: selection style
+            style: widget.activeIndex == i
+                ? TextStyle(
                     backgroundColor:
                         TextSelectionTheme.of(context).selectionColor ??
                         Colors.blue.withValues(alpha: 0.4),
@@ -319,8 +326,38 @@ class HtmlWidgetState extends State<HtmlWidget> {
               await launchUrl(url);
             }
           },
+        onEnter: w.onEnter,
+        onExit: w.onExit,
+        semanticsLabel: w.semanticsLabel,
+        semanticsIdentifier: w.semanticsIdentifier,
+        locale: w.locale,
+        spellOut: w.spellOut,
       );
     }
     return w;
+  }
+
+  InlineSpan clickable(InlineSpan w, int index) {
+    return w is TextSpan
+        ? TextSpan(
+            text: w.text,
+            children: w.children?.map((e) => clickable(e, index)).toList(),
+            recognizer:
+                w.recognizer ??
+                (TapGestureRecognizer()
+                  ..onTap = () {
+                    print('clickable:$index');
+                    widget.clicklNotify?.call(index);
+                  }),
+            style: w.style,
+            mouseCursor: w.mouseCursor,
+            onEnter: w.onEnter,
+            onExit: w.onExit,
+            semanticsLabel: w.semanticsLabel,
+            semanticsIdentifier: w.semanticsIdentifier,
+            locale: w.locale,
+            spellOut: w.spellOut,
+          )
+        : w;
   }
 }
