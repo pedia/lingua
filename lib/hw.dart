@@ -130,7 +130,8 @@ class HtmlWidgetState extends State<HtmlWidget> {
             trans(es[i]),
             key: newKey('$i'),
             style: widget.initialIndex == i
-                ? TextStyle(
+                ? // CASES: selection style
+                  TextStyle(
                     backgroundColor:
                         TextSelectionTheme.of(context).selectionColor ??
                         Colors.blue.withValues(alpha: 0.4),

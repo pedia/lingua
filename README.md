@@ -76,13 +76,15 @@ git@github.com:Mamasodikov/cosmos_epub.git
 git@github.com:chenkaiHere/flutter_book_reader.git
   only pure text
 
+# TODO:
+tts read from dom, Same top blocks
+sliver list lib, multiple shelf
+sliver list hw
+tts progress
+read progress
+
 
 # legacy code
-GestureDetector(
-    behavior: HitTestBehavior.opaque, // 👈 Crucial: Captures taps on empty space
-    onTap: toNextChapter,
-    child:
-
 
 drawer: Drawer(
         child: Scrollbar(
