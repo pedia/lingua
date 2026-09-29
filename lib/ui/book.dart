@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:archive/archive.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as dom;
 
 import '../settings/setting.dart';
 import 'setting.dart';
@@ -44,8 +46,18 @@ class BookFrame extends ConsumerStatefulWidget {
 
 class _BookFrameState extends ConsumerState<BookFrame> {
   Playback playbackState = Playback.stop;
+  bool get isPlaying =>
+      playbackState == Playback.pause || playbackState.isPlaying;
   final dt = DualTts();
   final roller = ScrollController();
+  dom.Document? doc;
+
+  @override
+  void didUpdateWidget(BookFrame oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // TODO: if (widget.progress != oldWidget.progress) {}
+  }
 
   /// CASE: avoid using ref in initState
   bool _initialized = false;
@@ -76,6 +88,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     // CASE:
     // Not work here(in initState). Move into didChangeDependencies
     // lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
+
+    // setState(() => doc = dom.parse(chapter.content));
 
     // safe here
     _itemsProvider = ref.read(itemsProvider.notifier);
@@ -113,19 +127,28 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     debugPrint('got dts notify ${dt.state} ${dt.index}');
 
+    // next chapter
+    if (playbackState.isPlaying &&
+        dt.state == Playback.stop &&
+        dt.index + 1 == lines.length) {
+      print('speak, try next chapter ${lines.length}');
+      if (_progress.chapterIndex + 1 < widget.book.chapters.length) {
+        setState(
+          () => _progress = Progress(chapterIndex: _progress.chapterIndex + 1),
+        );
+
+        /// not set `playbackState`
+        return;
+      }
+    }
+
     if (dt.state != playbackState) {
       setState(() => playbackState = dt.state);
     }
 
-    if (dt.state == Playback.playing) {
-      setState(() => _progress = _progress.copyWith(lineIndex: dt.index));
-    }
-
-    // next chapter
-    if (dt.state == Playback.playing && dt.index + 1 == lines.length) {
-      print('TODO: speak, next chapter');
-      // TODO: How to play next
-    }
+    // if (dt.state.isPlaying) {
+    //   setState(() => _progress = _progress.copyWith(lineIndex: dt.index));
+    // }
   }
 
   List<epub.Chunk> get lines {
@@ -161,16 +184,16 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         title: Text(chapter.title),
         actions: [
           IconButton(
-            tooltip: switch (dt.state) {
+            tooltip: switch (playbackState) {
               Playback.playing => 'Stop',
               _ => 'Play',
             },
-            icon: Icon(switch (dt.state) {
+            icon: Icon(switch (playbackState) {
               Playback.playing => Icons.stop_rounded,
               _ => Icons.play_arrow_rounded,
             }),
             onPressed: () async {
-              if (dt.state == Playback.playing) {
+              if (playbackState.isPlaying) {
                 dt.stop();
               } else {
                 if (!dt.inited) {
@@ -231,9 +254,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       ),
       body: SelectableRegion(
         selectionControls: materialTextSelectionHandleControls,
-        child: HtmlWidget.from(
+        child: HtmlWidget.parse(
           chapter.content,
           initialIndex: _progress.lineIndex,
+          activeIndex: isPlaying ? _progress.lineIndex : null,
           provider: ArchiveProvider(chapter.href, widget.book.files),
           scrollNotify: (offset, lineIndex) {
             _progress = _progress.copyWith(
@@ -242,8 +266,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
             );
           },
           clicklNotify: (lineIndex) {
-            if (playbackState == Playback.pause ||
-                playbackState == Playback.playing) {
+            if (isPlaying) {
               dt.jumpTo(lineIndex);
             }
           },
@@ -306,16 +329,16 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               icon: const Icon(Icons.skip_previous),
             ),
             IconButton.filled(
-              tooltip: switch (dt.state) {
+              tooltip: switch (playbackState) {
                 Playback.playing => 'Pause',
                 Playback.pause => 'Play',
                 _ => '_',
               },
               onPressed: dt.toggle,
-              icon: Icon(switch (dt.state) {
-                Playback.playing => Icons.pause,
+              icon: Icon(switch (playbackState) {
                 Playback.pause => Icons.play_arrow,
                 Playback.stop => Icons.stop,
+                _ => Icons.pause,
               }),
             ),
             IconButton(
@@ -361,16 +384,16 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             ),
             IconButton.filled(
-              tooltip: switch (dt.state) {
+              tooltip: switch (playbackState) {
                 Playback.playing => 'Pause',
                 Playback.pause => 'Play',
                 _ => '_',
               },
               onPressed: dt.toggle,
-              icon: Icon(switch (dt.state) {
-                Playback.playing => Icons.pause,
+              icon: Icon(switch (playbackState) {
                 Playback.pause => Icons.play_arrow,
                 Playback.stop => Icons.stop,
+                _ => Icons.pause,
               }),
             ),
             IconButton(

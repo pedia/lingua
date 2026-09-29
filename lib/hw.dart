@@ -30,7 +30,7 @@ class HtmlWidget extends StatefulWidget {
   final Function(double offset, int lineIndex)? scrollNotify;
   final Function(int lineIndex)? clicklNotify;
 
-  factory HtmlWidget.from(
+  factory HtmlWidget.parse(
     String html, {
     FileProvider? provider,
     int initialIndex = 0,
@@ -38,15 +38,18 @@ class HtmlWidget extends StatefulWidget {
     Key? key,
     Function(double offset, int lineIndex)? scrollNotify,
     Function(int lineIndex)? clicklNotify,
-  }) => HtmlWidget(
-    dom.parse(html),
-    provider: provider,
-    initialIndex: initialIndex,
-    activeIndex: activeIndex,
-    key: key,
-    scrollNotify: scrollNotify,
-    clicklNotify: clicklNotify,
-  );
+  }) {
+    debugPrint('hw parse');
+    return HtmlWidget(
+      dom.parse(html),
+      provider: provider,
+      initialIndex: initialIndex,
+      activeIndex: activeIndex,
+      key: key,
+      scrollNotify: scrollNotify,
+      clicklNotify: clicklNotify,
+    );
+  }
 
   @override
   State<StatefulWidget> createState() => HtmlWidgetState();
@@ -76,6 +79,16 @@ class HtmlWidgetState extends State<HtmlWidget> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(HtmlWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.doc != oldWidget.doc) {
+      debugPrint('hw clear');
+      topks.clear();
+    }
+  }
+
   void _onScroll() {
     final RenderBox? scrollBox = context.findRenderObject() as RenderBox?;
     if (scrollBox == null) return;
@@ -97,9 +110,9 @@ class HtmlWidgetState extends State<HtmlWidget> {
     }
 
     if (idx != null && idx != firstVisibleIdx) {
-      print(
-        'onScroll ${roller.offset.toStringAsFixed(2)}, First visible block: $idx',
-      );
+      // print(
+      //   'onScroll ${roller.offset.toStringAsFixed(2)}, First visible block: $idx',
+      // );
       firstVisibleIdx = idx;
     }
 
@@ -150,7 +163,9 @@ class HtmlWidgetState extends State<HtmlWidget> {
       rs.add(TextSpan(text: '\n'));
     }
 
-    rs.add(TextSpan(text: 'debug ks: ${topks.keys}'));
+    rs.add(
+      TextSpan(text: 'debug ks${topks.length}/${es.length}: ${topks.keys}'),
+    );
     return rs;
   }
 
@@ -345,10 +360,7 @@ class HtmlWidgetState extends State<HtmlWidget> {
             recognizer:
                 w.recognizer ??
                 (TapGestureRecognizer()
-                  ..onTap = () {
-                    print('clickable:$index');
-                    widget.clicklNotify?.call(index);
-                  }),
+                  ..onTap = () => widget.clicklNotify?.call(index)),
             style: w.style,
             mouseCursor: w.mouseCursor,
             onEnter: w.onEnter,

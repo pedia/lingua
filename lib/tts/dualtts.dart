@@ -149,7 +149,15 @@ class EngineSetting {
 }
 
 /// Triple state for tts engine
-enum Playback { playing, pause, stop }
+enum Playback {
+  playing,
+  startLine,
+  endLine,
+  pause,
+  stop;
+
+  bool get isPlaying => this == playing || this == startLine || this == endLine;
+}
 
 class DualTts extends ChangeNotifier {
   DualTts();
@@ -203,18 +211,19 @@ class DualTts extends ChangeNotifier {
   }
 
   Future<void> play() async {
-    if (chunks.isEmpty || state == Playback.playing) {
+    if (chunks.isEmpty || state.isPlaying) {
       return;
     }
     state = Playback.playing;
     notifyListeners();
-    while (state == Playback.playing && index < chunks.length) {
+    while (state.isPlaying && index < chunks.length) {
+      state = Playback.startLine;
       notifyListeners();
       final line = chunks[index];
       final v = ss[line.lang == '' ? 'zh' : line.lang];
       if (v != null) {
         await tts.setSpeechRate(v.rate);
-        debugPrint('rate: ${v.rate}');
+        // debugPrint('rate: ${v.rate}');
         await tts.setPitch(v.pitch);
         if (v.volume != null) await tts.setVolume(v.volume!);
 
@@ -228,18 +237,23 @@ class DualTts extends ChangeNotifier {
         debugPrint('voices[${line.lang}] not found, total:${ss.length}');
       }
 
-      debugPrint('$line');
+      debugPrint('$index, $line');
       await tts.speak(line.text);
       if (state == Playback.stop) {
         break;
       }
       if (index < chunks.length - 1) {
+        state = Playback.endLine;
+        notifyListeners();
+
         index += 1;
       } else {
+        state = Playback.endLine;
+        notifyListeners();
         state = Playback.stop;
       }
-      notifyListeners();
-    } // end while
+    }
+    notifyListeners(); // end while
   }
 
   Future<void> pause() async {
@@ -256,7 +270,7 @@ class DualTts extends ChangeNotifier {
   }
 
   Future<void> toggle() async {
-    if (state == Playback.playing) {
+    if (state.isPlaying) {
       await pause();
     } else {
       await play();
@@ -271,7 +285,7 @@ class DualTts extends ChangeNotifier {
     await pause();
     index = (index + delta).clamp(0, chunks.length - 1);
     notifyListeners();
-    if (wasPlaying == Playback.playing) {
+    if (wasPlaying.isPlaying) {
       await play();
     }
   }

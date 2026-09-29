@@ -14,6 +14,7 @@ import 'font.dart';
 import 'setting.dart';
 import 'voice_setting.dart';
 import 'shelf.dart' as experiment;
+import 'dep.dart' as experiment;
 import '../silver.dart';
 import '../rich.dart';
 import '../demo.dart';
@@ -148,6 +149,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                     'hive' => HiveFrame(),
                     'voice' => EngineSettingPage.from(context),
                     'tab' => experiment.ShelfFrame(),
+                    'dep' => experiment.DepFrame(),
                     _ => FontFrame(),
                   },
                 ),
@@ -167,6 +169,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               PopupMenuItem(value: 'hive', child: Text('Hive Console(Debug)')),
               PopupMenuItem(value: 'scan', child: Text('Scan')),
               PopupMenuItem(value: 'tab', child: Text('Tab')),
+              PopupMenuItem(value: 'dep', child: Text('Dep')),
             ],
             child: Icon(Icons.more_vert, size: 36),
           ),
