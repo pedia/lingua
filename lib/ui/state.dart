@@ -10,14 +10,24 @@ class ReadState {
   final int id;
   final epub.Book book;
   final ReadProgress progress;
+
+  ReadState copyWith({int? id, epub.Book? book, ReadProgress? progress}) =>
+      ReadState(
+        id: id ?? this.id,
+        book: book ?? this.book,
+        progress: progress ?? this.progress,
+      );
 }
 
-class ReadNotifier extends Notifier<ReadProgress> {
+class ReadNotifier extends Notifier<ReadState> {
   @override
-  ReadProgress build() {
-    return (0, 0);
+  ReadState build() {
+    return ReadState(id: 0, book: epub.Book.empty(), progress: (0, 0));
+  }
+
+  void update({ReadProgress? progress}) {
+    state = state.copyWith(progress: progress);
   }
 }
 
-// Read progress
-final readpp = NotifierProvider<ReadNotifier, ReadProgress>(ReadNotifier.new);
+final readp = NotifierProvider<ReadNotifier, ReadState>(ReadNotifier.new);

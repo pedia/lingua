@@ -182,6 +182,8 @@ class Book {
   final Map<String, ArchiveFile> files;
   final String? cover;
 
+  factory Book.empty() => Book(title: '', author: '', chapters: []);
+
   Uint8List? get coverBytes {
     if (cover != null) {
       return files[cover]?.content;

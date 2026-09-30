@@ -97,7 +97,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     });
   }
 
-  epub.Chapter get chapter => widget.book.chapters[ref.read(readpp).$1];
+  epub.Chapter get chapter => widget.book.chapters[0];
 
   @override
   void dispose() {
@@ -150,7 +150,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
   List<epub.Chunk> get lines {
     final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-    final chi = ref.read(readpp).$1;
+    final chi = ref.read(readp).progress.$1;
     return widget.book.chapters[chi].chunks
         .where((line) => lang == '' || line.lang == lang)
         .toList();

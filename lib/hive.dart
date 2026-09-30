@@ -87,7 +87,7 @@ class ValueDetail extends StatelessWidget {
       child: CustomScrollView(
         slivers: <Widget>[
           CupertinoSliverNavigationBar(
-            largeTitle: Text(k),
+            largeTitle: Text('$i $k'),
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () {
