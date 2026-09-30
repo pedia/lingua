@@ -1,8 +1,10 @@
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as dom;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'data/sample.dart';
 
 bool canLaunchUrl(Uri _) => false;
@@ -12,189 +14,81 @@ abstract class FileProvider {
   Uint8List bytes(String path);
 }
 
-/// Html to Widget
-class HtmlWidget extends StatefulWidget {
-  const HtmlWidget(
-    this.doc, {
-    this.provider,
-    this.initialIndex = 0,
-    this.activeIndex,
-    this.scrollNotify,
-    this.clicklNotify,
-    super.key,
+@immutable
+class Block {
+  const Block({
+    required this.i,
+    required this.key,
+    required this.selected,
+    required this.e,
   });
-  final dom.Document doc;
-  final int initialIndex;
-  final int? activeIndex;
-  final FileProvider? provider;
-  final Function(double offset, int lineIndex)? scrollNotify;
-  final Function(int lineIndex)? clicklNotify;
-
-  factory HtmlWidget.parse(
-    String html, {
-    FileProvider? provider,
-    int initialIndex = 0,
-    int? activeIndex,
-    Key? key,
-    Function(double offset, int lineIndex)? scrollNotify,
-    Function(int lineIndex)? clicklNotify,
-  }) {
-    debugPrint('hw parse');
-    return HtmlWidget(
-      dom.parse(html),
-      provider: provider,
-      initialIndex: initialIndex,
-      activeIndex: activeIndex,
-      key: key,
-      scrollNotify: scrollNotify,
-      clicklNotify: clicklNotify,
-    );
-  }
+  // clickable
+  final int i; // index from Doc.blocks
+  final GlobalKey key;
+  final bool selected;
+  final dom.Element e;
 
   @override
-  State<StatefulWidget> createState() => HtmlWidgetState();
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Block &&
+          other.i == i &&
+          other.key == key &&
+          other.selected == selected &&
+          // dom.Element hasn't ==
+          other.e == e);
+
+  @override
+  int get hashCode => Object.hash(i, key, selected, e);
+
+  Block copyWith({int? i, GlobalKey? key, bool? selected, dom.Element? e}) =>
+      Block(
+        i: i ?? this.i,
+        key: key ?? this.key,
+        selected: selected ?? this.selected,
+        e: e ?? this.e,
+      );
 }
 
-class HtmlWidgetState extends State<HtmlWidget> {
-  final roller = ScrollController();
-  int? firstVisibleIdx;
-
+class BlockWidget extends ConsumerWidget {
+  final int index;
+  final FileProvider? provider;
+  const BlockWidget({super.key, required this.index, this.provider});
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint("🟢 Building BlockWidget[$index]");
+    final b = ref.watch(docp.select((doc) => doc.blocks[index]));
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.initialIndex != 0) {
-        final key = topks['${widget.initialIndex}'];
-        if (key != null) Scrollable.ensureVisible(key.currentContext!);
-      }
-    });
-
-    roller.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    roller.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(HtmlWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (widget.doc != oldWidget.doc) {
-      debugPrint('hw clear');
-      topks.clear();
-    }
-  }
-
-  void _onScroll() {
-    final RenderBox? scrollBox = context.findRenderObject() as RenderBox?;
-    if (scrollBox == null) return;
-
-    int? idx;
-    double closestTop = double.infinity;
-
-    for (final e in topks.entries) {
-      final box = e.value.currentContext?.findRenderObject() as RenderBox?;
-      if (box == null || !box.attached || !box.hasSize) continue;
-
-      final position = box.localToGlobal(Offset.zero, ancestor: scrollBox);
-      final top = position.dy;
-
-      if (top >= -box.size.height && top < closestTop) {
-        closestTop = top;
-        idx = int.tryParse(e.key);
-      }
-    }
-
-    if (idx != null && idx != firstVisibleIdx) {
-      // print(
-      //   'onScroll ${roller.offset.toStringAsFixed(2)}, First visible block: $idx',
-      // );
-      firstVisibleIdx = idx;
-    }
-
-    widget.scrollNotify?.call(roller.offset, firstVisibleIdx ?? 0);
-  }
-
-  /// top level WidgetSpan: 'index' => GlogalKey
-  /// anchor: '#id' => GlogalKey
-  final topks = <String, GlobalKey>{};
-
-  @override
-  Widget build(BuildContext context) {
-    final body = widget.doc.body ?? dom.Element.tag('body');
-    return SingleChildScrollView(
-      controller: roller,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(8),
-        child: Text.rich(
-          TextSpan(
-            mouseCursor: SystemMouseCursors.text,
-            children: topBlocks(body.children),
-          ),
-        ),
-      ),
+    return Text.rich(
+      clickable(trans(b.e, ref), b.i, ref),
+      key: b.key,
+      // CASES: selection style
+      style: b.selected
+          ? TextStyle(
+              backgroundColor:
+                  TextSelectionTheme.of(context).selectionColor ??
+                  Colors.blue.withValues(alpha: 0.4),
+            )
+          : null,
     );
   }
-
-  List<InlineSpan> topBlocks(List<dom.Element> es) {
-    final rs = <InlineSpan>[];
-    for (var i = 0; i < es.length; i++) {
-      rs.add(
-        WidgetSpan(
-          child: Text.rich(
-            clickable(trans(es[i]), i),
-            key: newKey('$i'),
-            // CASES: selection style
-            style: widget.activeIndex == i
-                ? TextStyle(
-                    backgroundColor:
-                        TextSelectionTheme.of(context).selectionColor ??
-                        Colors.blue.withValues(alpha: 0.4),
-                  )
-                : null,
-          ),
-        ),
-      );
-      rs.add(TextSpan(text: '\n'));
-    }
-
-    rs.add(
-      TextSpan(text: 'debug ks${topks.length}/${es.length}: ${topks.keys}'),
-    );
-    return rs;
-  }
-
-  GlobalKey newKey(String name) {
-    return topks.putIfAbsent(name, () => GlobalKey());
-  }
-
-  double fontSize(String tag) => switch (tag) {
-    'h1' => 32,
-    'h2' => 24,
-    'h3' => 18,
-    _ => 18,
-  };
 
   /// Translate or transform html tag into InlineSpan
   /// force img height
   /// <p><sup><a><img></a></p>
-  InlineSpan trans(dom.Element e, {double? forceInlineHeight}) {
+  InlineSpan trans(dom.Element e, WidgetRef ref, {double? forceInlineHeight}) {
     // 1. Recursively parse all child nodes (text and nested tags)
     List<InlineSpan>? children = [];
     String? text;
     for (var c in e.nodes) {
       if (c is dom.Element) {
         // Recursive call for nested elements
-        children.add(trans(c, forceInlineHeight: forceInlineHeight));
+        children.add(trans(c, ref, forceInlineHeight: forceInlineHeight));
       } else if (c.nodeType == dom.Node.TEXT_NODE) {
         final t = _removeUnnecessaryWhitespace(c.text ?? '');
         if (children.isEmpty && c.text != null) {
           text = t;
+          // TODO: space deal right?
           if (t != ' ') forceInlineHeight ??= fontSize(e.localName ?? '');
         } else {
           children.add(TextSpan(text: t));
@@ -251,7 +145,7 @@ class HtmlWidgetState extends State<HtmlWidget> {
 
       'img' => WidgetSpan(
         child: Image.memory(
-          widget.provider?.bytes(e.attributes['src'] ?? '') ?? note,
+          provider?.bytes(e.attributes['src'] ?? '') ?? note,
           fit: BoxFit.fitHeight,
           width: forceInlineHeight != null
               ? null
@@ -265,6 +159,7 @@ class HtmlWidgetState extends State<HtmlWidget> {
       'a' => linkify(
         TextSpan(text: text, children: children),
         e.attributes['href'] ?? '',
+        ref,
       ),
 
       'code' => TextSpan(
@@ -287,7 +182,7 @@ class HtmlWidgetState extends State<HtmlWidget> {
         for (var i = 0; i < inside.children!.length; i++) {
           final c = inside.children![i];
           if (c is WidgetSpan && c.child is Image) {
-            print('got you');
+            print('got inline image');
           }
         }
       }
@@ -298,7 +193,9 @@ class HtmlWidgetState extends State<HtmlWidget> {
       return inside;
     }
 
-    return WidgetSpan(child: Text.rich(inside, key: newKey('#$id')));
+    return WidgetSpan(
+      child: Text.rich(inside, key: ref.read(docp).newKey('#$id')),
+    );
   }
 
   /// [_removeUnnecessaryWhitespace] removes "unnecessary" white space from the given String.
@@ -316,11 +213,11 @@ class HtmlWidgetState extends State<HtmlWidget> {
         .replaceAll(RegExp(r" {2,}"), " ");
   }
 
-  InlineSpan linkify(InlineSpan w, String href) {
+  InlineSpan linkify(InlineSpan w, String href, WidgetRef ref) {
     if (w is TextSpan) {
       w = TextSpan(
         text: w.text,
-        children: w.children?.map((e) => linkify(e, href)).toList(),
+        children: w.children?.map((e) => linkify(e, href, ref)).toList(),
         style: const TextStyle(
           color: Colors.blue,
           decoration: TextDecoration.underline,
@@ -328,10 +225,9 @@ class HtmlWidgetState extends State<HtmlWidget> {
         mouseCursor: SystemMouseCursors.click,
         recognizer: TapGestureRecognizer()
           ..onTap = () async {
-            print('anchor click $href');
             if (href.startsWith('#')) {
               // id => GlobalKey/context
-              final key = topks[href];
+              final key = ref.read(docp).topks[href];
               if (key != null) {
                 await Scrollable.ensureVisible(key.currentContext!);
               }
@@ -352,15 +248,19 @@ class HtmlWidgetState extends State<HtmlWidget> {
     return w;
   }
 
-  InlineSpan clickable(InlineSpan w, int index) {
+  InlineSpan clickable(InlineSpan w, int index, WidgetRef ref) {
     return w is TextSpan
         ? TextSpan(
             text: w.text,
-            children: w.children?.map((e) => clickable(e, index)).toList(),
+            children: w.children?.map((e) => clickable(e, index, ref)).toList(),
             recognizer:
                 w.recognizer ??
                 (TapGestureRecognizer()
-                  ..onTap = () => widget.clicklNotify?.call(index)),
+                  ..onTap = () {
+                    // TODO: widget.clicklNotify?.call(index));
+                    print('click $index');
+                    ref.read(docp.notifier).update(index);
+                  }),
             style: w.style,
             mouseCursor: w.mouseCursor,
             onEnter: w.onEnter,
@@ -372,4 +272,294 @@ class HtmlWidgetState extends State<HtmlWidget> {
           )
         : w;
   }
+
+  double fontSize(String tag) => switch (tag) {
+    'h1' => 32,
+    'h2' => 24,
+    'h3' => 18,
+    _ => 18,
+  };
 }
+
+class Doc {
+  const Doc({
+    required this.blocks,
+    this.activeIndex,
+    this.topks = const {},
+    this.offset = 0,
+    this.provider,
+  });
+
+  final List<Block> blocks;
+  final int? activeIndex;
+  final double? offset; // scroll offset
+  /// top level WidgetSpan: 'index' => GlogalKey
+  /// anchor: '#id' => GlogalKey
+  final Map<String, GlobalKey> topks;
+  final FileProvider? provider;
+
+  factory Doc.create({required String html, int? activeIndex, double? offset}) {
+    final doc = dom.parse(html);
+    final body = doc.body ?? dom.Element.tag('body');
+    body.children.length;
+    final ks = <String, GlobalKey>{};
+    return Doc(
+      activeIndex: activeIndex,
+      offset: offset,
+      topks: ks,
+      blocks: [
+        for (int i = 0; i < body.children.length; i++)
+          Block(
+            i: i,
+            e: body.children[i],
+            key: ks.putIfAbsent('$i', () => GlobalKey()),
+            selected: false,
+          ),
+      ],
+    );
+  }
+
+  Doc copyWith({
+    List<Block>? blocks,
+    int? activeIndex,
+    double? offset,
+    Map<String, GlobalKey>? topks,
+    FileProvider? provider,
+  }) => Doc(
+    blocks: blocks ?? this.blocks,
+    activeIndex: activeIndex ?? this.activeIndex,
+    offset: offset ?? this.offset,
+    topks: topks ?? this.topks,
+    provider: provider ?? this.provider,
+  );
+
+  GlobalKey newKey(String name) {
+    return topks.putIfAbsent(name, () => GlobalKey());
+  }
+}
+
+class DocWidget extends ConsumerStatefulWidget {
+  final Mode mode;
+  const DocWidget({required this.mode, super.key});
+
+  @override
+  ConsumerState<DocWidget> createState() => _DocWidgetState();
+}
+
+class _DocWidgetState extends ConsumerState<DocWidget> {
+  final roller = ScrollController();
+  int? firstVisibleIdx;
+  double? offset;
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // if (widget.initialIndex != 0) {
+      //   final key = doc?.topks['${widget.initialIndex}'];
+      //   if (key != null && key.currentContext != null) {
+      //     Scrollable.ensureVisible(key.currentContext!);
+      //   }
+      // }
+    });
+
+    roller.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    roller.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final RenderBox? scrollBox = context.findRenderObject() as RenderBox?;
+    if (scrollBox == null) return;
+
+    int? idx;
+    double closestTop = double.infinity;
+    final doc = ref.read(docp);
+
+    for (final e in doc.topks.entries) {
+      final box = e.value.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached || !box.hasSize) continue;
+
+      final position = box.localToGlobal(Offset.zero, ancestor: scrollBox);
+      final top = position.dy;
+
+      if (top >= -box.size.height && top < closestTop) {
+        closestTop = top;
+        idx = int.tryParse(e.key);
+      }
+    }
+
+    if (idx != null && idx != firstVisibleIdx) {
+      // print(
+      //   'onScroll ${roller.offset.toStringAsFixed(2)}, First visible block: $idx',
+      // );
+      firstVisibleIdx = idx;
+    }
+
+    // widget.scrollNotify?.call(roller.offset, firstVisibleIdx ?? 0);
+    offset = roller.offset;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final doc = ref.watch(docp);
+    debugPrint(
+      "🟢 Building DocWidget provider:${doc.provider} block:${doc.blocks.length}",
+    );
+
+    if (widget.mode == Mode.rich) {
+      final rs = <InlineSpan>[];
+      for (int i = 0; i < doc.blocks.length; i++) {
+        rs.add(
+          WidgetSpan(
+            child: BlockWidget(index: i, provider: doc.provider),
+          ),
+        );
+        rs.add(TextSpan(text: '\n'));
+      }
+
+      return SingleChildScrollView(
+        controller: roller,
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(8),
+          child: Text.rich(
+            TextSpan(mouseCursor: SystemMouseCursors.text, children: rs),
+          ),
+        ),
+      );
+    } else if (widget.mode == Mode.list) {
+      final rs = <InlineSpan>[];
+      for (int i = 0; i < doc.blocks.length; i++) {
+        rs.add(
+          WidgetSpan(
+            child: BlockWidget(index: i, provider: doc.provider),
+          ),
+        );
+      }
+      return Scrollbar(
+        controller: roller,
+        child: ListView.builder(
+          controller: roller,
+          padding: EdgeInsets.all(8),
+          itemCount: rs.length,
+          itemBuilder: (contex, i) => Text.rich(rs[i]),
+        ),
+      );
+    }
+    return Center();
+  }
+}
+
+class DocNotifier extends Notifier<Doc> {
+  // DocNotifier(this.doc);
+  // final Doc doc;
+  @override
+  Doc build() {
+    return Doc(blocks: []);
+  }
+
+  static DocNotifier foo(Doc doc) {
+    final d = DocNotifier();
+    d.state = doc;
+    return d;
+  }
+
+  void update(int activeIndex) {
+    if (activeIndex > state.blocks.length - 1) {
+      debugPrint('out of range: $activeIndex, current: ${state.blocks.length}');
+      return;
+    }
+    final nl = List<Block>.from(state.blocks);
+    nl[activeIndex] = nl[activeIndex].copyWith(selected: true);
+    if (state.activeIndex != null) {
+      nl[state.activeIndex!] = nl[state.activeIndex!].copyWith(selected: false);
+    }
+    state = state.copyWith(activeIndex: activeIndex, blocks: nl);
+  }
+}
+
+// final docp = Provider<Doc>((ref) => throw UnimplementedError('docp'));
+final docp = NotifierProvider<DocNotifier, Doc>(DocNotifier.new);
+
+class WithDocNotifier extends DocNotifier {
+  WithDocNotifier(this.doc);
+  final Doc doc;
+
+  @override
+  Doc build() {
+    return doc;
+  }
+}
+
+/// HtmlWidget render mode in ListView, RichText, SliverList
+/// auto, top block count > 1000 -> list
+enum Mode { auto, rich, list, silver }
+
+final parsedHtmlProvider = FutureProvider.family<Doc, String>((
+  ref,
+  html,
+) async {
+  print('parse in isolate');
+  return await Isolate.run(() => Doc.create(html: html));
+});
+
+class HtmlWidget extends ConsumerWidget {
+  const HtmlWidget(
+    this.html, {
+    this.mode = Mode.rich,
+    this.provider,
+    super.key,
+  });
+  final String html;
+  final Mode mode;
+  final FileProvider? provider;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncDoc = ref.watch(parsedHtmlProvider(html));
+    return asyncDoc.when(
+      loading: () => const CircularProgressIndicator(),
+      error: (err, stack) => Text('Error parsing: $err'),
+      data: (doc) => ProviderScope(
+        overrides: [
+          docp.overrideWith(
+            () => WithDocNotifier(doc.copyWith(provider: provider)),
+          ),
+          // readpp.overrideWith(() => WithReadNotifier()),
+        ],
+        child: DocWidget(mode: mode),
+      ),
+    );
+  }
+}
+
+// Assume this is your external Async I/O stream
+Stream<int> dtstream() async* {
+  int count = 0;
+  while (true) {
+    await Future.delayed(const Duration(seconds: 2));
+    yield count++;
+  }
+}
+
+// Map the stream directly into Riverpod
+final tickap = StreamProvider<int>((ref) {
+  return dtstream();
+});
+
+
+
+// class ReadNotifier extends Notifier<ReadProgress> {
+//   @override
+//   ReadProgress build() {
+//     return (0, 0);
+//   }
+// }
+
+// // Read progress
+// final readpp = NotifierProvider<ReadNotifier, ReadProgress>(ReadNotifier.new);

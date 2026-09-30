@@ -173,18 +173,18 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                     e.author == null) {
                   ref
                       .read(shopProvider.notifier)
-                      .updateItem(i, e.copyWith(author: book.author, name: book.title));
+                      .updateItem(
+                        i,
+                        e.copyWith(author: book.author, name: book.title),
+                      );
                 }
 
                 if (context.mounted && book != null) {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => BookFrame(
-                        id: e.id,
-                        book: book!,
-                        progress:
-                            e.progress ??
-                            Progress(chapterIndex: 0, lineIndex: 0),
+                      builder: (_) => ProviderScope(
+                        overrides: [],
+                        child: BookFrame(id: e.id, book: book!),
                       ),
                     ),
                   );

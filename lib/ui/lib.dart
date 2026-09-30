@@ -127,7 +127,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
             ),
             onPressed: () async {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (context) => PageFrame()),
+                MaterialPageRoute<void>(builder: (context) => DemoFrame()),
               );
             },
           ),
@@ -168,8 +168,8 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               PopupMenuItem(value: 'voice', child: Text('Voice Setting')),
               PopupMenuItem(value: 'hive', child: Text('Hive Console(Debug)')),
               PopupMenuItem(value: 'scan', child: Text('Scan')),
-              PopupMenuItem(value: 'tab', child: Text('Tab')),
-              PopupMenuItem(value: 'dep', child: Text('Dep')),
+              PopupMenuItem(value: 'tab', child: Text('Shelf')),
+              PopupMenuItem(value: 'dep', child: Text('Riverpod')),
             ],
             child: Icon(Icons.more_vert, size: 36),
           ),
@@ -219,13 +219,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                 if (context.mounted && book != null) {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => BookFrame(
-                        id: e.id,
-                        book: book!,
-                        progress:
-                            e.progress ??
-                            Progress(chapterIndex: 0, lineIndex: 0),
-                      ),
+                      builder: (_) => BookFrame(id: e.id, book: book!),
                     ),
                   );
                 }

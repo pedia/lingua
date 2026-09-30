@@ -144,3 +144,13 @@ drawer: Drawer(
 //     '' || _ => 'ALL',
 //   }),
 // ),
+
+
+# state
+
+https://item.jd.com/10234760286055.html
+
+
+/// init: read offset
+///  tts: line <- dutts
+/// read: line, offset <-- hw

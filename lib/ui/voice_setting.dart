@@ -52,7 +52,7 @@ class _EngineSettingPageState extends State<EngineSettingPage> {
     super.initState();
     setState(() => ess = widget.ess);
 
-    DualTts().setEngine();
+    // DualTts().setEngine();
 
     tts.getVoices.then((x) {
       final list = (x as List).cast<Map>();

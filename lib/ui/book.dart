@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:archive/archive.dart';
 import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart' as dom;
 
 import '../settings/setting.dart';
 import 'setting.dart';
@@ -15,6 +14,7 @@ import 'chapter_list.dart';
 import '../data/model.dart';
 import '../epub/epub.dart' as epub;
 import '../tts/dualtts.dart';
+import 'state.dart';
 
 class ArchiveProvider extends FileProvider {
   ArchiveProvider(String base, this.files) : base = Uri(path: base);
@@ -23,22 +23,16 @@ class ArchiveProvider extends FileProvider {
 
   @override
   Uint8List bytes(String path) {
-    // debugPrint('$path => ${base.resolve(path).path}');
+    debugPrint('$path => ${base.resolve(path).path}');
     final fp = base.resolve(path).path.toLowerCase();
     return files[fp]?.content ?? Uint8List.fromList([]);
   }
 }
 
 class BookFrame extends ConsumerStatefulWidget {
-  const BookFrame({
-    required this.book,
-    required this.id,
-    required this.progress,
-    super.key,
-  });
+  const BookFrame({required this.book, required this.id, super.key});
   final epub.Book book;
   final int id;
-  final Progress progress;
 
   @override
   ConsumerState<BookFrame> createState() => _BookFrameState();
@@ -78,12 +72,11 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// - ScrollController.addListener
   /// - dispose Future
   late final ItemListNotifier _itemsProvider;
-  late Progress _progress;
+  late StreamSubscription sub;
 
   @override
   void initState() {
     super.initState();
-    _progress = widget.progress;
 
     // CASE:
     // Not work here(in initState). Move into didChangeDependencies
@@ -94,66 +87,71 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     // safe here
     _itemsProvider = ref.read(itemsProvider.notifier);
 
-    dt.addListener(_onTts);
+    sub = dt.stream.listen(_onTts);
 
     // Set drawer opened at first time frame appear
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_progress.chapterIndex == 0) {
-        _scaffoldKey.currentState?.openDrawer();
-      }
+      // if (ref.read(readpp).$1 == 0) {
+      //   _scaffoldKey.currentState?.openDrawer();
+      // }
     });
   }
 
-  epub.Chapter get chapter => widget.book.chapters[_progress.chapterIndex];
+  epub.Chapter get chapter => widget.book.chapters[ref.read(readpp).$1];
 
   @override
   void dispose() {
-    /// Save progress with newest scroll offset
     Future(() {
-      _itemsProvider.update(widget.id, progress: _progress);
+      /// Save progress with newest scroll offset
+      // _itemsProvider.update(widget.id, progress: _progress);
+      // ref.read(readpp).$1
     });
 
+    sub.cancel();
+
     roller.dispose();
-    dt
-      ..removeListener(_onTts)
-      ..dispose();
+
     super.dispose();
   }
 
-  void _onTts() {
+  void _onTts((Playback, int) m) {
     if (!mounted) {
       return;
     }
 
-    debugPrint('got dts notify ${dt.state} ${dt.index}');
+    // final doc = ProviderScope.containerOf(context).read(docp);
+    // debugPrint('demo $doc');
+    // ref.read(docp);
+
+    debugPrint('got dts notify $m');
 
     // next chapter
     if (playbackState.isPlaying &&
-        dt.state == Playback.stop &&
-        dt.index + 1 == lines.length) {
+        m.$1 == Playback.stop &&
+        m.$2 + 1 == lines.length) {
       print('speak, try next chapter ${lines.length}');
-      if (_progress.chapterIndex + 1 < widget.book.chapters.length) {
-        setState(
-          () => _progress = Progress(chapterIndex: _progress.chapterIndex + 1),
-        );
+      // if (_progress.chapterIndex + 1 < widget.book.chapters.length) {
+      //   setState(
+      //     () => _progress = Progress(chapterIndex: _progress.chapterIndex + 1),
+      //   );
 
-        /// not set `playbackState`
-        return;
-      }
+      /// not set `playbackState`
+      return;
     }
 
-    if (dt.state != playbackState) {
-      setState(() => playbackState = dt.state);
+    if (m.$1 != playbackState) {
+      setState(() => playbackState = m.$1);
     }
 
-    // if (dt.state.isPlaying) {
-    //   setState(() => _progress = _progress.copyWith(lineIndex: dt.index));
+    // if (m.$1.isPlaying) {
+    //   setState(() => _progress = _progress.copyWith(lineIndex: m.$2));
     // }
   }
 
   List<epub.Chunk> get lines {
     final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-    return widget.book.chapters[_progress.chapterIndex].chunks
+    final chi = ref.read(readpp).$1;
+    return widget.book.chapters[chi].chunks
         .where((line) => lang == '' || line.lang == lang)
         .toList();
   }
@@ -246,47 +244,36 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         child: ChapterList(
           id: widget.id,
           book: widget.book,
-          chapterIndex: _progress.chapterIndex,
-          onChange: (i) => setState(
-            () => _progress = Progress(chapterIndex: i, lineIndex: 0),
-          ),
+          // chapterIndex: _progress.chapterIndex,
+          // onChange: (i) => setState(
+          // () => _progress = Progress(chapterIndex: i, lineIndex: 0),
+          // ),
         ),
       ),
       body: SelectableRegion(
         selectionControls: materialTextSelectionHandleControls,
-        child: HtmlWidget.parse(
+        contextMenuBuilder: selectToolbar,
+        child: HtmlWidget(
           chapter.content,
-          initialIndex: _progress.lineIndex,
-          activeIndex: isPlaying ? _progress.lineIndex : null,
+          mode: Mode.list,
           provider: ArchiveProvider(chapter.href, widget.book.files),
-          scrollNotify: (offset, lineIndex) {
-            _progress = _progress.copyWith(
-              offset: offset,
-              lineIndex: lineIndex,
-            );
-          },
-          clicklNotify: (lineIndex) {
-            if (isPlaying) {
-              dt.jumpTo(lineIndex);
-            }
-          },
         ),
       ),
     );
   }
 
   void gotoNextChapter() {
-    if (_progress.chapterIndex + 1 < widget.book.chapters.length) {
-      setState(
-        () => _progress = _progress.copyWith(
-          chapterIndex: _progress.chapterIndex + 1,
-          lineIndex: 0,
-        ),
-      );
-      ref.read(itemsProvider.notifier).update(widget.id, progress: _progress);
-    } else {
-      debugPrint('book end');
-    }
+    // if (_progress.chapterIndex + 1 < widget.book.chapters.length) {
+    //   setState(
+    //     () => _progress = _progress.copyWith(
+    //       chapterIndex: _progress.chapterIndex + 1,
+    //       lineIndex: 0,
+    //     ),
+    //   );
+    //   ref.read(itemsProvider.notifier).update(widget.id, progress: _progress);
+    // } else {
+    //   debugPrint('book end');
+    // }
   }
 
   void scrollToNextPage(TapUpDetails d) {

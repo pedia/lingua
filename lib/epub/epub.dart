@@ -8,6 +8,8 @@ import 'package:archive/archive.dart';
 class Chunk {
   Chunk(this.text, {this.lang = ''});
   final String text;
+
+  /// hardcode: en, zh, es, jp, kr
   final String lang;
   @override
   String toString() => '$lang: $text';

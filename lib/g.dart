@@ -14,7 +14,7 @@ int nextId() {
 }
 
 /// Returns PNG bytes of a thumbnail with width = 64 (height maintains aspect ratio).
-Uint8List? iconify(Uint8List imageBytes, {int width = 64}) {
+Uint8List? iconify(Uint8List imageBytes, {int width = 128}) {
   // Decode the image (supports JPG, PNG, WebP, GIF, BMP, etc.)
   final original = img.decodeImage(imageBytes);
   if (original == null) return null;

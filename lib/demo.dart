@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:html/parser.dart' as dom;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'hw.dart';
 import 'data/sample.dart';
 
@@ -12,6 +13,20 @@ class DemoFrame extends StatefulWidget {
 }
 
 class _DemoFrameState extends State<DemoFrame> {
+  Mode _mode = Mode.list;
+  Timer? _timer;
+  @override
+  void initState() {
+    super.initState();
+    // _timer = Timer.periodic(const Duration(seconds: 1), (timer) {});
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final small = 'The quick brown fox jumps over the lazy dog.';
@@ -38,11 +53,50 @@ class _DemoFrameState extends State<DemoFrame> {
 </body>''';
 
     return Scaffold(
-      appBar: AppBar(title: Text('HtmlWidget Demo(Debug)')),
-      body: SelectableRegion(
-        selectionControls: materialTextSelectionHandleControls,
-        child: HtmlWidget(dom.parse(h), initialIndex: 11),
+      appBar: AppBar(
+        title: Text('HtmlWidget Demo(Debug)'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.list, color: Theme.of(context).iconTheme.color),
+            onPressed: () => setState(() => _mode = Mode.list),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.text_format,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            onPressed: () => setState(() => _mode = Mode.rich),
+          ),
+        ],
       ),
+      body: SelectableRegion(
+        contextMenuBuilder: selectToolbar,
+        selectionControls: materialTextSelectionHandleControls,
+        child: HtmlWidget(h, mode: _mode),
+      ),
+    );
+  }
+
+  AdaptiveTextSelectionToolbar selectToolbar(
+    BuildContext context,
+    SelectableRegionState editableTextState,
+  ) {
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: editableTextState.contextMenuAnchors,
+      buttonItems: [
+        ...editableTextState.contextMenuButtonItems, // Copy, Select all, …
+        ContextMenuButtonItem(
+          label: 'Highlight',
+          onPressed: () {
+            final value = editableTextState.textEditingValue;
+            final sel = value.selection;
+            if (!sel.isValid || sel.isCollapsed) return;
+            final selected = value.text.substring(sel.start, sel.end);
+            debugPrint('Highlight: $selected');
+            ContextMenuController.removeAny();
+          },
+        ),
+      ],
     );
   }
 }

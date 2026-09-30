@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 import 'dart:math';
@@ -38,12 +40,8 @@ class Voice extends UnmodifiableMapView<String, String> {
 
   /// is match en, zh, es, jp, kr?
   bool match(String lang) {
+    // 'en-US' => en
     return this['locale']?.mid('', '-') == lang;
-    // return switch (lang) {
-    //   'en' => <String>{'en-US', 'en-AU', 'en-GB'}.contains(this['locale']),
-    //   'zh' => <String>{'zh-TW', 'zh-CN', 'zh-HK'}.contains(this['locale']),
-    //   _ => false,
-    // };
   }
 
   // Karen(Premium),F,TW
@@ -93,7 +91,9 @@ class EngineSetting {
     this.volume,
     this.voice,
   });
-  final String lang; // hardcode: en, zh, es, jp, kr
+
+  /// hardcode: en, zh, es, jp, kr
+  final String lang;
   final String language; // in engine en-US
   final double rate;
   final double pitch;
@@ -159,7 +159,9 @@ enum Playback {
   bool get isPlaying => this == playing || this == startLine || this == endLine;
 }
 
-class DualTts extends ChangeNotifier {
+typedef SpeakProgress = (Playback, int);
+
+class DualTts {
   DualTts();
 
   final tts = FlutterTts();
@@ -167,8 +169,15 @@ class DualTts extends ChangeNotifier {
   List<Chunk> chunks = const [];
   int index = 0;
   Playback state = Playback.stop;
+  static final streamController = StreamController<SpeakProgress>.broadcast();
 
-  /// TODO: brand specif tts engine or google
+  Stream<SpeakProgress> get stream => streamController.stream;
+
+  void notify() {
+    streamController.add((state, index));
+  }
+
+  /// TODO: remove this, someone said google tts is better
   Future<void> setEngine() async {
     if (Platform.isAndroid) {
       final info = await DeviceInfoPlugin().deviceInfo;
@@ -187,7 +196,7 @@ class DualTts extends ChangeNotifier {
   void load(List<Chunk> next, {int startAt = 0}) {
     chunks = next;
     index = max(0, startAt);
-    notifyListeners();
+    notify();
   }
 
   // apply voice setting
@@ -207,7 +216,7 @@ class DualTts extends ChangeNotifier {
 
     await tts.stop();
     index = nextIndex;
-    notifyListeners();
+    notify();
   }
 
   Future<void> play() async {
@@ -215,10 +224,10 @@ class DualTts extends ChangeNotifier {
       return;
     }
     state = Playback.playing;
-    notifyListeners();
+    notify();
     while (state.isPlaying && index < chunks.length) {
       state = Playback.startLine;
-      notifyListeners();
+      notify();
       final line = chunks[index];
       final v = ss[line.lang == '' ? 'zh' : line.lang];
       if (v != null) {
@@ -244,29 +253,29 @@ class DualTts extends ChangeNotifier {
       }
       if (index < chunks.length - 1) {
         state = Playback.endLine;
-        notifyListeners();
+        notify();
 
         index += 1;
       } else {
         state = Playback.endLine;
-        notifyListeners();
+        notify();
         state = Playback.stop;
       }
     }
-    notifyListeners(); // end while
+    notify(); // end while
   }
 
   Future<void> pause() async {
     state == Playback.pause;
     await tts.pause();
-    notifyListeners();
+    notify();
   }
 
   Future<void> stop() async {
     state == Playback.stop;
     await tts.stop();
     chunks.clear();
-    notifyListeners();
+    notify();
   }
 
   Future<void> toggle() async {
@@ -284,17 +293,40 @@ class DualTts extends ChangeNotifier {
     final wasPlaying = state;
     await pause();
     index = (index + delta).clamp(0, chunks.length - 1);
-    notifyListeners();
+    notify();
     if (wasPlaying.isPlaying) {
       await play();
     }
   }
 
-  @override
   void dispose() {
+    // never close? streamController.close();
     state = Playback.stop;
     tts.stop();
-
-    super.dispose();
   }
 }
+
+// Map the stream directly into Riverpod
+final spap = StreamProvider<SpeakProgress>((ref) {
+  return DualTts.streamController.stream;
+});
+
+/// Transform async StreamProvider to fully synchronous provider
+class SpeakNotifier extends Notifier<SpeakProgress> {
+  @override
+  SpeakProgress build() {
+    // Listen to the async StreamProvider
+    ref.listen<AsyncValue<SpeakProgress>>(spap, (previous, next) {
+      // Update state whenever new data arrives
+      next.whenData((v) {
+        state = v;
+      });
+    });
+
+    // Initial default value before stream emits anything
+    return (Playback.stop, 0);
+  }
+}
+
+// Synchronous Provider
+final spsp = NotifierProvider<SpeakNotifier, SpeakProgress>(SpeakNotifier.new);

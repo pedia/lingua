@@ -5,17 +5,9 @@ import '../epub/epub.dart' as epub;
 import '../../g.dart';
 
 class ChapterList extends ConsumerStatefulWidget {
-  const ChapterList({
-    required this.id,
-    required this.book,
-    required this.chapterIndex,
-    this.onChange,
-    super.key,
-  });
+  const ChapterList({required this.id, required this.book, super.key});
   final int id;
   final epub.Book book;
-  final int chapterIndex;
-  final Function(int)? onChange;
 
   @override
   ConsumerState<ChapterList> createState() => _ChapterListState();
@@ -29,7 +21,7 @@ class _ChapterListState extends ConsumerState<ChapterList> {
     return ScrollablePositionedList.builder(
       itemScrollController: isroller,
       key: PageStorageKey<int>(widget.id),
-      initialScrollIndex: widget.chapterIndex,
+      initialScrollIndex: 0,
       itemCount: widget.book.chapters.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
@@ -44,11 +36,11 @@ class _ChapterListState extends ConsumerState<ChapterList> {
         }
         final i = index - 1;
         return ListTile(
-          selected: i == widget.chapterIndex,
+          selected: i == 0,
           title: Text(widget.book.chapters[i].title),
           onTap: () {
             Navigator.pop(context);
-            widget.onChange?.call(i);
+            // widget.onChange?.call(i);
           },
         );
       },

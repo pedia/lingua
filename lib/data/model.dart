@@ -333,3 +333,5 @@ final shopProvider = NotifierProvider<ShopNotifier, Shop>(
   ShopNotifier.new,
   name: 'shopProvider',
 );
+
+/// id, book, readp, speakp

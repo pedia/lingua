@@ -1,12 +1,19 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 
 import 'g.dart';
 
-class HiveFrame extends StatelessWidget {
-  HiveFrame({super.key});
+class HiveFrame extends StatefulWidget {
+  const HiveFrame({super.key});
 
+  @override
+  State<HiveFrame> createState() => _HiveFrameState();
+}
+
+class _HiveFrameState extends State<HiveFrame> {
   final roller = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     return CupertinoApp(
@@ -39,13 +46,16 @@ class HiveFrame extends StatelessWidget {
                     trailing: v is int
                         ? Text('$v')
                         : const CupertinoListTileChevron(),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final f = await Navigator.push(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => ValueDetail(k: k, v: v),
+                          builder: (context) => ValueDetail(i: i, k: k, v: v),
                         ),
                       );
+                      if (f) {
+                        setState(() {});
+                      }
                     },
                   );
                 },
@@ -60,8 +70,14 @@ class HiveFrame extends StatelessWidget {
 }
 
 class ValueDetail extends StatelessWidget {
-  const ValueDetail({required this.k, required this.v, super.key});
+  const ValueDetail({
+    required this.i,
+    required this.k,
+    required this.v,
+    super.key,
+  });
 
+  final int i;
   final String k;
   final dynamic v;
 
@@ -70,11 +86,24 @@ class ValueDetail extends StatelessWidget {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: <Widget>[
-          CupertinoSliverNavigationBar(largeTitle: Text(k)),
+          CupertinoSliverNavigationBar(
+            largeTitle: Text(k),
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                gbox.deleteAt(i);
+                Navigator.of(context).pop(true);
+              }, // Add your action here
+              child: Icon(CupertinoIcons.delete, size: 28),
+            ),
+          ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(JsonEncoder.withIndent('  ').convert(v)),
+              child: switch (v) {
+                Uint8List() => Image.memory(v, fit: BoxFit.contain),
+                _ => Text(JsonEncoder.withIndent('  ').convert(v)),
+              },
             ),
           ),
         ],
