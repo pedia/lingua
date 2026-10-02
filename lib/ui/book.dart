@@ -67,7 +67,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     }
   }
 
-  /// CASES: save/restore scroll offset, include
+  /// CASE: save/restore scroll offset, include
   /// - addPostFrameCallback
   /// - ScrollController.addListener
   /// - dispose Future
@@ -79,7 +79,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   void initState() {
     super.initState();
 
-    // CASES:
+    // CASE:
     // Not work here(in initState). Move into didChangeDependencies
     // lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
 
@@ -172,6 +172,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         ref
             .read(docp.notifier)
             .update(ch.content, ArchiveProvider(ch.href, book.files));
+      }
+    });
+
+    ref.listen(docp, (_, next) {
+      if (next.activeIndex != null) {
+        ref
+            .read(isp(widget.id).notifier)
+            .updateRead(lineIndex: next.activeIndex!);
       }
     });
 
@@ -483,7 +491,7 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
 });
 
 class Progress {
-  const Progress({this.ci = 0, this.li = 0, this.offset = 0});
+  const Progress({this.ci = 0, this.li = 0, this.offset});
   final int ci;
   final int li;
   final double? offset;
@@ -495,6 +503,12 @@ class Progress {
   );
 
   Map<String, dynamic> toJson() => {"ci": ci, "li": li, "offset": ?offset};
+
+  Progress copyWith({int? ci, int? li, double? offset}) => Progress(
+    ci: ci ?? this.ci,
+    li: li ?? this.li,
+    offset: offset ?? this.offset,
+  );
 }
 
 //
@@ -535,8 +549,9 @@ class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
     return ItemState.fromJson(m);
   }
 
-  void update({Progress? read, Progress? speak}) async {
-    state = state.copyWith(read: read, speak: speak);
+  void updateRead({int? chapterIndex, int? lineIndex}) async {
+    final nr = state.read.copyWith(ci: chapterIndex, li: lineIndex);
+    state = state.copyWith(read: nr);
     gbox.put('item-state:${state.id}', state.toJson());
   }
 }

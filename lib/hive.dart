@@ -50,7 +50,7 @@ class _HiveFrameState extends State<HiveFrame> {
                         builder: (context) => ValueDetail(i: i, k: k, v: v),
                       ),
                     );
-                    if (f) {
+                    if (f!=null && f) {
                       setState(() {});
                     }
                   },
@@ -83,7 +83,7 @@ class ValueDetail extends StatelessWidget {
       child: CustomScrollView(
         slivers: <Widget>[
           CupertinoSliverNavigationBar(
-            largeTitle: Text('$i $k'),
+            largeTitle: Text('$i / $k'),
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () {

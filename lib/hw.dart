@@ -62,7 +62,7 @@ class BlockWidget extends ConsumerWidget {
     return Text.rich(
       clickable(trans(b.e, ref), b.i, ref),
       key: b.key,
-      // CASES: selection style
+      // CASE: selection style
       style: b.selected
           ? TextStyle(
               backgroundColor:
@@ -523,6 +523,7 @@ class DocNotifier extends Notifier<Doc> {
       debugPrint('out of range: $activeIndex, current: ${state.blocks.length}');
       return;
     }
+
     final nl = List<Block>.from(state.blocks);
     nl[activeIndex] = nl[activeIndex].copyWith(selected: true);
     if (state.activeIndex != null) {
@@ -549,11 +550,11 @@ class WithDocNotifier extends DocNotifier {
 /// auto, top block count > 1000 -> list
 enum Mode { auto, rich, list, silver }
 
+// not used now
 final parsedHtmlProvider = FutureProvider.family<Doc, String>((
   ref,
   html,
 ) async {
-  print('parse ${html.substring(0, 10)} in isolate');
   return await Isolate.run(() => Doc.create(html: html));
 });
 
@@ -570,15 +571,15 @@ class HtmlWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print('parse ${html.substring(0, 10)}');
-    return DocWidget(mode: mode);
-    // return ProviderScope(
-    //   overrides: [
-    //     docp.overrideWith(
-    //       () => WithDocNotifier(Doc.create(html: html, provider: provider)),
-    //     ),
-    //   ],
-    //   child: DocWidget(mode: mode),
-    // );
+    // return DocWidget(mode: mode);
+    return ProviderScope(
+      overrides: [
+        // for first time
+        docp.overrideWith(
+          () => WithDocNotifier(Doc.create(html: html, provider: provider)),
+        ),
+      ],
+      child: DocWidget(mode: mode),
+    );
   }
 }

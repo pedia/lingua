@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../epub/epub.dart' as epub;
 import '../../g.dart';
-import '../hw.dart';
 import 'book.dart';
 
 class ChapterList extends ConsumerStatefulWidget {
@@ -44,7 +43,9 @@ class _ChapterListState extends ConsumerState<ChapterList> {
           title: Text(chs[i].title),
           onTap: () {
             Navigator.pop(context);
-            ref.read(isp(widget.id).notifier).update(read: Progress(ci: i));
+            ref
+                .read(isp(widget.id).notifier)
+                .updateRead(chapterIndex: i, lineIndex: 0);
           },
         );
       },
