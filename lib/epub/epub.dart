@@ -210,3 +210,12 @@ class EpubParseException implements Exception {
   @override
   String toString() => message;
 }
+
+List<Chunk> md2ch(String md) {
+  final rs = <Chunk>[];
+  for (final line in md.split('\n')) {
+    final s = line.trim();
+    if (s.isNotEmpty) rs.add(Chunk(line, lang: 'zh'));
+  }
+  return rs;
+}

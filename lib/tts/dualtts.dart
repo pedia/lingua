@@ -78,8 +78,8 @@ class Voice extends UnmodifiableMapView<String, String> {
       this['identifier'] == other['identifier'];
 
   @override
-  int get hashCode =>
-      Object.hash(this['name'], this['locale'], this['identifier']);
+  int get hashCode => Object.hashAll(entries);
+  // Object.hash(this['name'], this['locale'], this['identifier']);
 }
 
 class EngineSetting {
@@ -308,6 +308,8 @@ class DualTts {
 
 // Map the stream directly into Riverpod
 final spap = StreamProvider<SpeakProgress>((ref) {
+  // is right?
+  ref.onDispose(DualTts.streamController.close);
   return DualTts.streamController.stream;
 });
 

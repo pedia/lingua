@@ -106,42 +106,75 @@ class BlockWidget extends ConsumerWidget {
       'figure' || 'div' || 'p' => TextSpan(
         text: text,
         children: children,
-        style: const TextStyle(fontSize: 16.0, height: 1.55),
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          fontSize: 16.0,
+          height: 1.55,
+        ),
       ),
       'h1' => TextSpan(
         text: text,
         children: children,
-        style: const TextStyle(fontSize: 32.0, height: 1.55),
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          fontSize: 32.0,
+          height: 1.55,
+        ),
       ),
       'h2' => TextSpan(
         text: text,
         children: children,
-        style: const TextStyle(fontSize: 24.0, height: 1.55),
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          fontSize: 24.0,
+          height: 1.55,
+        ),
       ),
       'h3' => TextSpan(
         text: text,
         children: children,
-        style: const TextStyle(fontSize: 18.0, height: 1.55),
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          fontSize: 18.0,
+          height: 1.55,
+        ),
       ),
 
       'b' || 'strong' => TextSpan(
         children: children,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          fontWeight: FontWeight.bold,
+        ),
       ),
 
       'i' || 'em' => TextSpan(
         text: text,
         children: children,
-        style: const TextStyle(fontStyle: FontStyle.italic),
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          fontStyle: FontStyle.italic,
+        ),
       ),
 
       'u' => TextSpan(
         text: text,
         children: children,
-        style: const TextStyle(decoration: TextDecoration.underline),
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          decoration: TextDecoration.underline,
+        ),
       ),
 
-      'span' => TextSpan(text: text, children: children),
+      'span' => TextSpan(
+        text: text,
+        children: children,
+        style: const TextStyle(
+          fontFamily: '.osdefault',
+          fontSize: 16.0,
+          height: 1.55,
+        ),
+      ),
 
       'img' => WidgetSpan(
         child: Image.memory(
@@ -157,7 +190,15 @@ class BlockWidget extends ConsumerWidget {
       ),
 
       'a' => linkify(
-        TextSpan(text: text, children: children),
+        TextSpan(
+          text: text,
+          children: children,
+          style: const TextStyle(
+            fontFamily: '.osdefault',
+            fontSize: 16.0,
+            height: 1.55,
+          ),
+        ),
         e.attributes['href'] ?? '',
         ref,
       ),
@@ -259,7 +300,7 @@ class BlockWidget extends ConsumerWidget {
                   ..onTap = () {
                     // TODO: widget.clicklNotify?.call(index));
                     print('click $index');
-                    ref.read(docp.notifier).update(index);
+                    ref.read(docp.notifier).updateActive(index);
                   }),
             style: w.style,
             mouseCursor: w.mouseCursor,
@@ -298,12 +339,18 @@ class Doc {
   final Map<String, GlobalKey> topks;
   final FileProvider? provider;
 
-  factory Doc.create({required String html, int? activeIndex, double? offset}) {
+  factory Doc.create({
+    required String html,
+    int? activeIndex,
+    double? offset,
+    FileProvider? provider,
+  }) {
     final doc = dom.parse(html);
     final body = doc.body ?? dom.Element.tag('body');
     body.children.length;
     final ks = <String, GlobalKey>{};
     return Doc(
+      provider: provider,
       activeIndex: activeIndex,
       offset: offset,
       topks: ks,
@@ -336,6 +383,10 @@ class Doc {
   GlobalKey newKey(String name) {
     return topks.putIfAbsent(name, () => GlobalKey());
   }
+
+  @override
+  String toString() =>
+      'Doc(bs:${blocks.length}, a:$activeIndex, ks:${topks.length})';
 }
 
 class DocWidget extends ConsumerStatefulWidget {
@@ -463,13 +514,11 @@ class DocNotifier extends Notifier<Doc> {
     return Doc(blocks: []);
   }
 
-  static DocNotifier foo(Doc doc) {
-    final d = DocNotifier();
-    d.state = doc;
-    return d;
+  void update(String html, FileProvider provider) {
+    state = Doc.create(html: html, provider: provider);
   }
 
-  void update(int activeIndex) {
+  void updateActive(int activeIndex) {
     if (activeIndex > state.blocks.length - 1) {
       debugPrint('out of range: $activeIndex, current: ${state.blocks.length}');
       return;
@@ -504,7 +553,7 @@ final parsedHtmlProvider = FutureProvider.family<Doc, String>((
   ref,
   html,
 ) async {
-  print('parse in isolate');
+  print('parse ${html.substring(0, 10)} in isolate');
   return await Isolate.run(() => Doc.create(html: html));
 });
 
@@ -521,45 +570,15 @@ class HtmlWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncDoc = ref.watch(parsedHtmlProvider(html));
-    return asyncDoc.when(
-      loading: () => const CircularProgressIndicator(),
-      error: (err, stack) => Text('Error parsing: $err'),
-      data: (doc) => ProviderScope(
-        overrides: [
-          docp.overrideWith(
-            () => WithDocNotifier(doc.copyWith(provider: provider)),
-          ),
-          // readpp.overrideWith(() => WithReadNotifier()),
-        ],
-        child: DocWidget(mode: mode),
-      ),
-    );
+    print('parse ${html.substring(0, 10)}');
+    return DocWidget(mode: mode);
+    // return ProviderScope(
+    //   overrides: [
+    //     docp.overrideWith(
+    //       () => WithDocNotifier(Doc.create(html: html, provider: provider)),
+    //     ),
+    //   ],
+    //   child: DocWidget(mode: mode),
+    // );
   }
 }
-
-// Assume this is your external Async I/O stream
-Stream<int> dtstream() async* {
-  int count = 0;
-  while (true) {
-    await Future.delayed(const Duration(seconds: 2));
-    yield count++;
-  }
-}
-
-// Map the stream directly into Riverpod
-final tickap = StreamProvider<int>((ref) {
-  return dtstream();
-});
-
-
-
-// class ReadNotifier extends Notifier<ReadProgress> {
-//   @override
-//   ReadProgress build() {
-//     return (0, 0);
-//   }
-// }
-
-// // Read progress
-// final readpp = NotifierProvider<ReadNotifier, ReadProgress>(ReadNotifier.new);

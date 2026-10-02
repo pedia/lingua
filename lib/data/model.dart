@@ -3,31 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../g.dart';
 
-part 'model.freezed.dart';
-part 'model.g.dart';
-
-/// current index of chapter and line
-@freezed
-abstract class Progress with _$Progress {
-  const factory Progress({
-    @Default(0) int chapterIndex,
-    @Default(0) int lineIndex,
-    @Default(0.0) double offset,
-  }) = _Progress;
-
-  const Progress._();
-
-  factory Progress.fromJson(Map<String, dynamic> json) =>
-      _$ProgressFromJson(json);
-
-  @override
-  Map<String, dynamic> toJson() => _$ProgressToJson(this as _Progress);
-
-  @override
-  String toString() =>
-      'Progress{$chapterIndex,$lineIndex,${offset.toStringAsFixed(2)}}';
-}
-
 enum ItemType { assets, file, demo, net, debug }
 
 class Item {
@@ -37,7 +12,6 @@ class Item {
     required this.path,
     this.name,
     this.author,
-    this.progress,
     this.percent = 0,
   });
 
@@ -46,7 +20,6 @@ class Item {
   final String path;
   final String? name;
   final String? author;
-  final Progress? progress;
   final double percent;
 
   String get subtitle => [
@@ -67,9 +40,6 @@ class Item {
     path: json['path'] as String,
     name: json['name'] as String?,
     author: json['author'] as String?,
-    progress: json['progress'] == null
-        ? null
-        : Progress.fromJson((json['progress'] as Map).cast<String, dynamic>()),
     percent: (json['percent'] as num?)?.toDouble() ?? 0,
   );
 
@@ -79,7 +49,6 @@ class Item {
     'path': path,
     'name': name,
     'author': author,
-    'progress': progress?.toJson(),
     'percent': percent,
   };
 
@@ -89,7 +58,6 @@ class Item {
     String? path,
     String? name,
     String? author,
-    Progress? progress,
     double? percent,
   }) => Item(
     id: id ?? this.id,
@@ -97,9 +65,13 @@ class Item {
     path: path ?? this.path,
     name: name ?? this.name,
     author: author ?? this.author,
-    progress: progress ?? this.progress,
     percent: percent ?? this.percent,
   );
+
+  @override
+  bool operator ==(Object other) => other is Item && id == other.id;
+  @override
+  int get hashCode => Object.hash(runtimeType, id, name, path);
 }
 
 class ItemListNotifier extends Notifier<List<Item>> {
@@ -115,14 +87,10 @@ class ItemListNotifier extends Notifier<List<Item>> {
     state = [target, ...state];
   }
 
-  void update(int id, {Progress? progress, String? author, String? name}) {
-    print('item($id) update $progress $author');
+  void update(int id, {String? author, String? name}) {
     state = [
       for (final e in state)
-        if (e.id == id)
-          e.copyWith(progress: progress, author: author, name: name)
-        else
-          e,
+        if (e.id == id) e.copyWith(author: author, name: name) else e,
     ];
     save();
   }
@@ -141,42 +109,6 @@ class ItemListNotifier extends Notifier<List<Item>> {
     save();
   }
 
-  final builtin = [
-    const Item(
-      id: 1,
-      name: 'The Little Prince',
-      path: 'assets/the-little-prince-dual.epub',
-      type: ItemType.assets,
-    ),
-    const Item(
-      id: 2,
-      name: 'Super Supportive',
-      path: 'assets/super-supportive-dual.epub',
-      type: ItemType.assets,
-    ),
-    const Item(
-      id: 3,
-      name: 'Paranoid Mage',
-      path: 'assets/paranoid-mage-dual.epub',
-      type: ItemType.assets,
-    ),
-    const Item(
-      id: 4,
-      name: 'Mother of Learning',
-      path: 'assets/mother-of-learning-dual.epub',
-      type: ItemType.assets,
-    ),
-
-    const Item(id: 5, name: 'Sample', path: '', type: ItemType.demo),
-    if (!bool.fromEnvironment('dart.vm.product'))
-      const Item(
-        id: 6,
-        name: 'Debug, 中文',
-        path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
-        type: ItemType.debug,
-      ),
-  ];
-
   Future load() async {
     final jl = gbox.get('items2');
     state = (jl is List && jl.isNotEmpty)
@@ -184,9 +116,9 @@ class ItemListNotifier extends Notifier<List<Item>> {
             for (final i in jl)
               Item.fromJson((i as Map).cast<String, dynamic>()),
           ]
-        : builtin;
+        : ShopNotifier.builtin;
 
-    for (final i in builtin) {
+    for (final i in ShopNotifier.builtin) {
       if (!state.contains(i)) add(i);
     }
   }
@@ -204,22 +136,36 @@ final itemsProvider = NotifierProvider<ItemListNotifier, List<Item>>(
 );
 
 class Shelf {
-  Shelf({required this.name, required this.items});
+  Shelf({required this.id, required this.name, required this.items});
+  final int id;
   final String name;
   final List<Item> items;
 
+  static List<Item> loadItems(List<int> iids) {
+    final items = <Item>[];
+    for (int iid in iids) {
+      final m = gbox.get('item:$iid');
+      if (m != null) {
+        items.add(Item.fromJson(m));
+      }
+    }
+    return items;
+  }
+
   factory Shelf.fromJson(Map<String, dynamic> json) => Shelf(
+    id: json['id'] as int,
     name: json['name'] as String,
-    items: (json['items'] as List).map((m) => Item.fromJson(m)).toList(),
+    items: loadItems(json['items'] as List<int>),
   );
 
   Map<String, dynamic> toJson() => {
-    'items': items.map((e) => e.toJson()).toList(),
+    'id': id,
     'name': name,
+    'items': items.map((e) => e.id).toList(),
   };
 }
 
-/// short for Shelves, mean bookshop
+/// Short for Shelves, mean bookshop
 class Shop {
   Shop({required this.shelves, this.current = 0});
   final List<Shelf> shelves;
@@ -242,17 +188,27 @@ class ShopNotifier extends Notifier<Shop> {
     final m = gbox.get('shop');
     if (m == null) {
       return Shop(
-        shelves: [Shelf(name: 'all', items: builtin)],
+        shelves: [Shelf(id: nextId(), name: 'all', items: builtin)],
       );
     }
-    return Shop.fromJson((m as Map).cast<String, dynamic>());
+    final current = Shop.fromJson((m as Map).cast<String, dynamic>());
+    final all = <Item>[];
+    for (var s in current.shelves) {
+      all.addAll(s.items);
+    }
+    for (final bi in builtin) {
+      if (!all.contains(bi)) {
+        current.shelves.first.items.add(bi);
+      }
+    }
+    return current;
   }
 
   /// add means, put it at 1st place
   int add(String name) {
     state = Shop(
       shelves: [
-        Shelf(name: name, items: []),
+        Shelf(id: nextId(), name: name, items: []),
         ...state.shelves,
       ],
       current: state.current,
@@ -287,7 +243,7 @@ class ShopNotifier extends Notifier<Shop> {
     );
   }
 
-  final builtin = [
+  static final builtin = [
     const Item(
       id: 1,
       name: 'The Little Prince',
@@ -313,7 +269,7 @@ class ShopNotifier extends Notifier<Shop> {
       type: ItemType.assets,
     ),
 
-    const Item(id: 5, name: 'Sample', path: '', type: ItemType.demo),
+    const Item(id: 5, name: 'Freya Cycle', path: '', type: ItemType.demo),
     if (!bool.fromEnvironment('dart.vm.product'))
       const Item(
         id: 6,
@@ -333,5 +289,3 @@ final shopProvider = NotifierProvider<ShopNotifier, Shop>(
   ShopNotifier.new,
   name: 'shopProvider',
 );
-
-/// id, book, readp, speakp

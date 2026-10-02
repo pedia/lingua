@@ -119,6 +119,7 @@ class _EngineSettingPageState extends State<EngineSettingPage> {
       },
       items: allvoices
           .where((e) => e.match(ess[i].lang) && e.valid)
+          // .where((e) => e['name'] != 'Samantha')
           .map((e) => DropdownMenuItem<Voice>(value: e, child: Text(e.title)))
           .toList(),
     );
@@ -136,7 +137,7 @@ class _EngineSettingPageState extends State<EngineSettingPage> {
         ).read(settingProvider.notifier);
         for (final v in ess) {
           m.put('tts.${v.lang}', v.toSetting());
-          debugPrint('$v');
+          debugPrint('setting put $v');
         }
       },
       child: Scaffold(

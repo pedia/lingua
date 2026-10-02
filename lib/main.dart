@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:universal_io/universal_io.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_file_open_handler/macos_file_open_handler.dart';
+import 'package:riverpod_devtools/riverpod_devtools.dart';
 import 'package:open_with_app/open_with_app.dart';
 import 'package:hive_ce/hive_ce.dart';
 
@@ -15,6 +17,13 @@ import 'ui/font.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    final json = await rootBundle.loadString('lib/riverpod_dependencies.json');
+    RiverpodDevToolsRegistry.instance.loadFromJson(json);
+  } catch (_) {
+    // DevTools shows setup instructions
+  }
 
   final docs = await getApplicationDocumentsDirectory();
   gbox = await Hive.openBox('all', path: docs.path);
@@ -50,7 +59,12 @@ Future<void> main() async {
   }
 
   final ff = await osFontFamily();
-  debugPrint('osfont: $ff ${Directory.current.path}', );
+  debugPrint('osfont: $ff ${Directory.current.path}');
 
-  runApp(ProviderScope(child: LinguaApp(family: ff)));
+  runApp(
+    ProviderScope(
+      observers: [RiverpodDevToolsObserver()],
+      child: LinguaApp(family: ff),
+    ),
+  );
 }

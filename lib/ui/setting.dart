@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../settings/setting.dart';
 
@@ -62,9 +63,13 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
   Widget build(BuildContext context) {
     final m = ref.watch(settingProvider);
     debugPrint('all setting: $m');
-    return Scaffold(
-      appBar: AppBar(title: const Text('Setting')),
-      body: ListView(children: items.map((e) => Tile(e)).toList()),
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(middle: Text('Setting')),
+      child: SafeArea(
+        child: Material(
+          child: ListView(children: items.map((e) => Tile(e)).toList()),
+        ),
+      ),
     );
   }
 }

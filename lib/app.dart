@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lingua/hive.dart';
+import 'package:lingua/prototype.dart';
+import 'package:lingua/route.dart';
+import 'package:lingua/ui/book.dart';
+import 'package:lingua/ui/setting.dart';
+import 'package:lingua/ui/shelf.dart';
+import 'package:lingua/ui/voice_setting.dart';
 
 import 'settings/setting.dart';
 import 'ui/font.dart';
@@ -58,8 +66,7 @@ class LinguaApp extends ConsumerWidget {
     return base.copyWith(textTheme: textTheme);
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget m(WidgetRef ref) {
     final tm = ref.watch(
       settingProvider.select((m) => m.intOf('ui.theme-mode', defaults: 0)),
     );
@@ -76,28 +83,103 @@ class LinguaApp extends ConsumerWidget {
         Locale('ko', 'KR'),
         // Locale('es', 'ES'),
       ],
-      home: LibraryFrame(),
+    );
+  }
+
+  Brightness resolveBrightness(BuildContext context, ThemeMode themeMode) {
+    switch (themeMode) {
+      case ThemeMode.light:
+        return Brightness.light;
+      case ThemeMode.dark:
+        return Brightness.dark;
+      case ThemeMode.system:
+        // Reads the current OS brightness (light/dark) from context
+        return MediaQuery.platformBrightnessOf(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tm = ref.watch(
+      settingProvider.select((m) => m.intOf('ui.theme-mode', defaults: 0)),
+    );
+    final br = resolveBrightness(context, ThemeMode.values[tm]);
+    return CupertinoApp.router(
+      debugShowCheckedModeBanner: false,
+      localizationsDelegates: <LocalizationsDelegate<dynamic>>[
+        DefaultMaterialLocalizations.delegate, // <-- THIS FIXES THE ERROR
+        DefaultWidgetsLocalizations.delegate,
+        DefaultCupertinoLocalizations.delegate,
+      ],
+      theme: CupertinoThemeData(
+        brightness: br,
+        primaryColor: CupertinoColors.activeBlue,
+      ),
+      routerConfig: router,
     );
   }
 }
 
 final router = GoRouter(
   routes: [
+    GoRoute(path: '/', builder: (_, _) => ShelfFrame()),
     GoRoute(
-      path: '/',
-      builder: (_, _) => LibraryFrame(),
-      routes: [
-        GoRoute(
-          path: 'book/:path',
-          builder: (context, state) {
-            final _ = state.pathParameters['path']!;
-            return Scaffold(
-              appBar: AppBar(title: const Text('Details Screen')),
-            );
-            // BookFrame(book: book, progress: progress, path: path);
-          },
+      path: '/book/:id',
+      pageBuilder: (_, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(
+          type: MaterialType.transparency,
+          child: BookFrame(id: int.parse(state.pathParameters['id'] ?? '')),
         ),
-      ],
+      ),
+    ),
+    GoRoute(
+      path: '/hive',
+      pageBuilder: (_, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(type: MaterialType.transparency, child: HiveFrame()),
+      ),
+    ),
+    GoRoute(
+      path: '/setting',
+      pageBuilder: (_, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(type: MaterialType.transparency, child: SettingFrame()),
+      ),
+    ),
+    GoRoute(
+      path: '/engine',
+      pageBuilder: (ctx, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(
+          type: MaterialType.transparency,
+          child: EngineSettingPage.from(ctx),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '/route',
+      pageBuilder: (_, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(type: MaterialType.transparency, child: RouteScreen()),
+      ),
+    ),
+    GoRoute(
+      path: '/library',
+      pageBuilder: (_, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(type: MaterialType.transparency, child: LibraryFrame()),
+      ),
+    ),
+    GoRoute(
+      path: '/protype',
+      pageBuilder: (_, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(
+          type: MaterialType.transparency,
+          child: BookReaderScreen(bookId: '3'),
+        ),
+      ),
     ),
   ],
 );

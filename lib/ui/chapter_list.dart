@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../epub/epub.dart' as epub;
 import '../../g.dart';
-import 'state.dart';
+import '../hw.dart';
+import 'book.dart';
 
 class ChapterList extends ConsumerStatefulWidget {
-  const ChapterList({required this.id, required this.book, super.key});
+  const ChapterList(this.id, this.book, {super.key});
   final int id;
   final epub.Book book;
 
@@ -16,14 +17,14 @@ class ChapterList extends ConsumerStatefulWidget {
 
 class _ChapterListState extends ConsumerState<ChapterList> {
   // not work for 0.3.8 final roller = ScrollController();
-  final isroller = ItemScrollController();
+  final itemroller = ItemScrollController();
 
   @override
   Widget build(BuildContext context) {
-    final chs = ref.watch(readp.select((s) => s.book.chapters));
+    final chs = widget.book.chapters;
     return ScrollablePositionedList.builder(
-      itemScrollController: isroller,
-      key: PageStorageKey<int>(ref.watch(readp.select((s) => s.id))),
+      itemScrollController: itemroller,
+      key: PageStorageKey<int>(widget.id),
       initialScrollIndex: 0,
       itemCount: chs.length + 1,
       itemBuilder: (context, index) {
@@ -39,11 +40,11 @@ class _ChapterListState extends ConsumerState<ChapterList> {
         }
         final i = index - 1;
         return ListTile(
-          selected: i == ref.watch(readp.select((s) => s.progress.$1)),
-          title: Text(widget.book.chapters[i].title),
+          selected: i == ref.watch(isp(widget.id)).read.ci,
+          title: Text(chs[i].title),
           onTap: () {
             Navigator.pop(context);
-            ref.read(readp.notifier).update(progress: (i, 0));
+            ref.read(isp(widget.id).notifier).update(read: Progress(ci: i));
           },
         );
       },

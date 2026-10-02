@@ -206,8 +206,6 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                   }
                 }
 
-                print("${e.id}: ${book?.author}");
-
                 if (book != null &&
                     book.author.isNotEmpty &&
                     e.author == null) {
@@ -219,7 +217,10 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                 if (context.mounted && book != null) {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => BookFrame(id: e.id, book: book!),
+                      builder: (_) => ProviderScope(
+                        overrides: [],
+                        child: BookFrame(id: e.id),
+                      ),
                     ),
                   );
                 }

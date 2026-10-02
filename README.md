@@ -148,9 +148,22 @@ drawer: Drawer(
 
 # state
 
-https://item.jd.com/10234760286055.html
+-    tts:
+   watch: tts-line?
+    read: lines
+      up: tts-line
 
+- reader:
+   watch: cch, read-line, tts.state
+    read: cch, cbook(ArchiveProvider)
+   // up: read-line
 
-/// init: read offset
-///  tts: line <- dutts
-/// read: line, offset <-- hw
+-    hw: [bookProvider]
+   read: Doc, ArchiveProvider
+  watch: ch->Doc, ch->ArchiveProvider
+     up: read-line
+
+- chs list:
+     watch: cch=?book,  cbook
+      read: chs
+        up: cch

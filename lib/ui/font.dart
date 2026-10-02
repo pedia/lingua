@@ -55,7 +55,6 @@ class FontFrame extends StatelessWidget {
   const FontFrame({super.key});
 
   final List<String> fonts = const [
-    '',
     '.osdefault', // osfont
     '.AppleSystemUIFont',
     'CupertinoSystemDisplay',

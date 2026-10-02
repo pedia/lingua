@@ -1,5 +1,6 @@
-import 'dart:typed_data';
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:archive/archive.dart';
@@ -10,11 +11,14 @@ import 'setting.dart';
 import 'voice_setting.dart';
 import 'font.dart';
 import '../hw.dart';
+import '../g.dart';
 import 'chapter_list.dart';
 import '../data/model.dart';
 import '../epub/epub.dart' as epub;
+import '../epub/parser.dart' as epub;
 import '../tts/dualtts.dart';
-import 'state.dart';
+import '../freya.dart';
+import '../data/sample.dart';
 
 class ArchiveProvider extends FileProvider {
   ArchiveProvider(String base, this.files) : base = Uri(path: base);
@@ -30,8 +34,7 @@ class ArchiveProvider extends FileProvider {
 }
 
 class BookFrame extends ConsumerStatefulWidget {
-  const BookFrame({required this.book, required this.id, super.key});
-  final epub.Book book;
+  const BookFrame({required this.id, super.key});
   final int id;
 
   @override
@@ -44,14 +47,11 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       playbackState == Playback.pause || playbackState.isPlaying;
   final dt = DualTts();
   final roller = ScrollController();
-  dom.Document? doc;
 
-  @override
-  void didUpdateWidget(BookFrame oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // TODO: if (widget.progress != oldWidget.progress) {}
-  }
+  // @override
+  // void didUpdateWidget(BookFrame oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  // }
 
   /// CASE: avoid using ref in initState
   bool _initialized = false;
@@ -71,33 +71,28 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   /// - addPostFrameCallback
   /// - ScrollController.addListener
   /// - dispose Future
-  late final ItemListNotifier _itemsProvider;
+
   late StreamSubscription sub;
+  late epub.Book book;
 
   @override
   void initState() {
     super.initState();
 
-    // CASE:
+    // CASES:
     // Not work here(in initState). Move into didChangeDependencies
     // lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
-
-    // setState(() => doc = dom.parse(chapter.content));
-
-    // safe here
-    _itemsProvider = ref.read(itemsProvider.notifier);
 
     sub = dt.stream.listen(_onTts);
 
     // Set drawer opened at first time frame appear
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // if (ref.read(readpp).$1 == 0) {
-      //   _scaffoldKey.currentState?.openDrawer();
-      // }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
 
-  epub.Chapter get chapter => widget.book.chapters[0];
+  epub.Chapter get chapter {
+    final s = ref.read(isp(widget.id));
+    return book.chapters[s.read.ci];
+  }
 
   @override
   void dispose() {
@@ -142,16 +137,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     if (m.$1 != playbackState) {
       setState(() => playbackState = m.$1);
     }
-
-    // if (m.$1.isPlaying) {
-    //   setState(() => _progress = _progress.copyWith(lineIndex: m.$2));
-    // }
   }
 
   List<epub.Chunk> get lines {
     final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
-    final chi = ref.read(readp).progress.$1;
-    return widget.book.chapters[chi].chunks
+    final chi = ref.read(isp(widget.id)).read.ci;
+    return book.chapters[chi].chunks
         .where((line) => lang == '' || line.lang == lang)
         .toList();
   }
@@ -172,14 +163,42 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
-    final fs = ref.watch(
-      settingProvider.select((m) => m.intOf('ui.font-size', defaults: 14)),
+    ref.listen(isp(widget.id), (previous, next) {
+      if (next.read.ci != previous?.read.ci) {
+        final ch = book.chapters[next.read.ci];
+        print(
+          'ch change: ${previous?.read.ci} -> ${next.read.ci} ${ch.content.substring(0, 10)}',
+        );
+        ref
+            .read(docp.notifier)
+            .update(ch.content, ArchiveProvider(ch.href, book.files));
+      }
+    });
+
+    final ab = ref.watch(bookProvider(widget.id));
+    return AsyncValueX(ab).when(
+      data: (book) {
+        this.book = book!;
+        return builds(context, book);
+      },
+      loading: () => const CircularProgressIndicator(),
+      error: (err, stackTrace) {
+        print(stackTrace.toString().substring(0, 1000));
+        return Text('Error: $err', style: const TextStyle(color: Colors.red));
+      },
     );
+  }
+
+  Widget builds(BuildContext context, epub.Book book) {
+    final ci = ref.watch(isp(widget.id)).read.ci;
+    final ch = book.chapters[ci];
+
+    print('book build with $ci ${ch.title}');
 
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(chapter.title),
+        title: Text(ch.title),
         actions: [
           IconButton(
             tooltip: switch (playbackState) {
@@ -239,24 +258,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           ),
         ],
       ),
-      drawer: Drawer(
-        width: 280,
-        child: ChapterList(
-          id: widget.id,
-          book: widget.book,
-          // chapterIndex: _progress.chapterIndex,
-          // onChange: (i) => setState(
-          // () => _progress = Progress(chapterIndex: i, lineIndex: 0),
-          // ),
-        ),
-      ),
+      drawer: Drawer(width: 280, child: ChapterList(widget.id, book)),
       body: SelectableRegion(
         selectionControls: materialTextSelectionHandleControls,
         contextMenuBuilder: selectToolbar,
         child: HtmlWidget(
-          chapter.content,
+          ch.content,
           mode: Mode.list,
-          provider: ArchiveProvider(chapter.href, widget.book.files),
+          provider: ArchiveProvider(ch.href, book.files),
         ),
       ),
     );
@@ -276,33 +285,33 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     // }
   }
 
-  void scrollToNextPage(TapUpDetails d) {
-    if (!roller.hasClients) return;
+  // void scrollToNextPage(TapUpDetails d) {
+  //   if (!roller.hasClients) return;
 
-    final double viewportHeight = roller.position.viewportDimension;
-    final double target = (roller.offset + viewportHeight).clamp(
-      0.0,
-      roller.position.maxScrollExtent,
-    );
+  //   final double viewportHeight = roller.position.viewportDimension;
+  //   final double target = (roller.offset + viewportHeight).clamp(
+  //     0.0,
+  //     roller.position.maxScrollExtent,
+  //   );
 
-    if (roller.offset == roller.position.maxScrollExtent) {
-      debugPrint('next chapter');
-      gotoNextChapter();
-      return;
-    }
+  //   if (roller.offset == roller.position.maxScrollExtent) {
+  //     debugPrint('next chapter');
+  //     gotoNextChapter();
+  //     return;
+  //   }
 
-    if (ref.watch(
-      settingProvider.select((m) => m.flag('ui.next-page-animation')),
-    )) {
-      roller.animateTo(
-        target,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-      );
-    } else {
-      roller.jumpTo(target);
-    }
-  }
+  //   if (ref.watch(
+  //     settingProvider.select((m) => m.flag('ui.next-page-animation')),
+  //   )) {
+  //     roller.animateTo(
+  //       target,
+  //       duration: const Duration(milliseconds: 100),
+  //       curve: Curves.easeOut,
+  //     );
+  //   } else {
+  //     roller.jumpTo(target);
+  //   }
+  // }
 
   Widget playbackPanel(BuildContext context) {
     return SafeArea(
@@ -437,3 +446,102 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     );
   }
 }
+
+final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
+  ref,
+  id,
+) async {
+  print('book provider $id');
+  if (id == 5) return freya;
+  if (id == 6) return sample();
+
+  final m = gbox.get('item:$id');
+  if (m == null) return null;
+
+  final item = Item.fromJson(m);
+
+  final file = File(item.path);
+  if (!file.existsSync()) {
+    return null;
+  }
+
+  final book = const epub.EpubParser().parseBytes(await file.readAsBytes());
+
+  // // book cover image thumbnail
+  if (gbox.get('icon-$id') == null) {
+    final cb = book.coverBytes;
+    if (cb != null) {
+      gbox.put('icon-$id', iconify(cb));
+    }
+  }
+
+  if (book.author.isNotEmpty && item.author == null) {
+    gbox.put('item:$id', item.copyWith(author: book.author, name: book.title));
+  }
+
+  return book;
+});
+
+class Progress {
+  const Progress({this.ci = 0, this.li = 0, this.offset = 0});
+  final int ci;
+  final int li;
+  final double? offset;
+
+  factory Progress.fromJson(Map<String, dynamic> json) => Progress(
+    ci: json['ci'] ?? 0,
+    li: json['li'] ?? 0,
+    offset: json['offset'],
+  );
+
+  Map<String, dynamic> toJson() => {"ci": ci, "li": li, "offset": ?offset};
+}
+
+//
+class ItemState {
+  ItemState({
+    required this.id,
+    this.read = const Progress(),
+    this.speak = const Progress(),
+  });
+  final int id;
+  final Progress read;
+  final Progress speak;
+
+  ItemState copyWith({int? id, Progress? read, Progress? speak}) => ItemState(
+    id: id ?? this.id,
+    read: read ?? this.read,
+    speak: speak ?? this.speak,
+  );
+
+  factory ItemState.fromJson(Map<String, dynamic> json) =>
+      ItemState(id: json['id'], read: json['read'], speak: json['speak']);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'read': read.toJson(),
+    'speak': speak.toJson(),
+  };
+}
+
+// AsyncNotifier family tracking just progress for a book ID
+class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
+  @override
+  ItemState build(int id) {
+    final m = gbox.get('item-state:$id');
+    if (m == null) {
+      return ItemState(id: id);
+    }
+    return ItemState.fromJson(m);
+  }
+
+  void update({Progress? read, Progress? speak}) async {
+    state = state.copyWith(read: read, speak: speak);
+    gbox.put('item-state:${state.id}', state.toJson());
+  }
+}
+
+/// short for ItemStateProvider
+final isp = NotifierProvider.family<ItemStateNotifier, ItemState, int>(
+  ItemStateNotifier.new,
+);

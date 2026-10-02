@@ -55,7 +55,7 @@ class TypedMap {
         try {
           m = m[i].cast<String, dynamic>();
         } catch (e) {
-          debugPrint('$e');
+          debugPrint('TypedMap has $key failed $e');
           return false;
         }
       }

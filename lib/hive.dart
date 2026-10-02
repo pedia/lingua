@@ -16,54 +16,50 @@ class _HiveFrameState extends State<HiveFrame> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
-      debugShowCheckedModeBanner: false,
-      theme: CupertinoThemeData(brightness: Brightness.dark),
-      home: CupertinoPageScaffold(
-        // A CustomScrollView is required for slivers to work together
-        child: CustomScrollView(
-          slivers: <Widget>[
-            // 1. The Cupertino Sliver AppBar
-            CupertinoSliverNavigationBar(
-              largeTitle: Text('Hive Console(Debug)'),
-              trailing: CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: null, // Add your action here
-                child: Icon(CupertinoIcons.add, size: 28),
-              ),
+    return CupertinoPageScaffold(
+      // A CustomScrollView is required for slivers to work together
+      child: CustomScrollView(
+        slivers: <Widget>[
+          // 1. The Cupertino Sliver AppBar
+          CupertinoSliverNavigationBar(
+            largeTitle: Text('Hive Console(Debug)'),
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: null, // Add your action here
+              child: Icon(CupertinoIcons.add, size: 28),
             ),
+          ),
 
-            // 2. The iOS-styled List Content
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int i) {
-                  final k = gbox.keys.skip(i).first;
-                  final v = gbox.getAt(i);
-                  return CupertinoListTile(
-                    title: Text(k),
-                    subtitle: Text('${v.runtimeType}'),
-                    leading: const Icon(CupertinoIcons.gear),
-                    trailing: v is int
-                        ? Text('$v')
-                        : const CupertinoListTileChevron(),
-                    onTap: () async {
-                      final f = await Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => ValueDetail(i: i, k: k, v: v),
-                        ),
-                      );
-                      if (f) {
-                        setState(() {});
-                      }
-                    },
-                  );
-                },
-                childCount: gbox.length, // Number of items in your list
-              ),
+          // 2. The iOS-styled List Content
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (BuildContext context, int i) {
+                final k = gbox.keys.skip(i).first;
+                final v = gbox.getAt(i);
+                return CupertinoListTile(
+                  title: Text(k),
+                  subtitle: Text('${v.runtimeType}'),
+                  leading: const Icon(CupertinoIcons.gear),
+                  trailing: v is int
+                      ? Text('$v')
+                      : const CupertinoListTileChevron(),
+                  onTap: () async {
+                    final f = await Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (context) => ValueDetail(i: i, k: k, v: v),
+                      ),
+                    );
+                    if (f) {
+                      setState(() {});
+                    }
+                  },
+                );
+              },
+              childCount: gbox.length, // Number of items in your list
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
