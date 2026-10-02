@@ -172,7 +172,7 @@ final router = GoRouter(
       ),
     ),
     GoRoute(
-      path: '/protype',
+      path: '/prototype',
       pageBuilder: (_, state) => CupertinoPage(
         key: state.pageKey,
         child: Material(

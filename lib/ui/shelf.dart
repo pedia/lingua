@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 import '../epub/epub.dart';
 import '../epub/parser.dart';
@@ -223,5 +224,51 @@ class _TabHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _TabHeaderDelegate oldDelegate) {
     return oldDelegate.child != child;
+  }
+}
+
+void scan(WidgetRef ref) async {
+  final appDir = await getApplicationDocumentsDirectory();
+  final booksDir = Directory(p.join(appDir.path, 'books'));
+
+  final items = ref.read(itemsProvider);
+
+  int c = 0;
+
+  await for (final e in booksDir.list()) {
+    if (e.path.endsWith('.epub')) {
+      if (!items.any((i) => i.path == e.path)) {
+        final fp = e.path.substring(booksDir.path.length + 1); // +1 for last /
+        ref
+            .read(shopProvider.notifier)
+            .addItemTo(
+              0,
+              Item(
+                id: nextId(),
+                type: ItemType.file,
+                path: fp,
+                name: p.basename(fp).replaceAll('.epub', ''),
+              ),
+            );
+        c += 1;
+      }
+    }
+  }
+
+  // ScaffoldMessenger.of(
+  //   context,
+  // ).showSnackBar(SnackBar(content: Text('$c added')));
+}
+
+class ErrScreen extends StatelessWidget {
+  const ErrScreen(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(middle: Text('Error')),
+      child: Center(child: Text(text)),
+    );
   }
 }

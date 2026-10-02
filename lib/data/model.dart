@@ -172,8 +172,10 @@ class Shop {
   final int current;
 
   factory Shop.fromJson(Map<String, dynamic> json) => Shop(
-    shelves: (json['shelves'] as List).map((m) => Shelf.fromJson(m)).toList(),
-    current: (json['id'] as num).toInt(),
+    shelves: ((json['shelves'] as List).cast<Map>())
+        .map((m) => Shelf.fromJson(m.cast<String, dynamic>()))
+        .toList(),
+    current: (json['id'] as int?)?.toInt() ?? 0,
   );
 
   Map<String, dynamic> toJson() => {
@@ -187,21 +189,24 @@ class ShopNotifier extends Notifier<Shop> {
   Shop build() {
     final m = gbox.get('shop');
     if (m == null) {
-      return Shop(
-        shelves: [Shelf(id: nextId(), name: 'all', items: builtin)],
-      );
+      return init();
     }
-    final current = Shop.fromJson((m as Map).cast<String, dynamic>());
-    final all = <Item>[];
-    for (var s in current.shelves) {
-      all.addAll(s.items);
-    }
-    for (final bi in builtin) {
-      if (!all.contains(bi)) {
-        current.shelves.first.items.add(bi);
+    try {
+      final current = Shop.fromJson((m as Map).cast<String, dynamic>());
+      final all = <Item>[];
+      for (var s in current.shelves) {
+        all.addAll(s.items);
       }
+      for (final bi in builtin) {
+        if (!all.contains(bi)) {
+          current.shelves.first.items.add(bi);
+        }
+      }
+      return current;
+    } catch (e) {
+      print('load shop failed $e');
+      return init();
     }
-    return current;
   }
 
   /// add means, put it at 1st place
@@ -213,10 +218,12 @@ class ShopNotifier extends Notifier<Shop> {
       ],
       current: state.current,
     );
+    save(state);
     return state.shelves.length;
   }
 
-  void addItem(int shelfidx, Item target) {
+  void addItemTo(int shelfidx, Item target) {
+    saveItem(target);
     final ns = state.shelves[shelfidx];
     ns.items.insert(0, target);
 
@@ -227,6 +234,7 @@ class ShopNotifier extends Notifier<Shop> {
       ],
       current: state.current,
     );
+    save(state);
   }
 
   void updateItem(int shelfidx, Item target) {
@@ -240,6 +248,24 @@ class ShopNotifier extends Notifier<Shop> {
           i == shelfidx ? ns : state.shelves[i],
       ],
       current: state.current,
+    );
+    save(state);
+  }
+
+  void save(Shop shop) {
+    gbox.put('shop', shop.toJson());
+  }
+
+  void saveItem(Item target) {
+    gbox.put('item:${target.id}', target.toJson());
+  }
+
+  Shop init() {
+    for (final bi in builtin) {
+      gbox.put('item:${bi.id}', bi.toJson());
+    }
+    return Shop(
+      shelves: [Shelf(id: nextId(), name: 'all', items: builtin)],
     );
   }
 
@@ -270,6 +296,7 @@ class ShopNotifier extends Notifier<Shop> {
     ),
 
     const Item(id: 5, name: 'Freya Cycle', path: '', type: ItemType.demo),
+
     if (!bool.fromEnvironment('dart.vm.product'))
       const Item(
         id: 6,
@@ -278,11 +305,6 @@ class ShopNotifier extends Notifier<Shop> {
         type: ItemType.debug,
       ),
   ];
-
-  void save() {
-    final js = state.toJson();
-    gbox.put('shop', js);
-  }
 }
 
 final shopProvider = NotifierProvider<ShopNotifier, Shop>(

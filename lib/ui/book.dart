@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:archive/archive.dart';
-import 'package:html/dom.dart' as dom;
 
 import '../settings/setting.dart';
 import 'setting.dart';
@@ -19,6 +18,7 @@ import '../epub/parser.dart' as epub;
 import '../tts/dualtts.dart';
 import '../freya.dart';
 import '../data/sample.dart';
+import 'shelf.dart';
 
 class ArchiveProvider extends FileProvider {
   ArchiveProvider(String base, this.files) : base = Uri(path: base);
@@ -186,7 +186,10 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     final ab = ref.watch(bookProvider(widget.id));
     return AsyncValueX(ab).when(
       data: (book) {
-        this.book = book!;
+        if (book == null) {
+          return ErrScreen('Unable to open it');
+        }
+        this.book = book;
         return builds(context, book);
       },
       loading: () => const CircularProgressIndicator(),
