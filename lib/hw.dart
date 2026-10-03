@@ -69,7 +69,7 @@ class BlockWidget extends ConsumerWidget {
       clickable(trans(b.e, ref), b.i, ref),
       key: b.key,
       // CASE: selection style
-      style: b.selected
+      style: ref.watch(docp) == index
           ? TextStyle(
               backgroundColor:
                   TextSelectionTheme.of(context).selectionColor ??

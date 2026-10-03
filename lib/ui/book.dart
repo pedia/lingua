@@ -196,7 +196,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   }
 
   Widget builds(BuildContext context, epub.Book book) {
-    final ci = ref.watch(isp(widget.id)).read.ci;
+    final ci = ref.watch(isp(widget.id).select((o) => o.read.ci));
     final ch = book.chapters[ci];
 
     print('book build with $ci ${ch.title}');

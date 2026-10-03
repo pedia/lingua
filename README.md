@@ -159,8 +159,8 @@ drawer: Drawer(
    // up: read-line
 
 -    hw: [bookProvider]
-   read: Doc, ArchiveProvider
-  watch: ch->Doc, ch->ArchiveProvider
+   read: Doc[Blocks] + ArchiveProvider, lineIndex
+  watch: lineIndex
      up: read-line
 
 - chs list:
