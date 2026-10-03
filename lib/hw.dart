@@ -51,13 +51,19 @@ class Block {
 }
 
 class BlockWidget extends ConsumerWidget {
+  final Doc doc;
   final int index;
   final FileProvider? provider;
-  const BlockWidget({super.key, required this.index, this.provider});
+  const BlockWidget({
+    super.key,
+    required this.doc,
+    required this.index,
+    this.provider,
+  });
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     debugPrint("🟢 Building BlockWidget[$index]");
-    final b = ref.watch(docp.select((doc) => doc.blocks[index]));
+    final b = doc.blocks[index];
 
     return Text.rich(
       clickable(trans(b.e, ref), b.i, ref),
@@ -234,9 +240,7 @@ class BlockWidget extends ConsumerWidget {
       return inside;
     }
 
-    return WidgetSpan(
-      child: Text.rich(inside, key: ref.read(docp).newKey('#$id')),
-    );
+    return WidgetSpan(child: Text.rich(inside, key: doc.newKey('#$id')));
   }
 
   /// [_removeUnnecessaryWhitespace] removes "unnecessary" white space from the given String.
@@ -268,7 +272,7 @@ class BlockWidget extends ConsumerWidget {
           ..onTap = () async {
             if (href.startsWith('#')) {
               // id => GlobalKey/context
-              final key = ref.read(docp).topks[href];
+              final key = doc.topks[href];
               if (key != null) {
                 await Scrollable.ensureVisible(key.currentContext!);
               }
@@ -298,7 +302,6 @@ class BlockWidget extends ConsumerWidget {
                 w.recognizer ??
                 (TapGestureRecognizer()
                   ..onTap = () {
-                    // TODO: widget.clicklNotify?.call(index));
                     print('click $index');
                     ref.read(docp.notifier).updateActive(index);
                   }),
@@ -385,22 +388,40 @@ class Doc {
   }
 
   @override
+  bool operator ==(Object other) => other is Doc && identical(blocks, other.blocks);
+
+  @override
+  int get hashCode => Object.hashAll(blocks);
+
+  @override
   String toString() =>
       'Doc(bs:${blocks.length}, a:$activeIndex, ks:${topks.length})';
 }
 
-class DocWidget extends ConsumerStatefulWidget {
+/// HtmlWidget render mode in ListView, RichText, SliverList
+/// auto, top block count > 1000 -> list
+enum Mode { auto, rich, list, silver }
+
+class HtmlWidget extends ConsumerStatefulWidget {
+  final Doc doc;
   final Mode mode;
-  const DocWidget({required this.mode, super.key});
+
+  HtmlWidget({
+    required String html,
+    required this.mode,
+    FileProvider? provider,
+    super.key,
+  }) : doc = Doc.create(html: html, provider: provider);
 
   @override
-  ConsumerState<DocWidget> createState() => _DocWidgetState();
+  ConsumerState<HtmlWidget> createState() => _HtmlWidgetState();
 }
 
-class _DocWidgetState extends ConsumerState<DocWidget> {
+class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
   final roller = ScrollController();
   int? firstVisibleIdx;
   double? offset;
+
   @override
   void initState() {
     super.initState();
@@ -409,9 +430,10 @@ class _DocWidgetState extends ConsumerState<DocWidget> {
       // if (widget.initialIndex != 0) {
       //   final key = doc?.topks['${widget.initialIndex}'];
       //   if (key != null && key.currentContext != null) {
-      //     Scrollable.ensureVisible(key.currentContext!);
+      // Scrollable.ensureVisible(key.currentContext!);
       //   }
       // }
+      // Scrollable.ensureVisible(key.currentContext!);
     });
 
     roller.addListener(_onScroll);
@@ -429,9 +451,8 @@ class _DocWidgetState extends ConsumerState<DocWidget> {
 
     int? idx;
     double closestTop = double.infinity;
-    final doc = ref.read(docp);
 
-    for (final e in doc.topks.entries) {
+    for (final e in widget.doc.topks.entries) {
       final box = e.value.currentContext?.findRenderObject() as RenderBox?;
       if (box == null || !box.attached || !box.hasSize) continue;
 
@@ -451,23 +472,47 @@ class _DocWidgetState extends ConsumerState<DocWidget> {
       firstVisibleIdx = idx;
     }
 
-    // widget.scrollNotify?.call(roller.offset, firstVisibleIdx ?? 0);
     offset = roller.offset;
   }
 
   @override
-  Widget build(BuildContext context) {
-    final doc = ref.watch(docp);
-    debugPrint(
-      "🟢 Building DocWidget provider:${doc.provider} block:${doc.blocks.length}",
-    );
+  void didUpdateWidget(covariant HtmlWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
 
+    // Check if the list reference or content has changed
+    print('didUpdateWidget');
+    if (oldWidget.doc != widget.doc) {
+      _scrollToTop();
+    }
+  }
+
+  void _scrollToTop() {
+    // Wait for the UI to complete rendering the updated list
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (roller.hasClients) {
+        roller.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+        );
+        // Or for instant jump without animation:
+        // _scrollController.jumpTo(0.0);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (widget.mode == Mode.rich) {
       final rs = <InlineSpan>[];
-      for (int i = 0; i < doc.blocks.length; i++) {
+      for (int i = 0; i < widget.doc.blocks.length; i++) {
         rs.add(
           WidgetSpan(
-            child: BlockWidget(index: i, provider: doc.provider),
+            child: BlockWidget(
+              doc: widget.doc,
+              index: i,
+              provider: widget.doc.provider,
+            ),
           ),
         );
         rs.add(TextSpan(text: '\n'));
@@ -485,10 +530,14 @@ class _DocWidgetState extends ConsumerState<DocWidget> {
       );
     } else if (widget.mode == Mode.list) {
       final rs = <InlineSpan>[];
-      for (int i = 0; i < doc.blocks.length; i++) {
+      for (int i = 0; i < widget.doc.blocks.length; i++) {
         rs.add(
           WidgetSpan(
-            child: BlockWidget(index: i, provider: doc.provider),
+            child: BlockWidget(
+              doc: widget.doc,
+              index: i,
+              provider: widget.doc.provider,
+            ),
           ),
         );
       }
@@ -506,80 +555,18 @@ class _DocWidgetState extends ConsumerState<DocWidget> {
   }
 }
 
-class DocNotifier extends Notifier<Doc> {
+class LineNotifier extends Notifier<int?> {
   // DocNotifier(this.doc);
   // final Doc doc;
   @override
-  Doc build() {
-    return Doc(blocks: []);
-  }
-
-  void update(String html, FileProvider provider) {
-    state = Doc.create(html: html, provider: provider);
+  int? build() {
+    return null;
   }
 
   void updateActive(int activeIndex) {
-    if (activeIndex > state.blocks.length - 1) {
-      debugPrint('out of range: $activeIndex, current: ${state.blocks.length}');
-      return;
-    }
-
-    final nl = List<Block>.from(state.blocks);
-    nl[activeIndex] = nl[activeIndex].copyWith(selected: true);
-    if (state.activeIndex != null) {
-      nl[state.activeIndex!] = nl[state.activeIndex!].copyWith(selected: false);
-    }
-    state = state.copyWith(activeIndex: activeIndex, blocks: nl);
+    state = activeIndex;
   }
 }
 
 // final docp = Provider<Doc>((ref) => throw UnimplementedError('docp'));
-final docp = NotifierProvider<DocNotifier, Doc>(DocNotifier.new);
-
-class WithDocNotifier extends DocNotifier {
-  WithDocNotifier(this.doc);
-  final Doc doc;
-
-  @override
-  Doc build() {
-    return doc;
-  }
-}
-
-/// HtmlWidget render mode in ListView, RichText, SliverList
-/// auto, top block count > 1000 -> list
-enum Mode { auto, rich, list, silver }
-
-// not used now
-final parsedHtmlProvider = FutureProvider.family<Doc, String>((
-  ref,
-  html,
-) async {
-  return await Isolate.run(() => Doc.create(html: html));
-});
-
-class HtmlWidget extends ConsumerWidget {
-  const HtmlWidget(
-    this.html, {
-    this.mode = Mode.rich,
-    this.provider,
-    super.key,
-  });
-  final String html;
-  final Mode mode;
-  final FileProvider? provider;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // return DocWidget(mode: mode);
-    return ProviderScope(
-      overrides: [
-        // for first time
-        docp.overrideWith(
-          () => WithDocNotifier(Doc.create(html: html, provider: provider)),
-        ),
-      ],
-      child: DocWidget(mode: mode),
-    );
-  }
-}
+final docp = NotifierProvider<LineNotifier, int?>(LineNotifier.new);

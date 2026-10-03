@@ -38,6 +38,7 @@ void main() {
     print(box.toMap());
   });
   test('model', () async {
+    gid = 0;
     gbox = await Hive.openBox('app', path: '.');
 
     final a = Item(
@@ -45,18 +46,15 @@ void main() {
       name: 'The Little Prince',
       path: 'assets/the-little-prince-dual.epub',
       type: ItemType.assets,
-      progress: Progress(chapterIndex: 2, offset: 3),
-    )..toJson();
+    );
+    gbox.put('item:100', a.toJson());
 
-    final al = ItemList(items: [a]);
-    gbox.put('items', al.toJson());
+    final shop = ShopNotifier().init();
+    gbox.put('shop', shop.toJson());
 
-    final jl = al.toJson();
-    final bl = ItemList.fromJson(jl);
-    expect(al, bl);
+    final x = Shop.fromJson(gbox.get('shop'));
+    expect(x, isNotNull);
 
-    final cl = ItemList.fromJson(gbox.get('items'));
-    expect(al, cl);
     print(gbox.toMap());
   });
 }

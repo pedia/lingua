@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:archive/archive.dart';
 
 import '../settings/setting.dart';
@@ -164,22 +167,14 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   @override
   Widget build(BuildContext context) {
     ref.listen(isp(widget.id), (previous, next) {
-      if (next.read.ci != previous?.read.ci) {
-        final ch = book.chapters[next.read.ci];
-        print(
-          'ch change: ${previous?.read.ci} -> ${next.read.ci} ${ch.content.substring(0, 10)}',
-        );
-        ref
-            .read(docp.notifier)
-            .update(ch.content, ArchiveProvider(ch.href, book.files));
+      if (next.read.li != previous?.read.li) {
+        ref.read(docp.notifier).updateActive(next.read.li);
       }
     });
 
-    ref.listen(docp, (_, next) {
-      if (next.activeIndex != null) {
-        ref
-            .read(isp(widget.id).notifier)
-            .updateRead(lineIndex: next.activeIndex!);
+    ref.listen(docp, (prev, next) {
+      if (next != null && next != prev) {
+        ref.read(isp(widget.id).notifier).updateRead(lineIndex: next);
       }
     });
 
@@ -187,7 +182,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     return AsyncValueX(ab).when(
       data: (book) {
         if (book == null) {
-          return ErrScreen('Unable to open it');
+          return ErrScreen('Unable to open item:${widget.id}');
         }
         this.book = book;
         return builds(context, book);
@@ -195,7 +190,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       loading: () => const CircularProgressIndicator(),
       error: (err, stackTrace) {
         print(stackTrace.toString().substring(0, 1000));
-        return Text('Error: $err', style: const TextStyle(color: Colors.red));
+        return ErrScreen('Unable to open it\n$err');
       },
     );
   }
@@ -274,7 +269,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         selectionControls: materialTextSelectionHandleControls,
         contextMenuBuilder: selectToolbar,
         child: HtmlWidget(
-          ch.content,
+          html: ch.content,
           mode: Mode.list,
           provider: ArchiveProvider(ch.href, book.files),
         ),
@@ -462,21 +457,32 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   ref,
   id,
 ) async {
-  print('book provider $id');
-  if (id == 5) return freya;
-  if (id == 6) return sample();
-
   final m = gbox.get('item:$id');
-  if (m == null) return null;
+  if (m == null) throw Exception('item:$id not exist');
 
+  epub.Book? book;
   final item = Item.fromJson(m);
+  if (id == 5) {
+    book = freya;
+  } else if (id == 6) {
+    book = sample();
+  } else if (item.type == ItemType.file) {
+    final appDir = await getApplicationDocumentsDirectory();
+    final booksDir = Directory(p.join(appDir.path, 'books'));
 
-  final file = File(item.path);
-  if (!file.existsSync()) {
-    return null;
+    final file = File(p.join(booksDir.path, item.path));
+    if (!file.existsSync()) {
+      return null;
+    }
+    book = const epub.EpubParser().parseBytes(await file.readAsBytes());
+  } else if (item.type == ItemType.assets) {
+    final d = await rootBundle.load(item.path);
+    book = epub.EpubParser().parseBytes(d.buffer.asInt8List());
   }
 
-  final book = const epub.EpubParser().parseBytes(await file.readAsBytes());
+  if (book == null) {
+    throw Exception('book:${item.type}/${item.path} not exist');
+  }
 
   // // book cover image thumbnail
   if (gbox.get('icon-$id') == null) {
@@ -487,7 +493,10 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   }
 
   if (book.author.isNotEmpty && item.author == null) {
-    gbox.put('item:$id', item.copyWith(author: book.author, name: book.title));
+    gbox.put(
+      'item:$id',
+      item.copyWith(author: book.author, name: book.title).toJson(),
+    );
   }
 
   return book;
@@ -531,8 +540,11 @@ class ItemState {
     speak: speak ?? this.speak,
   );
 
-  factory ItemState.fromJson(Map<String, dynamic> json) =>
-      ItemState(id: json['id'], read: json['read'], speak: json['speak']);
+  factory ItemState.fromJson(Map<String, dynamic> json) => ItemState(
+    id: json['id'],
+    read: Progress.fromJson(json['read'].cast<String, dynamic>()),
+    speak: Progress.fromJson(json['speak'].cast<String, dynamic>()),
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -549,7 +561,7 @@ class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
     if (m == null) {
       return ItemState(id: id);
     }
-    return ItemState.fromJson(m);
+    return ItemState.fromJson(m.cast<String, dynamic>());
   }
 
   void updateRead({int? chapterIndex, int? lineIndex}) async {

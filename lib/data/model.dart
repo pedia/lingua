@@ -311,3 +311,17 @@ final shopProvider = NotifierProvider<ShopNotifier, Shop>(
   ShopNotifier.new,
   name: 'shopProvider',
 );
+
+class CurrentItemId extends Notifier<int?> {
+  @override
+  int? build() => 1; // Initial value
+
+  void update(int id) {
+    state = id;
+  }
+}
+
+final ciip = NotifierProvider<CurrentItemId, int?>(
+  CurrentItemId.new,
+  name: 'current item id provider',
+);

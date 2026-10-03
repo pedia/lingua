@@ -72,7 +72,7 @@ class _DemoFrameState extends State<DemoFrame> {
       body: SelectableRegion(
         contextMenuBuilder: selectToolbar,
         selectionControls: materialTextSelectionHandleControls,
-        child: HtmlWidget(h, mode: _mode),
+        child: HtmlWidget(html: h, mode: _mode),
       ),
     );
   }

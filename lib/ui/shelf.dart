@@ -142,7 +142,10 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
               title: Text(e.name ?? ''),
               subtitle: Text(e.subtitle),
               leading: boxImage('icon-${e.id}'),
-              onTap: () => context.push('book/${e.id}'),
+              onTap: () {
+                ref.read(ciip.notifier).update(e.id);
+                context.push('book/${e.id}');
+              },
 
               // Book? book;
               // if (e.type == ItemType.assets) {
