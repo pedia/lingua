@@ -187,7 +187,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
         this.book = book;
         return builds(context, book);
       },
-      loading: () => const CircularProgressIndicator(),
+      loading: () => const Center(), // TODO: better solution
       error: (err, stackTrace) {
         print(stackTrace.toString().substring(0, 1000));
         return ErrScreen('Unable to open it\n$err');

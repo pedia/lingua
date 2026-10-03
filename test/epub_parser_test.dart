@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
-import 'package:html/parser.dart' as html_parser;
+import 'package:html/parser.dart' as dom;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lingua/epub/epub.dart';
@@ -39,43 +39,39 @@ void main() {
           href: '',
           title: 'One',
           chunks: [
-            TextBlock.single('Hello world.', lang: 'en'),
-            TextBlock.single('你好世界。', lang: 'zh'),
+            Chunk('Hello world.', lang: 'en'),
+            Chunk('你好世界。', lang: 'zh'),
           ],
         ),
       ],
     );
     final book = const EpubParser().parseBytes(bytes);
     expect(book.title, 'Export');
-    expect(book.chapters.single.text, contains('Hello world.'));
-    expect(book.chapters.single.text, contains('你好世界。'));
+    expect(book.chapters.single.chunks[0], contains('Hello world.'));
+    expect(book.chapters.single.chunks[1], contains('你好世界。'));
   });
 
   test('extract', () {
-    final dom = html_parser.parse('''
-<html>
-<title>Title</title>
+    final doc = dom.parse('''
+<?xml version="1.0" encoding="utf-8"?>
+<!--?xml version="1.0" encoding="utf-8" standalone="no"?--><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title/>
+<link href="../Styles/stylesheet.css" rel="stylesheet" type="text/css"/>
+</head>
 <body>
-  <h1>H1 Title</h1>
-  <p>first line</p>
-  <p lang="kr">메이드 인 코리아 시즌2</p>
-  <p>韩国制造2</p>
-  <p lang="zh">韩国制造3</p>
-  <p><img src="../images/foo.jpg" /></p>
-  <li><a>foo</a>
+<h1 class="hidden" title="封面"/>
+<div align="center" class="image-single">
+<img alt="" src="../Images/cover.jpg"/>
+</div>
 </body>
 </html>
 ''');
-    final lines = HtmlExtractor('to/foo.html').extract(dom.body!);
-    lines.forEach(print);
-    expect(lines.length, 7);
-    expect(lines[0].text, 'H1 Title');
-    // expect(lines[1], TextBlock.single('first line', lang: ''));
-    // expect(lines[2], TextBlock.single('메이드 인 코리아 시즌2', lang: 'kr'));
-    // expect(lines[3], TextBlock.single('韩国制造2', lang: ''));
-    // expect(lines[4], TextBlock.single('韩国制造3', lang: 'zh'));
-    // expect(lines[5], BlockImage('../images/foo.jpg'));
-    // expect(lines[6], TextBlock.single('foo'));
+    expect(doc.querySelectorAll('title').length, 1);
+    expect(doc.querySelector('title')?.innerHtml, isNotEmpty);
+    expect(doc.querySelectorAll('body title'), isEmpty);
+    expect(doc.querySelector('h1')?.innerHtml, isNull);
   });
 }
 

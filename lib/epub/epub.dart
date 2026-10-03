@@ -51,7 +51,7 @@ class ChapterStub implements Chapter {
   @override
   String get title {
     if (_title == null) {
-      _parse(onlyTitle: true);
+      _parse(title: true);
     }
     return _title ?? '';
   }
@@ -59,7 +59,7 @@ class ChapterStub implements Chapter {
   @override
   List<Chunk> get chunks {
     if (_chunks == null) {
-      _parse(onlyTitle: false);
+      _parse(body: true);
     }
     return _chunks!;
   }
@@ -90,23 +90,28 @@ class ChapterStub implements Chapter {
         .replaceAll('"', '&quot;');
   }
 
-  void _parse({bool onlyTitle = true}) {
+  void _parse({bool title = false, bool body = false}) {
     final html = utf8.decode(file.content);
     final dom = parse(html);
 
-    if (_title == null) {
+    if (_title == null && title) {
       for (final selector in ['title', 'h1', 'h2', 'h3']) {
         final text = dom.querySelector(selector)?.text.trim();
-        if (text != null &&
-            text.isNotEmpty &&
-            !{'未知', 'Unknown'}.contains(text)) {
+        if (text != null && text.isNotEmpty) {
+          if ({'未知', 'Unknown'}.contains(text)) {
+            continue;
+          }
+          if (text.contains('<link')) {
+            continue;
+          }
           _title = text;
           break;
         }
       }
+      _title = '';
     }
 
-    if (!onlyTitle && _chunks == null) {
+    if (_chunks == null && body) {
       /// parse text/chunks from dom
       _chunks = extract(dom);
     }
