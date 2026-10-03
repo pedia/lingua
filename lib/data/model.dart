@@ -146,7 +146,7 @@ class Shelf {
     for (int iid in iids) {
       final m = gbox.get('item:$iid');
       if (m != null) {
-        items.add(Item.fromJson(m));
+        items.add(Item.fromJson((m as Map).cast<String, dynamic>()));
       }
     }
     return items;
@@ -203,8 +203,8 @@ class ShopNotifier extends Notifier<Shop> {
         }
       }
       return current;
-    } catch (e) {
-      print('load shop failed $e');
+    } catch (e, stackTrace) {
+      print('load shop failed $e\n$stackTrace');
       return init();
     }
   }

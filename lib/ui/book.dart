@@ -461,7 +461,7 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   if (m == null) throw Exception('item:$id not exist');
 
   epub.Book? book;
-  final item = Item.fromJson(m);
+  final item = Item.fromJson((m as Map).cast<String, dynamic>());
   if (id == 5) {
     book = freya;
   } else if (id == 6) {

@@ -108,7 +108,6 @@ class ChapterStub implements Chapter {
           break;
         }
       }
-      _title = '';
     }
 
     if (_chunks == null && body) {
