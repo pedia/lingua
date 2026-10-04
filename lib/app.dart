@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lingua/hive.dart';
 import 'package:lingua/prototype.dart';
 import 'package:lingua/route.dart';
+import 'package:lingua/silver.dart';
 import 'package:lingua/ui/book.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
@@ -14,7 +15,25 @@ import 'settings/setting.dart';
 import 'ui/font.dart';
 
 import 'ui/lib.dart';
-import 'rich.dart';
+
+extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
+  CupertinoTextThemeData withFontFamily(String family) {
+    return copyWith(
+      textStyle: textStyle.copyWith(fontFamily: family),
+      actionTextStyle: actionTextStyle.copyWith(fontFamily: family),
+      tabLabelTextStyle: tabLabelTextStyle.copyWith(fontFamily: family),
+      navTitleTextStyle: navTitleTextStyle.copyWith(fontFamily: family),
+      navLargeTitleTextStyle: navLargeTitleTextStyle.copyWith(
+        fontFamily: family,
+      ),
+      navActionTextStyle: navActionTextStyle.copyWith(fontFamily: family),
+      pickerTextStyle: pickerTextStyle.copyWith(fontFamily: family),
+      dateTimePickerTextStyle: dateTimePickerTextStyle.copyWith(
+        fontFamily: family,
+      ),
+    );
+  }
+}
 
 class LinguaApp extends ConsumerWidget {
   const LinguaApp({this.family, super.key});
@@ -114,6 +133,7 @@ class LinguaApp extends ConsumerWidget {
       theme: CupertinoThemeData(
         brightness: br,
         primaryColor: CupertinoColors.activeBlue,
+        textTheme: const CupertinoTextThemeData().withFontFamily(family!),
       ),
       routerConfig: router,
     );
@@ -178,6 +198,16 @@ final router = GoRouter(
         child: Material(
           type: MaterialType.transparency,
           child: BookReaderScreen(bookId: '3'),
+        ),
+      ),
+    ),
+    GoRoute(
+      path: '/silver',
+      pageBuilder: (_, state) => CupertinoPage(
+        key: state.pageKey,
+        child: Material(
+          type: MaterialType.transparency,
+          child: SilverFrame(),
         ),
       ),
     ),

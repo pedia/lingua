@@ -95,11 +95,7 @@ class TypedMap {
 
 class Setting extends Notifier<TypedMap> {
   @override
-  TypedMap build() {
-    // TODO: load from storage
-    Future.microtask(() => load());
-    return TypedMap({});
-  }
+  TypedMap build() => load();
 
   void put(String key, dynamic val) {
     // Important: create a new instance or notify so Riverpod sees the change
@@ -115,12 +111,12 @@ class Setting extends Notifier<TypedMap> {
         .then((_) => debugPrint('saved by $key ${state.map}'));
   }
 
-  Future load() async {
+  TypedMap load() {
     final m = gbox.get('settings');
 
     debugPrint('setting load: $m');
 
-    state = m is Map && m.isNotEmpty
+    return m is Map && m.isNotEmpty
         ? TypedMap(m.cast<String, dynamic>())
         : TypedMap({
             // defaults
@@ -143,19 +139,10 @@ class Setting extends Notifier<TypedMap> {
   }
 }
 
-/// ref.watch(settingsProvider.notifier) /// get Setting
-/// ref.watch(settingsProvider)          /// watches the whole map
-
-/// Only rebuilds when 'ui.thememode' changes
-/// final themeMode = ref.watch(
-///   settingsProvider.select((s) => s.getInt('ui.thememode')),
-/// );
-
-/// /// or better – typed selectors
-/// final themeModeProvider = Provider<ThemeMode>((ref) {
-///   return ref.watch(settingsProvider.select((s) => s.themeMode));
-/// });
-final settingProvider = NotifierProvider<Setting, TypedMap>(Setting.new);
+final settingProvider = NotifierProvider<Setting, TypedMap>(
+  Setting.new,
+  name: 'Setting',
+);
 
 enum SettingType {
   slider,

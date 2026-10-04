@@ -8,13 +8,19 @@ import 'package:lingua/hw.dart';
 
 void main() {
   testWidgets('html2widget', (WidgetTester tester) async {
-    final doc = parse('''<div class="calibre3">
+    final html = '''<div class="calibre3">
 </div>
 <p>foo</p>
 <p class="foo">fake news<img height="100"></p>
-''');
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: HtmlWidget(doc))));
-    final HtmlWidgetState state = tester.state(find.byType(HtmlWidget));
+''';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HtmlWidget(html: html, mode: Mode.list),
+        ),
+      ),
+    );
+    final state = tester.state(find.byType(HtmlWidget));
 
     final spand = state.trans(doc.querySelector('div')!) as TextSpan;
     expect(spand, isA<TextSpan>());
@@ -25,7 +31,7 @@ void main() {
     expect(spanp, isA<TextSpan>());
     expect(spanp.text, 'foo');
     expect(spanp.children, isNull);
-    
+
     final spanf = state.trans(doc.querySelector('p.foo')!) as TextSpan;
     expect(spanf, isA<TextSpan>());
     expect(spanf.text, 'fake news');

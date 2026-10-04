@@ -1,4 +1,3 @@
-import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as dom;
@@ -69,7 +68,7 @@ class BlockWidget extends ConsumerWidget {
       clickable(trans(b.e, ref), b.i, ref),
       key: b.key,
       // CASE: selection style
-      style: ref.watch(docp) == index
+      style: ref.watch(linep) == index
           ? TextStyle(
               backgroundColor:
                   TextSelectionTheme.of(context).selectionColor ??
@@ -77,6 +76,14 @@ class BlockWidget extends ConsumerWidget {
             )
           : null,
     );
+  }
+
+  /// add CR
+  List<InlineSpan> cr(List<InlineSpan>? children) {
+    if (children == null) {
+      return [TextSpan(text: '\n')];
+    }
+    return children..add(TextSpan(text: '\n'));
   }
 
   /// Translate or transform html tag into InlineSpan
@@ -109,9 +116,9 @@ class BlockWidget extends ConsumerWidget {
 
     // 2. Apply styling based on the local tag name
     final inside = switch (e.localName) {
-      'figure' || 'div' || 'p' => TextSpan(
+      'figure' || 'div' || 'p' || 'li' => TextSpan(
         text: text,
-        children: children,
+        children: cr(children),
         style: const TextStyle(
           fontFamily: '.osdefault',
           fontSize: 16.0,
@@ -120,7 +127,7 @@ class BlockWidget extends ConsumerWidget {
       ),
       'h1' => TextSpan(
         text: text,
-        children: children,
+        children: cr(children),
         style: const TextStyle(
           fontFamily: '.osdefault',
           fontSize: 32.0,
@@ -129,7 +136,7 @@ class BlockWidget extends ConsumerWidget {
       ),
       'h2' => TextSpan(
         text: text,
-        children: children,
+        children: cr(children),
         style: const TextStyle(
           fontFamily: '.osdefault',
           fontSize: 24.0,
@@ -138,7 +145,7 @@ class BlockWidget extends ConsumerWidget {
       ),
       'h3' => TextSpan(
         text: text,
-        children: children,
+        children: cr(children),
         style: const TextStyle(
           fontFamily: '.osdefault',
           fontSize: 18.0,
@@ -265,7 +272,7 @@ class BlockWidget extends ConsumerWidget {
         children: w.children?.map((e) => linkify(e, href, ref)).toList(),
         style: const TextStyle(
           color: Colors.blue,
-          decoration: TextDecoration.underline,
+          // decoration: TextDecoration.underline,
         ),
         mouseCursor: SystemMouseCursors.click,
         recognizer: TapGestureRecognizer()
@@ -303,7 +310,7 @@ class BlockWidget extends ConsumerWidget {
                 (TapGestureRecognizer()
                   ..onTap = () {
                     print('click $index');
-                    ref.read(docp.notifier).updateActive(index);
+                    ref.read(linep.notifier).updateActive(index);
                   }),
             style: w.style,
             mouseCursor: w.mouseCursor,
@@ -388,7 +395,8 @@ class Doc {
   }
 
   @override
-  bool operator ==(Object other) => other is Doc && identical(blocks, other.blocks);
+  bool operator ==(Object other) =>
+      other is Doc && identical(blocks, other.blocks);
 
   @override
   int get hashCode => Object.hashAll(blocks);
@@ -515,7 +523,7 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
             ),
           ),
         );
-        rs.add(TextSpan(text: '\n'));
+        // rs.add(TextSpan(text: '\n'));
       }
 
       return SingleChildScrollView(
@@ -556,12 +564,8 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
 }
 
 class LineNotifier extends Notifier<int?> {
-  // DocNotifier(this.doc);
-  // final Doc doc;
   @override
-  int? build() {
-    return null;
-  }
+  int? build() => null;
 
   void updateActive(int activeIndex) {
     state = activeIndex;
@@ -569,4 +573,7 @@ class LineNotifier extends Notifier<int?> {
 }
 
 // final docp = Provider<Doc>((ref) => throw UnimplementedError('docp'));
-final docp = NotifierProvider<LineNotifier, int?>(LineNotifier.new);
+final linep = NotifierProvider<LineNotifier, int?>(
+  LineNotifier.new,
+  name: 'CurrentLine',
+);

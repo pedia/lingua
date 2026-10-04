@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../g.dart';
 
@@ -132,7 +131,7 @@ class ItemListNotifier extends Notifier<List<Item>> {
 
 final itemsProvider = NotifierProvider<ItemListNotifier, List<Item>>(
   ItemListNotifier.new,
-  name: 'itemsProvider',
+  name: 'Items',
 );
 
 class Shelf {
@@ -163,6 +162,12 @@ class Shelf {
     'name': name,
     'items': items.map((e) => e.id).toList(),
   };
+
+  Shelf copyWith({List<Item>? items, int? id, String? name}) => Shelf(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    items: items ?? this.items,
+  );
 }
 
 /// Short for Shelves, mean bookshop
@@ -252,6 +257,24 @@ class ShopNotifier extends Notifier<Shop> {
     save(state);
   }
 
+  void touch(int shelfidx, int itemId) {
+    final old = state.shelves[shelfidx];
+    final ns = old.copyWith(
+      items: <Item>[
+        ...old.items.where((i) => i.id == itemId),
+        ...old.items.where((i) => i.id != itemId),
+      ],
+    );
+    state = Shop(
+      shelves: [
+        for (int i = 0; i < state.shelves.length; i++)
+          i == shelfidx ? ns : state.shelves[i],
+      ],
+      current: state.current,
+    );
+    save(state);
+  }
+
   void save(Shop shop) {
     gbox.put('shop', shop.toJson());
   }
@@ -309,7 +332,7 @@ class ShopNotifier extends Notifier<Shop> {
 
 final shopProvider = NotifierProvider<ShopNotifier, Shop>(
   ShopNotifier.new,
-  name: 'shopProvider',
+  name: 'Shop',
 );
 
 class CurrentItemId extends Notifier<int?> {
@@ -323,5 +346,5 @@ class CurrentItemId extends Notifier<int?> {
 
 final ciip = NotifierProvider<CurrentItemId, int?>(
   CurrentItemId.new,
-  name: 'current item id provider',
+  name: 'CurrentItemId:ciip',
 );

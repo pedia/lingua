@@ -31,7 +31,7 @@ class _ChapterListState extends ConsumerState<ChapterList> {
           return DrawerHeader(
             decoration: BoxDecoration(color: Theme.of(context).primaryColor),
             child: ListTile(
-              leading: boxImage('icon-${widget.id}'),
+              leading: boxImage('icon:${widget.id}'),
               title: Text(widget.book.title),
               subtitle: Text(widget.book.author),
             ),

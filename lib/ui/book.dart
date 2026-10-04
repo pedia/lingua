@@ -168,11 +168,11 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   Widget build(BuildContext context) {
     ref.listen(isp(widget.id), (previous, next) {
       if (next.read.li != previous?.read.li) {
-        ref.read(docp.notifier).updateActive(next.read.li);
+        ref.read(linep.notifier).updateActive(next.read.li);
       }
     });
 
-    ref.listen(docp, (prev, next) {
+    ref.listen(linep, (prev, next) {
       if (next != null && next != prev) {
         ref.read(isp(widget.id).notifier).updateRead(lineIndex: next);
       }
@@ -268,10 +268,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       body: SelectableRegion(
         selectionControls: materialTextSelectionHandleControls,
         contextMenuBuilder: selectToolbar,
-        child: HtmlWidget(
-          html: ch.content,
-          mode: Mode.list,
-          provider: ArchiveProvider(ch.href, book.files),
+        child: SafeArea(
+          child: HtmlWidget(
+            html: ch.content,
+            mode: Mode.list,
+            provider: ArchiveProvider(ch.href, book.files),
+          ),
         ),
       ),
     );
@@ -485,10 +487,10 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   }
 
   // // book cover image thumbnail
-  if (gbox.get('icon-$id') == null) {
+  if (gbox.get('icon:$id') == null) {
     final cb = book.coverBytes;
     if (cb != null) {
-      gbox.put('icon-$id', iconify(cb));
+      gbox.put('icon:$id', iconify(cb));
     }
   }
 
@@ -574,4 +576,5 @@ class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
 /// short for ItemStateProvider
 final isp = NotifierProvider.family<ItemStateNotifier, ItemState, int>(
   ItemStateNotifier.new,
+  name: 'ItemState',
 );

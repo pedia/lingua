@@ -24,6 +24,7 @@ class RouteScreen extends ConsumerWidget {
               '/engine',
               '/library',
               '/prototype',
+              '/silver',
             ].map(
               (e) => CupertinoButton(
                 onPressed: () => context.push(e),

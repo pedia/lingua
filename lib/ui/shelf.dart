@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 
 import '../epub/epub.dart';
@@ -11,6 +13,7 @@ import '../epub/parser.dart';
 import '../data/model.dart';
 import '../g.dart';
 import 'book.dart';
+import 'open.dart';
 
 class ShelfFrame extends ConsumerStatefulWidget {
   const ShelfFrame({super.key});
@@ -23,16 +26,38 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     with TickerProviderStateMixin {
   TabController? _tabController;
   final _searchController = TextEditingController();
+  StreamSubscription? subOpenFile;
 
   @override
   void initState() {
     super.initState();
+
+    subOpenFile = OpenPump.stream.listen((fn) {
+      debugPrint('lib got $fn');
+      ref
+          .read(itemsProvider.notifier)
+          .add(
+            Item(
+              id: nextId(),
+              type: ItemType.file,
+              path: fn,
+              name: p.basename(fn).replaceAll('.epub', ''),
+            ),
+          );
+
+      // setState(
+      //   () => items.add(
+      //     Item(type: ItemType.file, path: fn, name: p.basename(fn)),
+      //   ),
+      // );
+    });
 
     _initTabController();
   }
 
   @override
   void dispose() {
+    subOpenFile?.cancel();
     _tabController?.dispose();
     _searchController.dispose();
     super.dispose();
@@ -59,7 +84,6 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     return CupertinoPageScaffold(
       child: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          // final shop = ref.watch(shopProvider);
           return <Widget>[
             // 1. SCROLLABLE: This row disappears up and out of view when scrolling down
             SliverToBoxAdapter(
@@ -79,7 +103,18 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                       CupertinoButton(
                         padding: EdgeInsets.zero,
                         // minSize: 36,
-                        onPressed: _showNewShelfDialog,
+                        onPressed: () async {
+                          final result = await FilePicker.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: const ['epub'],
+                            allowMultiple: true,
+                          );
+                          if (result?.files != null) {
+                            for (final file in result!.files) {
+                              OpenPump.send(file.path!);
+                            }
+                          }
+                        },
                         child: const Icon(
                           CupertinoIcons.add_circled_solid,
                           size: 28,
@@ -103,17 +138,31 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
               delegate: _TabHeaderDelegate(
                 child: Material(
                   color: CupertinoColors.systemBackground.resolveFrom(context),
-                  child: TabBar(
-                    controller: _tabController,
-                    // Styling the TabBar to look cleaner and integrated with iOS styles
-                    labelColor: CupertinoColors.activeBlue.resolveFrom(context),
-                    unselectedLabelColor: CupertinoColors.systemGrey
-                        .resolveFrom(context),
-                    indicatorColor: CupertinoColors.activeBlue.resolveFrom(
-                      context,
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    tabs: shop.shelves.map((s) => Tab(text: s.name)).toList(),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TabBar(
+                          controller: _tabController,
+                          // Styling the TabBar to look cleaner and integrated with iOS styles
+                          labelColor: CupertinoColors.activeBlue.resolveFrom(
+                            context,
+                          ),
+                          unselectedLabelColor: CupertinoColors.systemGrey
+                              .resolveFrom(context),
+                          indicatorColor: CupertinoColors.activeBlue
+                              .resolveFrom(context),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          tabs: shop.shelves
+                              .map((s) => Tab(text: s.name))
+                              .toList(),
+                        ),
+                      ),
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: _showNewShelfDialog,
+                        child: Icon(CupertinoIcons.add),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -123,40 +172,36 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         body: TabBarView(
           controller: _tabController,
           // TODO: shelfIdx
-          children: shop.shelves.map((s) => _buildBookList(0, s)).toList(),
+          children: List.generate(
+            shop.shelves.length,
+            ((i) => _buildBookList(i)),
+          ),
         ),
       ),
     );
   }
 
   // Quick Mock List View for content screens
-  Widget _buildBookList(int shelfIdx, Shelf shelf) {
+  Widget _buildBookList(int shelfidx) {
+    final shelf = ref.watch(shopProvider.select((s) => s.shelves[shelfidx]));
     return CupertinoScrollbar(
       child: ListView.builder(
         padding: const EdgeInsets.all(16.0),
         itemCount: shelf.items.length,
         itemBuilder: (context, i) {
           final e = shelf.items[i];
-          return Material(
-            child: ListTile(
-              title: Text(e.name ?? ''),
-              subtitle: Text(e.subtitle),
-              leading: boxImage('icon-${e.id}'),
-              onTap: () {
-                ref.read(ciip.notifier).update(e.id);
-                context.push('book/${e.id}');
-              },
-
-              // Book? book;
-              // if (e.type == ItemType.assets) {
-              //   final d = await rootBundle.load(e.path);
-              //   book = EpubParser().parseBytes(d.buffer.asInt8List());
-              // } else if (e.type == ItemType.file) {
-              //   book = await openEpub(e.path);
-              // } else if (e.type == ItemType.demo) {
-              //   book = sample();
-              // }
-            ),
+          return CupertinoListTile(
+            title: Text(e.name ?? '', maxLines: 3, softWrap: true),
+            subtitle: Text(e.subtitle),
+            leading: boxImage('icon:${e.id}'),
+            leadingSize: 64,
+            padding: EdgeInsets.only(bottom: 8),
+            trailing: const CupertinoListTileChevron(),
+            onTap: () {
+              ref.read(ciip.notifier).update(e.id);
+              context.push('book/${e.id}');
+              ref.read(shopProvider.notifier).touch(shelfidx, i);
+            },
           );
         },
       ),
@@ -237,6 +282,7 @@ void scan(WidgetRef ref) async {
   final items = ref.read(itemsProvider);
 
   int c = 0;
+  final currentShelfIdx = ref.read(shopProvider).current;
 
   await for (final e in booksDir.list()) {
     if (e.path.endsWith('.epub')) {
@@ -245,7 +291,7 @@ void scan(WidgetRef ref) async {
         ref
             .read(shopProvider.notifier)
             .addItemTo(
-              0,
+              currentShelfIdx,
               Item(
                 id: nextId(),
                 type: ItemType.file,

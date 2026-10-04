@@ -26,13 +26,9 @@ class SilverFrame extends StatelessWidget {
               ),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      // CupertinoListTile(context,
-                      RichText(
-                        text: TextSpan(
-                          children: [TextSpan(text: 'Item #$index')],
-                        ),
-                      ),
+                  (context, index) => RichText(
+                    text: TextSpan(children: [TextSpan(text: 'Item #$index')]),
+                  ),
                   childCount: 140,
                 ),
               ),

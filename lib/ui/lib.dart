@@ -186,7 +186,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
             return ListTile(
               title: Text(e.name!),
               subtitle: Text(e.subtitle),
-              leading: boxImage('icon-${e.id}'),
+              leading: boxImage('icon:${e.id}'),
               onTap: () async {
                 Book? book;
                 if (e.type == ItemType.assets) {
@@ -199,10 +199,10 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                 }
 
                 // book cover image thumbnail
-                if (book != null && gbox.get('icon-${e.id}') == null) {
+                if (book != null && gbox.get('icon:${e.id}') == null) {
                   final cb = book.coverBytes;
                   if (cb != null) {
-                    gbox.put('icon-${e.id}', iconify(cb));
+                    gbox.put('icon:${e.id}', iconify(cb));
                   }
                 }
 
