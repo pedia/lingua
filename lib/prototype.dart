@@ -75,10 +75,10 @@ final bookProgressProvider = AsyncNotifierProvider.autoDispose
       BookProgressNotifier.new,
     );
 
-class BookReaderScreen extends ConsumerWidget {
+class TestProviderScreen extends ConsumerWidget {
   final String bookId;
 
-  const BookReaderScreen({super.key, required this.bookId});
+  const TestProviderScreen({super.key, required this.bookId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

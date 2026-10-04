@@ -13,6 +13,7 @@ import 'package:lingua/ui/voice_setting.dart';
 
 import 'settings/setting.dart';
 import 'ui/font.dart';
+import 'ui/read.dart';
 
 import 'ui/lib.dart';
 
@@ -145,71 +146,26 @@ final router = GoRouter(
     GoRoute(path: '/', builder: (_, _) => ShelfFrame()),
     GoRoute(
       path: '/book/:id',
-      pageBuilder: (_, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(
-          type: MaterialType.transparency,
-          child: BookFrame(id: int.parse(state.pathParameters['id'] ?? '')),
-        ),
-      ),
+      builder: (_, state) =>
+          BookFrame(id: int.parse(state.pathParameters['id'] ?? '')),
     ),
-    GoRoute(
-      path: '/hive',
-      pageBuilder: (_, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(type: MaterialType.transparency, child: HiveFrame()),
-      ),
-    ),
-    GoRoute(
-      path: '/setting',
-      pageBuilder: (_, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(type: MaterialType.transparency, child: SettingFrame()),
-      ),
-    ),
+    GoRoute(path: '/hive', builder: (_, state) => HiveFrame()),
+    GoRoute(path: '/setting', builder: (_, state) => SettingFrame()),
     GoRoute(
       path: '/engine',
-      pageBuilder: (ctx, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(
-          type: MaterialType.transparency,
-          child: EngineSettingPage.from(ctx),
-        ),
-      ),
+      builder: (ctx, state) => EngineSettingPage.from(ctx),
     ),
-    GoRoute(
-      path: '/route',
-      pageBuilder: (_, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(type: MaterialType.transparency, child: RouteScreen()),
-      ),
-    ),
-    GoRoute(
-      path: '/library',
-      pageBuilder: (_, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(type: MaterialType.transparency, child: LibraryFrame()),
-      ),
-    ),
+    GoRoute(path: '/route', builder: (_, state) => RouteScreen()),
+    GoRoute(path: '/library', builder: (_, state) => LibraryFrame()),
     GoRoute(
       path: '/prototype',
-      pageBuilder: (_, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(
-          type: MaterialType.transparency,
-          child: BookReaderScreen(bookId: '3'),
-        ),
-      ),
+      builder: (_, state) => TestProviderScreen(bookId: '3'),
     ),
+    GoRoute(path: '/silver', builder: (_, state) => SilverFrame()),
     GoRoute(
-      path: '/silver',
-      pageBuilder: (_, state) => CupertinoPage(
-        key: state.pageKey,
-        child: Material(
-          type: MaterialType.transparency,
-          child: SilverFrame(),
-        ),
-      ),
+      path: '/read/:id',
+      builder: (_, state) =>
+          ReadFrame(id: int.parse(state.pathParameters['id'] ?? '')),
     ),
   ],
 );

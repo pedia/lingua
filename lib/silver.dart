@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'ui/gadget.dart';
 
 class SilverFrame extends StatelessWidget {
   SilverFrame({super.key});
@@ -63,36 +63,4 @@ class SilverFrame extends StatelessWidget {
       ),
     );
   }
-}
-
-class FullScreen extends StatefulWidget {
-  const FullScreen({this.on = true, required this.child, super.key});
-  final bool on;
-  final Widget child;
-
-  @override
-  State<FullScreen> createState() => _FullScreenState();
-}
-
-class _FullScreenState extends State<FullScreen> {
-  @override
-  void initState() {
-    super.initState();
-    if (widget.on) {
-      // Hide status bar when entering this screen
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    }
-  }
-
-  @override
-  void dispose() {
-    if (widget.on) {
-      // Restore regular status bar and bottom navigation when leaving this screen
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
 }
