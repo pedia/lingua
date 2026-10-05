@@ -189,8 +189,16 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         itemBuilder: (context, i) {
           final e = shelf.items[i];
           return CupertinoListTile(
-            title: Text('${e.name}/${e.id}', maxLines: 3, softWrap: true),
-            subtitle: Text(e.subtitle),
+            title: Text(
+              '${e.name}/${e.id}',
+              maxLines: 3,
+              softWrap: true,
+              style: TextStyle(fontFamily: '.osdefault'),
+            ),
+            subtitle: Text(
+              e.subtitle,
+              style: TextStyle(fontFamily: '.osdefault'),
+            ),
             leading: boxImage('icon:${e.id}'),
             leadingSize: 64,
             padding: EdgeInsets.only(bottom: 8),

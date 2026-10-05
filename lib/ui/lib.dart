@@ -15,7 +15,7 @@ import 'setting.dart';
 import 'voice_setting.dart';
 import 'shelf.dart' as experiment;
 import 'dep.dart' as experiment;
-import '../silver.dart';
+import '../sliver.dart';
 import '../rich.dart';
 import '../demo.dart';
 import '../hive.dart';
@@ -143,7 +143,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                   builder: (context) => switch (cv) {
                     'font' => FontFrame(),
                     'setting' => SettingFrame(),
-                    'search' => SilverFrame(),
+                    'search' => SliverFrame(),
                     'rich' => PageFrame(),
                     'demo' => DemoFrame(),
                     'hive' => HiveFrame(),

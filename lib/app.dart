@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lingua/hive.dart';
 import 'package:lingua/prototype.dart';
 import 'package:lingua/route.dart';
-import 'package:lingua/silver.dart';
+import 'package:lingua/sliver.dart';
 import 'package:lingua/ui/book.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
@@ -135,7 +135,7 @@ class MainApp extends ConsumerWidget {
             path: '/prototype',
             builder: (_, _) => TestProviderScreen(bookId: '3'),
           ),
-          GoRoute(path: '/silver', builder: (_, _) => SilverFrame()),
+          GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
           GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
           GoRoute(
             path: '/read/:id',
