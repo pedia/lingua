@@ -258,6 +258,7 @@ class ShopNotifier extends Notifier<Shop> {
   }
 
   void touch(int shelfidx, int itemId) {
+    print('touch $shelfidx/$itemId');
     final old = state.shelves[shelfidx];
     final ns = old.copyWith(
       items: <Item>[

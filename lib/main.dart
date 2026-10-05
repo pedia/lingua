@@ -64,7 +64,7 @@ Future<void> main() async {
   runApp(
     ProviderScope(
       observers: [RiverpodDevToolsObserver()],
-      child: LinguaApp(family: ff),
+      child: MainApp(family: ff),
     ),
   );
 }

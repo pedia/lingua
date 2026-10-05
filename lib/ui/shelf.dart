@@ -81,8 +81,8 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   @override
   Widget build(BuildContext context) {
     final shop = ref.watch(shopProvider);
-    return CupertinoPageScaffold(
-      child: NestedScrollView(
+    return Scaffold(
+      body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
           return <Widget>[
             // 1. SCROLLABLE: This row disappears up and out of view when scrolling down
@@ -171,27 +171,25 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         },
         body: TabBarView(
           controller: _tabController,
-          // TODO: shelfIdx
           children: List.generate(
             shop.shelves.length,
-            ((i) => _buildBookList(i)),
+            (i) => _buildBookList(i),
           ),
         ),
       ),
     );
   }
 
-  // Quick Mock List View for content screens
   Widget _buildBookList(int shelfidx) {
     final shelf = ref.watch(shopProvider.select((s) => s.shelves[shelfidx]));
-    return CupertinoScrollbar(
+    return Scrollbar(
       child: ListView.builder(
         padding: const EdgeInsets.all(16.0),
         itemCount: shelf.items.length,
         itemBuilder: (context, i) {
           final e = shelf.items[i];
           return CupertinoListTile(
-            title: Text(e.name ?? '', maxLines: 3, softWrap: true),
+            title: Text('${e.name}/${e.id}', maxLines: 3, softWrap: true),
             subtitle: Text(e.subtitle),
             leading: boxImage('icon:${e.id}'),
             leadingSize: 64,
@@ -199,8 +197,8 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
             trailing: const CupertinoListTileChevron(),
             onTap: () {
               ref.read(ciip.notifier).update(e.id);
-              context.push('book/${e.id}');
-              ref.read(shopProvider.notifier).touch(shelfidx, i);
+              context.push('/book/${e.id}');
+              ref.read(shopProvider.notifier).touch(shelfidx, e.id);
             },
           );
         },
@@ -307,17 +305,4 @@ void scan(WidgetRef ref) async {
   // ScaffoldMessenger.of(
   //   context,
   // ).showSnackBar(SnackBar(content: Text('$c added')));
-}
-
-class ErrScreen extends StatelessWidget {
-  const ErrScreen(this.text, {super.key});
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(middle: Text('Error')),
-      child: Center(child: Text(text)),
-    );
-  }
 }

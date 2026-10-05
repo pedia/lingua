@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'g.dart';
@@ -16,18 +17,19 @@ class _HiveFrameState extends State<HiveFrame> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      // A CustomScrollView is required for slivers to work together
-      child: CustomScrollView(
+    return Scaffold(
+      body: CustomScrollView(
         slivers: <Widget>[
           // 1. The Cupertino Sliver AppBar
-          CupertinoSliverNavigationBar(
-            largeTitle: Text('Hive Console(Debug)'),
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: null, // Add your action here
-              child: Icon(CupertinoIcons.add, size: 28),
-            ),
+          SliverAppBar(
+            title: Text('Hive Console(Debug)'),
+            actions: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: null, // Add your action here
+                child: Icon(CupertinoIcons.add, size: 28),
+              ),
+            ],
           ),
 
           // 2. The iOS-styled List Content
@@ -50,7 +52,7 @@ class _HiveFrameState extends State<HiveFrame> {
                         builder: (context) => ValueDetail(i: i, k: k, v: v),
                       ),
                     );
-                    if (f!=null && f) {
+                    if (f != null && f) {
                       setState(() {});
                     }
                   },
@@ -79,19 +81,21 @@ class ValueDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: CustomScrollView(
+    return Scaffold(
+      body: CustomScrollView(
         slivers: <Widget>[
-          CupertinoSliverNavigationBar(
-            largeTitle: Text('$i / $k'),
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                gbox.deleteAt(i);
-                Navigator.of(context).pop(true);
-              }, // Add your action here
-              child: Icon(CupertinoIcons.delete, size: 28),
-            ),
+          SliverAppBar(
+            title: Text('$i / $k'),
+            actions: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  gbox.deleteAt(i);
+                  Navigator.of(context).pop(true);
+                }, // Add your action here
+                child: Icon(CupertinoIcons.delete, size: 28),
+              ),
+            ],
           ),
           SliverToBoxAdapter(
             child: Padding(

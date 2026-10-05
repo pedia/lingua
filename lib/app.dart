@@ -13,8 +13,8 @@ import 'package:lingua/ui/voice_setting.dart';
 
 import 'settings/setting.dart';
 import 'ui/font.dart';
+import 'ui/gadget.dart';
 import 'ui/read.dart';
-
 import 'ui/lib.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
@@ -36,8 +36,8 @@ extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
   }
 }
 
-class LinguaApp extends ConsumerWidget {
-  const LinguaApp({this.family, super.key});
+class MainApp extends ConsumerWidget {
+  const MainApp({this.family, super.key});
   final String? family;
 
   ThemeData buildTheme(Brightness brightness) {
@@ -86,12 +86,12 @@ class LinguaApp extends ConsumerWidget {
     return base.copyWith(textTheme: textTheme);
   }
 
-  Widget m(WidgetRef ref) {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final tm = ref.watch(
       settingProvider.select((m) => m.intOf('ui.theme-mode', defaults: 0)),
     );
-    return MaterialApp(
-      title: 'Lingua Reader',
+    return MaterialApp.router(
       themeMode: ThemeMode.values[tm],
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
@@ -103,6 +103,47 @@ class LinguaApp extends ConsumerWidget {
         Locale('ko', 'KR'),
         // Locale('es', 'ES'),
       ],
+      localizationsDelegates: <LocalizationsDelegate<dynamic>>[
+        DefaultMaterialLocalizations.delegate, // <-- THIS FIXES THE ERROR
+        DefaultWidgetsLocalizations.delegate,
+        DefaultCupertinoLocalizations.delegate,
+      ],
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => RouteScreen(),
+          ),
+          GoRoute(
+            path: '/shelf',
+            builder: (_, _) => ShelfFrame(),
+          ),
+          GoRoute(
+            path: '/book/:id',
+            builder: (_, state) =>
+                BookFrame(id: int.parse(state.pathParameters['id'] ?? '')),
+          ),
+          GoRoute(path: '/hive', builder: (_, _) => HiveFrame()),
+          GoRoute(path: '/setting', builder: (_, _) => SettingFrame()),
+          GoRoute(
+            path: '/engine',
+            builder: (ctx, _) => EngineSettingPage.from(ctx),
+          ),
+          GoRoute(path: '/route', builder: (_, _) => RouteScreen()),
+          GoRoute(path: '/library', builder: (_, _) => LibraryFrame()),
+          GoRoute(
+            path: '/prototype',
+            builder: (_, _) => TestProviderScreen(bookId: '3'),
+          ),
+          GoRoute(path: '/silver', builder: (_, _) => SilverFrame()),
+          GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
+          GoRoute(
+            path: '/read/:id',
+            builder: (_, state) =>
+                ReadFrame(id: int.parse(state.pathParameters['id'] ?? '')),
+          ),
+        ],
+      ),
     );
   }
 
@@ -118,8 +159,7 @@ class LinguaApp extends ConsumerWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget c2(BuildContext context, WidgetRef ref) {
     final tm = ref.watch(
       settingProvider.select((m) => m.intOf('ui.theme-mode', defaults: 0)),
     );
@@ -127,7 +167,7 @@ class LinguaApp extends ConsumerWidget {
     return CupertinoApp.router(
       debugShowCheckedModeBanner: false,
       localizationsDelegates: <LocalizationsDelegate<dynamic>>[
-        DefaultMaterialLocalizations.delegate, // <-- THIS FIXES THE ERROR
+        DefaultMaterialLocalizations.delegate,
         DefaultWidgetsLocalizations.delegate,
         DefaultCupertinoLocalizations.delegate,
       ],
@@ -136,36 +176,7 @@ class LinguaApp extends ConsumerWidget {
         primaryColor: CupertinoColors.activeBlue,
         textTheme: const CupertinoTextThemeData().withFontFamily(family!),
       ),
-      routerConfig: router,
+      // routerConfig: GoRouter(),
     );
   }
 }
-
-final router = GoRouter(
-  routes: [
-    GoRoute(path: '/', builder: (_, _) => ShelfFrame()),
-    GoRoute(
-      path: '/book/:id',
-      builder: (_, state) =>
-          BookFrame(id: int.parse(state.pathParameters['id'] ?? '')),
-    ),
-    GoRoute(path: '/hive', builder: (_, state) => HiveFrame()),
-    GoRoute(path: '/setting', builder: (_, state) => SettingFrame()),
-    GoRoute(
-      path: '/engine',
-      builder: (ctx, state) => EngineSettingPage.from(ctx),
-    ),
-    GoRoute(path: '/route', builder: (_, state) => RouteScreen()),
-    GoRoute(path: '/library', builder: (_, state) => LibraryFrame()),
-    GoRoute(
-      path: '/prototype',
-      builder: (_, state) => TestProviderScreen(bookId: '3'),
-    ),
-    GoRoute(path: '/silver', builder: (_, state) => SilverFrame()),
-    GoRoute(
-      path: '/read/:id',
-      builder: (_, state) =>
-          ReadFrame(id: int.parse(state.pathParameters['id'] ?? '')),
-    ),
-  ],
-);

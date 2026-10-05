@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,10 +9,10 @@ class RouteScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Route')),
-      child: SafeArea(
-        child: Column(
+    return Scaffold(
+      appBar: AppBar(title: Text('Route')),
+      body: SafeArea(
+        child: ListView(
           children: [
             CupertinoButton(
               onPressed: () => context.go('/'),
@@ -25,6 +26,9 @@ class RouteScreen extends ConsumerWidget {
               '/library',
               '/prototype',
               '/silver',
+              '/error',
+              '/shelf',
+              '/read/5',
             ].map(
               (e) => CupertinoButton(
                 onPressed: () => context.push(e),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'book.dart';
 import 'gadget.dart';
 
-/// Material Silver Style reader
+/// Material Silver Style Reader
 class ReadFrame extends ConsumerWidget {
   ReadFrame({required this.id, super.key});
   final int id;
