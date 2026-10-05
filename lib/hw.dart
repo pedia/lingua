@@ -408,7 +408,7 @@ class Doc {
 
 /// HtmlWidget render mode in ListView, RichText, SliverList
 /// auto, top block count > 1000 -> list
-enum Mode { auto, rich, list, silver }
+enum Mode { auto, rich, list, sliver }
 
 class HtmlWidget extends ConsumerStatefulWidget {
   final Doc doc;
@@ -556,6 +556,28 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
           padding: EdgeInsets.all(8),
           itemCount: rs.length,
           itemBuilder: (contex, i) => Text.rich(rs[i]),
+        ),
+      );
+    } else if (widget.mode == Mode.sliver) {
+      final rs = <InlineSpan>[];
+      for (int i = 0; i < widget.doc.blocks.length; i++) {
+        rs.add(
+          WidgetSpan(
+            child: BlockWidget(
+              doc: widget.doc,
+              index: i,
+              provider: widget.doc.provider,
+            ),
+          ),
+        );
+      }
+      return SliverPadding(
+        padding: EdgeInsetsGeometry.all(8),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (countext, i) => Text.rich(rs[i]),
+            childCount: rs.length,
+          ),
         ),
       );
     }
