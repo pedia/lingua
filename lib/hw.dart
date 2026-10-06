@@ -418,11 +418,13 @@ enum Mode { auto, rich, list, sliver }
 class HtmlWidget extends ConsumerStatefulWidget {
   final Doc doc;
   final Mode mode;
+  final ScrollController? roller;
 
   HtmlWidget({
     required String html,
     required this.mode,
     FileProvider? provider,
+    this.roller,
     super.key,
   }) : doc = Doc.create(html: html, provider: provider);
 
@@ -431,7 +433,6 @@ class HtmlWidget extends ConsumerStatefulWidget {
 }
 
 class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
-  final roller = ScrollController();
   int? firstVisibleIdx;
   double? offset;
 
@@ -449,12 +450,12 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
       // Scrollable.ensureVisible(key.currentContext!);
     });
 
-    roller.addListener(_onScroll);
+    widget.roller?.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    roller.dispose();
+    widget.roller?.dispose();
     super.dispose();
   }
 
@@ -479,38 +480,10 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
     }
 
     if (idx != null && idx != firstVisibleIdx) {
-      // print(
-      //   'onScroll ${roller.offset.toStringAsFixed(2)}, First visible block: $idx',
-      // );
       firstVisibleIdx = idx;
     }
 
-    offset = roller.offset;
-  }
-
-  @override
-  void didUpdateWidget(covariant HtmlWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Check if the list reference or content has changed
-    if (oldWidget.doc != widget.doc) {
-      print('HW didUpdateWidget');
-    }
-  }
-
-  void _scrollToTop() {
-    // Wait for the UI to complete rendering the updated list
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (roller.hasClients) {
-        roller.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-        );
-        // Or for instant jump without animation:
-        // _scrollController.jumpTo(0.0);
-      }
-    });
+    offset = widget.roller?.offset;
   }
 
   @override
@@ -532,7 +505,7 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
       }
 
       return SingleChildScrollView(
-        controller: roller,
+        controller: widget.roller,
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.all(8),
@@ -556,9 +529,9 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
         );
       }
       return Scrollbar(
-        controller: roller,
+        controller: widget.roller,
         child: ListView.builder(
-          controller: roller,
+          controller: widget.roller,
           padding: EdgeInsets.all(8),
           itemCount: rs.length,
           itemBuilder: (contex, i) => Text.rich(rs[i]),

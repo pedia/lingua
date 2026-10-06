@@ -6,9 +6,10 @@ import '../../g.dart';
 import 'book.dart';
 
 class ChapterList extends ConsumerStatefulWidget {
-  const ChapterList(this.id, this.book, {super.key});
+  const ChapterList(this.id, this.book, {this.isTablet = false, super.key});
   final int id;
   final epub.Book book;
+  final bool isTablet;
 
   @override
   ConsumerState<ChapterList> createState() => _ChapterListState();
@@ -42,7 +43,7 @@ class _ChapterListState extends ConsumerState<ChapterList> {
           selected: i == ref.watch(isp(widget.id)).read.ci,
           title: Text(chs[i].title),
           onTap: () {
-            Navigator.pop(context);
+            if (!widget.isTablet) Navigator.pop(context);
             ref
                 .read(isp(widget.id).notifier)
                 .updateRead(chapterIndex: i, lineIndex: 0);

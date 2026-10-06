@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../epub/epub.dart' as epub;
+import '../hw.dart';
 import 'chapter_list.dart';
 import 'read.dart';
+import 'gadget.dart';
+import 'book.dart';
 
 /// left master ListView, right detail view
 
@@ -45,78 +49,46 @@ final activeDetailItemProvider = Provider<Item?>((ref) {
 // -----------------------------------------------------------------------------
 
 class MasterDetailContainer extends ConsumerWidget {
-  const MasterDetailContainer({super.key});
+  const MasterDetailContainer(this.id, {super.key});
+  final int id;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ab = ref.watch(bookProvider(id));
+    return AsyncValueX(ab).when(
+      data: (book) {
+        if (book == null) {
+          return ErrScreen('Unable to open item:$id');
+        }
+        return builds(context, book);
+      },
+      loading: () => const Center(), // TODO: better solution
+      error: (err, stackTrace) {
+        print(stackTrace.toString().substring(0, 1000));
+        return ErrScreen('Unable to open it\n$err');
+      },
+    );
+  }
+
+  Widget builds(BuildContext context, epub.Book book) {
     final isTablet = MediaQuery.of(context).size.width >= 600;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Master-Detail Layout')),
+      appBar: AppBar(title: Text(book.title)),
       body: isTablet
           ? Row(
               children: [
                 // Left Pane: Master List View
-                SizedBox(width: 340, child: MasterListView(isTablet: true)),
+                SizedBox(
+                  width: 280,
+                  child: ChapterList(id, book, isTablet: true),
+                ),
                 VerticalDivider(width: 1, thickness: 1),
                 // Right Pane: Detail View
-                Expanded(child: DetailView()),
+                Expanded(child: DetailView(id, book)),
               ],
             )
-          : const MasterListView(isTablet: false),
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// 3. MASTER LIST VIEW (LEFT PANE)
-// -----------------------------------------------------------------------------
-
-class MasterListView extends ConsumerWidget {
-  final bool isTablet;
-
-  const MasterListView({super.key, required this.isTablet});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final items = ref.watch(masterItemsProvider);
-    final selectedId = ref.watch(selectedItemIdProvider);
-
-    return ListView.separated(
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        final isSelected = item.id == selectedId;
-
-        return ListTile(
-          title: Text(
-            item.title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(
-            item.details,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          selected: isTablet && isSelected,
-          selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-          onTap: () {
-            ref.read(selectedItemIdProvider.notifier).state = item.id;
-
-            if (!isTablet) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => Scaffold(
-                    appBar: AppBar(title: Text(item.title)),
-                    body: DetailView(),
-                  ),
-                ),
-              );
-            }
-          },
-        );
-      },
+          : ChapterList(id, book, isTablet: false),
     );
   }
 }
@@ -126,34 +98,30 @@ class MasterListView extends ConsumerWidget {
 // -----------------------------------------------------------------------------
 
 class DetailView extends ConsumerWidget {
-  DetailView({super.key});
+  DetailView(this.id, this.book, {super.key});
+  final int id;
+  final epub.Book book;
   final roller = ScrollController();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final item = ref.watch(activeDetailItemProvider);
-
-    if (item == null) {
-      return const Center(child: Text('Please select an item from the left.'));
-    }
-
-    ref.listen(activeDetailItemProvider, (p, n) {
-      if (n != p) {
+    ref.listen(isp(id).select((s) => s.read.ci), (p, n) {
+      if (n != p && roller.hasClients) {
         roller.jumpTo(0);
       }
     });
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: ListView(
-        // crossAxisAlignment: CrossAxisAlignment.start,
-        controller: roller,
-        children: [
-          Text(item.title, style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 16),
-          Text(item.details, style: Theme.of(context).textTheme.bodyLarge),
-          ...List.generate(20, (i) => ListTile(title: Text('${item.id} $i'))),
-        ],
+    final ci = ref.watch(isp(id).select((o) => o.read.ci));
+    final ch = book.chapters[ci];
+
+    return SelectableRegion(
+      selectionControls: materialTextSelectionHandleControls,
+      // contextMenuBuilder: selectToolbar,
+      child: HtmlWidget(
+        html: ch.content,
+        mode: Mode.list,
+        roller: roller,
+        provider: ArchiveProvider(ch.href, book.files),
       ),
     );
   }
