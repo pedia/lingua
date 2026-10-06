@@ -51,11 +51,13 @@ class Block {
 
 class BlockWidget extends ConsumerWidget {
   final Doc doc;
+  final Mode mode;
   final int index;
   final FileProvider? provider;
   const BlockWidget({
     super.key,
     required this.doc,
+    required this.mode,
     required this.index,
     this.provider,
   });
@@ -80,6 +82,9 @@ class BlockWidget extends ConsumerWidget {
 
   /// add CR
   List<InlineSpan> cr(List<InlineSpan>? children) {
+    if (mode != Mode.rich) {
+      return children ?? [];
+    }
     if (children == null) {
       return [TextSpan(text: '\n')];
     }
@@ -192,7 +197,7 @@ class BlockWidget extends ConsumerWidget {
       'img' => WidgetSpan(
         child: Image.memory(
           provider?.bytes(e.attributes['src'] ?? '') ?? note,
-          fit: BoxFit.fitHeight,
+          fit: BoxFit.fitWidth,
           width: forceInlineHeight != null
               ? null
               : double.tryParse(e.attributes['width'] ?? ''),
@@ -488,9 +493,8 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
     super.didUpdateWidget(oldWidget);
 
     // Check if the list reference or content has changed
-    print('didUpdateWidget');
     if (oldWidget.doc != widget.doc) {
-      _scrollToTop();
+      print('HW didUpdateWidget');
     }
   }
 
@@ -518,6 +522,7 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
           WidgetSpan(
             child: BlockWidget(
               doc: widget.doc,
+              mode: widget.mode,
               index: i,
               provider: widget.doc.provider,
             ),
@@ -543,6 +548,7 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
           WidgetSpan(
             child: BlockWidget(
               doc: widget.doc,
+              mode: widget.mode,
               index: i,
               provider: widget.doc.provider,
             ),
@@ -565,6 +571,7 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
           WidgetSpan(
             child: BlockWidget(
               doc: widget.doc,
+              mode: widget.mode,
               index: i,
               provider: widget.doc.provider,
             ),

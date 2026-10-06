@@ -118,10 +118,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       return;
     }
 
-    // final doc = ProviderScope.containerOf(context).read(docp);
-    // debugPrint('demo $doc');
-    // ref.read(docp);
-
     debugPrint('got dts notify $m');
 
     // next chapter

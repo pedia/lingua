@@ -19,7 +19,7 @@ class RouteScreen extends ConsumerWidget {
               child: Text('Go /'),
             ),
             ...[
-              '/book/5',
+              '/book/4',
               '/hive',
               '/setting',
               '/engine',
@@ -28,7 +28,9 @@ class RouteScreen extends ConsumerWidget {
               '/sliver',
               '/error',
               '/shelf',
-              '/read/5',
+              '/read/4',
+              '/example',
+              '/master-detail',
             ].map(
               (e) => CupertinoButton(
                 onPressed: () => context.push(e),

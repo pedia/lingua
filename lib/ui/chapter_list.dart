@@ -23,7 +23,7 @@ class _ChapterListState extends ConsumerState<ChapterList> {
     final chs = widget.book.chapters;
     return ScrollablePositionedList.builder(
       itemScrollController: itemroller,
-      key: PageStorageKey<int>(widget.id),
+      key: PageStorageKey<String>('cl:${widget.id}'),
       initialScrollIndex: 0,
       itemCount: chs.length + 1,
       itemBuilder: (context, index) {

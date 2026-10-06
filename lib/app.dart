@@ -16,6 +16,8 @@ import 'ui/font.dart';
 import 'ui/gadget.dart';
 import 'ui/read.dart';
 import 'ui/lib.dart';
+import 'example.dart';
+import 'master_detail.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
   CupertinoTextThemeData withFontFamily(String family) {
@@ -136,7 +138,9 @@ class MainApp extends ConsumerWidget {
             builder: (_, _) => TestProviderScreen(bookId: '3'),
           ),
           GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
+          GoRoute(path: '/example', builder: (_, _) => DrawerScrollExample()),
           GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
+          GoRoute(path: '/master-detail', builder: (_, _) => MasterDetailContainer()),
           GoRoute(
             path: '/read/:id',
             builder: (_, state) =>
