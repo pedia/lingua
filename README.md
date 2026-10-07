@@ -146,24 +146,6 @@ drawer: Drawer(
 // ),
 
 
-# state
-
--    tts:
-   watch: tts-line?
-    read: lines
-      up: tts-line
-
-- reader:
-   watch: cch, read-line, tts.state
-    read: cch, cbook(ArchiveProvider)
-   // up: read-line
-
--    hw: [bookProvider]
-   read: Doc[Blocks] + ArchiveProvider, lineIndex
-  watch: lineIndex
-     up: read-line
-
-- chs list:
-     watch: cch=?book,  cbook
-      read: chs
-        up: cch
+# shelf management
+- delete, merge
+- 

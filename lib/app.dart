@@ -16,7 +16,7 @@ import 'ui/font.dart';
 import 'ui/gadget.dart';
 import 'ui/read.dart';
 import 'ui/lib.dart';
-import 'example.dart';
+import 'ui/shelf_mgmt.dart';
 import 'ui/md.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
@@ -138,7 +138,7 @@ class MainApp extends ConsumerWidget {
             builder: (_, _) => TestProviderScreen(bookId: '3'),
           ),
           GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
-          GoRoute(path: '/example', builder: (_, _) => DrawerScrollExample()),
+          GoRoute(path: '/shelf-mgmt', builder: (_, _) => ShelfManagementScreen()),
           GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
           GoRoute(path: '/master-detail', builder: (_, _) => TabletReadFrame(2)),
           GoRoute(

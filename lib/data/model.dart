@@ -214,6 +214,10 @@ class ShopNotifier extends Notifier<Shop> {
     }
   }
 
+  void update(List<Shelf> shelves) {
+    state = Shop(shelves: shelves, current: state.current);
+  }
+
   /// add means, put it at 1st place
   int add(String name) {
     state = Shop(

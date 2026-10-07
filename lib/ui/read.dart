@@ -5,6 +5,7 @@ import '../epub/epub.dart' as epub;
 import 'book.dart';
 import 'gadget.dart';
 import '../hw.dart';
+import 'chapter_list.dart';
 
 /// Material Silver Style Reader
 class ReadFrame extends ConsumerStatefulWidget {
@@ -23,12 +24,20 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(isp(widget.id), (previous, next) {
-      if (next.read.li != previous?.read.li) {
-        ref.read(linep.notifier).updateActive(next.read.li);
+    // ci change, scroll to top
+    ref.listen(isp(widget.id).select((s) => s.read.ci), (p, n) {
+      if (n != p && roller.hasClients) {
+        roller.jumpTo(0);
       }
     });
+    //
+    // ref.listen(isp(widget.id), (previous, next) {
+    //   if (next.read.li != previous?.read.li) {
+    //     ref.read(linep.notifier).updateActive(next.read.li);
+    //   }
+    // });
 
+    // save current progress
     ref.listen(linep, (prev, next) {
       if (next != null && next != prev) {
         ref.read(isp(widget.id).notifier).updateRead(lineIndex: next);
@@ -57,6 +66,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     final ch = book.chapters[ci];
     return FullScreen(
       child: Scaffold(
+        drawer: Drawer(width: 280, child: ChapterList(widget.id, book)),
         body: SelectableRegion(
           selectionControls: materialTextSelectionHandleControls,
           // contextMenuBuilder: selectToolbar,

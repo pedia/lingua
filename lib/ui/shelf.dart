@@ -8,11 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 
-import '../epub/epub.dart';
-import '../epub/parser.dart';
 import '../data/model.dart';
 import '../g.dart';
-import 'book.dart';
 import 'open.dart';
 
 class ShelfFrame extends ConsumerStatefulWidget {
@@ -44,12 +41,6 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
               name: p.basename(fn).replaceAll('.epub', ''),
             ),
           );
-
-      // setState(
-      //   () => items.add(
-      //     Item(type: ItemType.file, path: fn, name: p.basename(fn)),
-      //   ),
-      // );
     });
 
     _initTabController();
@@ -80,7 +71,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
 
   @override
   Widget build(BuildContext context) {
-    final shop = ref.watch(shopProvider);
+    final shelves = ref.watch(shopProvider.select((shop) => shop.shelves));
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
@@ -122,7 +113,6 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                       ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
-                        // minSize: 36,
                         onPressed: () => context.push('/route'),
                         child: const Icon(CupertinoIcons.settings, size: 28),
                       ),
@@ -152,15 +142,13 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                           indicatorColor: CupertinoColors.activeBlue
                               .resolveFrom(context),
                           indicatorSize: TabBarIndicatorSize.tab,
-                          tabs: shop.shelves
-                              .map((s) => Tab(text: s.name))
-                              .toList(),
+                          tabs: shelves.map((s) => Tab(text: s.name)).toList(),
                         ),
                       ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
-                        onPressed: _showNewShelfDialog,
-                        child: Icon(CupertinoIcons.add),
+                        onPressed: () => context.push('/shelf-mgmt'),
+                        child: Icon(Icons.edit),
                       ),
                     ],
                   ),
@@ -171,10 +159,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         },
         body: TabBarView(
           controller: _tabController,
-          children: List.generate(
-            shop.shelves.length,
-            (i) => _buildBookList(i),
-          ),
+          children: List.generate(shelves.length, (i) => _buildBookList(i)),
         ),
       ),
     );
@@ -184,6 +169,8 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     final shelf = ref.watch(shopProvider.select((s) => s.shelves[shelfidx]));
     return Scrollbar(
       child: ListView.builder(
+        primary: true,
+        restorationId: 'shelf:$shelfidx',
         padding: const EdgeInsets.all(16.0),
         itemCount: shelf.items.length,
         itemBuilder: (context, i) {
@@ -285,19 +272,19 @@ void scan(WidgetRef ref) async {
   final appDir = await getApplicationDocumentsDirectory();
   final booksDir = Directory(p.join(appDir.path, 'books'));
 
-  final items = ref.read(itemsProvider);
-
   int c = 0;
-  final currentShelfIdx = ref.read(shopProvider).current;
+  final shelfidx = ref.read(shopProvider.select((s) => s.current));
+  final shelf = ref.read(shopProvider.select((s) => s.shelves[shelfidx]));
 
   await for (final e in booksDir.list()) {
     if (e.path.endsWith('.epub')) {
-      if (!items.any((i) => i.path == e.path)) {
-        final fp = e.path.substring(booksDir.path.length + 1); // +1 for last /
+      final fp = e.path.substring(booksDir.path.length + 1); // +1 for last /
+
+      if (!shelf.items.any((i) => i.path == fp)) {
         ref
             .read(shopProvider.notifier)
             .addItemTo(
-              currentShelfIdx,
+              shelfidx,
               Item(
                 id: nextId(),
                 type: ItemType.file,
