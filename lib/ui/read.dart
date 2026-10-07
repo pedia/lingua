@@ -57,8 +57,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     final ch = book.chapters[ci];
     return FullScreen(
       child: Scaffold(
-        body: Scrollbar(
-          controller: roller,
+        body: SelectableRegion(
+          selectionControls: materialTextSelectionHandleControls,
+          // contextMenuBuilder: selectToolbar,
           child: CustomScrollView(
             restorationId: 'read-${widget.id}-$ci',
             controller: roller,
@@ -73,7 +74,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 pinned: false,
                 elevation: 2.0,
               ),
-              HtmlWidget(html: ch.content, mode: Mode.sliver),
+              HtmlWidget(html: ch.content, mode: Mode.sliver, roller: roller),
             ],
           ),
         ),

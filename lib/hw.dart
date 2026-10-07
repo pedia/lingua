@@ -70,13 +70,13 @@ class BlockWidget extends ConsumerWidget {
       clickable(trans(b.e, ref), b.i, ref),
       key: b.key,
       // CASE: selection style
-      style: ref.watch(linep) == index
-          ? TextStyle(
-              backgroundColor:
-                  TextSelectionTheme.of(context).selectionColor ??
-                  Colors.blue.withValues(alpha: 0.4),
-            )
-          : null,
+      // style: ref.watch(linep) == index
+      //     ? TextStyle(
+      //         backgroundColor:
+      //             TextSelectionTheme.of(context).selectionColor ??
+      //             Colors.blue.withValues(alpha: 0.4),
+      //       )
+      //     : null,
     );
   }
 
@@ -314,7 +314,7 @@ class BlockWidget extends ConsumerWidget {
                 w.recognizer ??
                 (TapGestureRecognizer()
                   ..onTap = () {
-                    print('click $index');
+                    debugPrint('click $index');
                     ref.read(linep.notifier).updateActive(index);
                   }),
             style: w.style,
@@ -455,13 +455,19 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
 
   @override
   void dispose() {
-    widget.roller?.dispose();
+    // TODO: widget.roller?.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    final RenderBox? scrollBox = context.findRenderObject() as RenderBox?;
-    if (scrollBox == null) return;
+    final obj = context.findRenderObject();
+    if (obj == null || obj is! RenderBox) {
+      // debugPrint('in scroll, ${obj.runtimeType}');
+      /// [RenderSliverPadding]
+      return;
+    }
+
+    RenderBox scrollBox = obj;
 
     int? idx;
     double closestTop = double.infinity;
@@ -481,6 +487,7 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
 
     if (idx != null && idx != firstVisibleIdx) {
       firstVisibleIdx = idx;
+      ref.read(linep.notifier).updateActive(firstVisibleIdx!);
     }
 
     offset = widget.roller?.offset;

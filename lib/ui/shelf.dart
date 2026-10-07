@@ -205,7 +205,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
             trailing: const CupertinoListTileChevron(),
             onTap: () {
               ref.read(ciip.notifier).update(e.id);
-              context.push('/book/${e.id}');
+              context.push('/read/${e.id}');
               ref.read(shopProvider.notifier).touch(shelfidx, e.id);
             },
           );

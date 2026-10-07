@@ -219,8 +219,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                 if (!dt.inited) {
                   await applyVoice(context);
                 }
-
-                dt.load(lines);
+                final start = ref.read(linep) ?? 0;
+                dt.load(lines.sublist(start));
                 dt.play();
               }
             },
@@ -269,6 +269,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
           child: HtmlWidget(
             html: ch.content,
             mode: Mode.list,
+            roller: roller,
             provider: ArchiveProvider(ch.href, book.files),
           ),
         ),

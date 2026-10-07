@@ -140,7 +140,7 @@ class MainApp extends ConsumerWidget {
           GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
           GoRoute(path: '/example', builder: (_, _) => DrawerScrollExample()),
           GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
-          GoRoute(path: '/master-detail', builder: (_, _) => MasterDetailContainer(2)),
+          GoRoute(path: '/master-detail', builder: (_, _) => TabletReadFrame(2)),
           GoRoute(
             path: '/read/:id',
             builder: (_, state) =>
