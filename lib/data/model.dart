@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pinyin_pro_flutter/pinyin_pro_flutter.dart';
 
 import '../g.dart';
 
@@ -11,6 +12,7 @@ class Item {
     required this.path,
     this.name,
     this.author,
+    this.description,
     this.percent = 0,
   });
 
@@ -19,6 +21,7 @@ class Item {
   final String path;
   final String? name;
   final String? author;
+  final String? description;
   final double percent;
 
   String get subtitle => [
@@ -39,6 +42,7 @@ class Item {
     path: json['path'] as String,
     name: json['name'] as String?,
     author: json['author'] as String?,
+    description: json['description'] as String?,
     percent: (json['percent'] as num?)?.toDouble() ?? 0,
   );
 
@@ -48,6 +52,7 @@ class Item {
     'path': path,
     'name': name,
     'author': author,
+    'description': description,
     'percent': percent,
   };
 
@@ -57,6 +62,7 @@ class Item {
     String? path,
     String? name,
     String? author,
+    String? description,
     double? percent,
   }) => Item(
     id: id ?? this.id,
@@ -64,6 +70,7 @@ class Item {
     path: path ?? this.path,
     name: name ?? this.name,
     author: author ?? this.author,
+    description: description ?? this.description,
     percent: percent ?? this.percent,
   );
 
@@ -71,6 +78,36 @@ class Item {
   bool operator ==(Object other) => other is Item && id == other.id;
   @override
   int get hashCode => Object.hash(runtimeType, id, name, path);
+
+  bool match(String q) {
+    q = q.toLowerCase();
+    if (author != null) {
+      if (author!.toLowerCase().contains(q)) {
+        return true;
+      }
+      final m = matchPinyin(author!, q);
+      if (m != null && m.isNotEmpty) {
+        return true;
+      }
+    }
+
+    if (name != null) {
+      if (name!.toLowerCase().contains(q)) {
+        return true;
+      }
+      final m = matchPinyin(name!, q);
+      if (m != null && m.isNotEmpty) {
+        return true;
+      }
+    }
+
+    if (description != null) {
+      if (description!.toLowerCase().contains(q)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 class ItemListNotifier extends Notifier<List<Item>> {
@@ -168,6 +205,14 @@ class Shelf {
     name: name ?? this.name,
     items: items ?? this.items,
   );
+
+  List<Item> search(String q) {
+    final rs = <Item>[];
+    for (final i in items) {
+      if (i.match(q)) rs.add(i);
+    }
+    return rs;
+  }
 }
 
 /// Short for Shelves, mean bookshop
@@ -187,6 +232,10 @@ class Shop {
     'shelves': shelves.map((e) => e.toJson()).toList(),
     'current': current,
   };
+
+  List<Item> search(String q) {
+    return [for (final s in shelves) ...s.search(q)];
+  }
 }
 
 class ShopNotifier extends Notifier<Shop> {
@@ -214,8 +263,11 @@ class ShopNotifier extends Notifier<Shop> {
     }
   }
 
-  void update(List<Shelf> shelves) {
-    state = Shop(shelves: shelves, current: state.current);
+  void update({List<Shelf>? shelves, int? current}) {
+    state = Shop(
+      shelves: shelves ?? state.shelves,
+      current: current ?? state.current,
+    );
   }
 
   /// add means, put it at 1st place

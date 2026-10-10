@@ -15,6 +15,44 @@ class HiveFrame extends StatefulWidget {
 class _HiveFrameState extends State<HiveFrame> {
   final roller = ScrollController();
 
+  /// Displays a dialog with a text input field and returns the entered String.
+  /// Returns `null` if the user cancels or dismisses the dialog.
+  Future<String?> showTextInputDialog({
+    required BuildContext context,
+    required String title,
+    String hintText = '',
+    String initialText = '',
+  }) async {
+    final controller = TextEditingController(text: initialText);
+
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(hintText: hintText),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(null), // Return null on Cancel
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(
+                context,
+              ).pop(controller.text), // Return input value
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,8 +64,28 @@ class _HiveFrameState extends State<HiveFrame> {
             actions: [
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: null, // Add your action here
-                child: Icon(CupertinoIcons.add, size: 28),
+                onPressed: () async {
+                  final prefix = await showTextInputDialog(
+                    context: context,
+                    title: 'Input delete key prefix',
+                  );
+                  if (prefix != null) {
+                    final ks = gbox.keys
+                        .whereType<String>()
+                        .where((k) => k.startsWith(prefix))
+                        .toList();
+                    if (ks.isNotEmpty && mounted) {
+                      await gbox.deleteAll(ks);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${ks.length} deleted')),
+                      );
+
+                      setState(() {});
+                    }
+                  }
+                },
+                child: Icon(CupertinoIcons.delete_simple, size: 28),
               ),
             ],
           ),

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/model.dart';
@@ -7,7 +9,8 @@ class ShelfManagementScreen extends ConsumerStatefulWidget {
   const ShelfManagementScreen({super.key});
 
   @override
-  ConsumerState<ShelfManagementScreen> createState() => _EditableListScreenState();
+  ConsumerState<ShelfManagementScreen> createState() =>
+      _EditableListScreenState();
 }
 
 class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
@@ -65,7 +68,7 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
   }
 
   // 4. Reorder Items
-  void _reorderItems(int oldIndex, int newIndex) {
+  void _onReorder(int oldIndex, int newIndex) {
     setState(() {
       // ReorderableListView adjustment for moving down
       if (oldIndex < newIndex) {
@@ -167,45 +170,7 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
             ),
           ],
         ),
-        body: _items.isEmpty
-            ? const Center(child: Text('No shelf in the list. Tap + to add.'))
-            : ReorderableListView.builder(
-                itemCount: _items.length,
-                onReorder: _reorderItems,
-                itemBuilder: (context, index) {
-                  final item = _items[index];
-
-                  return ListTile(
-                    // Key must also be unique across items for ReorderableListView
-                    key: ValueKey(item),
-                    leading: CircleAvatar(child: Text('${index + 1}')),
-                    title: Text('${item.name}, ${item.items.length}'),
-                    onTap: () => _showRenameDialog(index), // Tap tile to rename
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.edit_outlined,
-                            color: Colors.blue,
-                          ),
-                          onPressed: () => _showRenameDialog(index),
-                          tooltip: 'Rename',
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.grey,
-                          ),
-                          onPressed: () => _deleteItem(index),
-                          tooltip: 'Delete',
-                        ),
-                        SizedBox(width: 12),
-                      ],
-                    ),
-                  );
-                },
-              ),
+        body: buildList(context),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddDialog,
           tooltip: 'Add Item',
@@ -213,6 +178,78 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
         ),
       ),
     );
+  }
+
+  Widget buildList(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color oddItemColor = colorScheme.secondary.withValues(alpha: 0.05);
+    final Color evenItemColor = colorScheme.secondary.withValues(alpha: 0.15);
+    final Color draggableItemColor = colorScheme.secondary;
+
+    Widget proxyDecorator(
+      Widget child,
+      int index,
+      Animation<double> animation,
+    ) {
+      return AnimatedBuilder(
+        animation: animation,
+        builder: (BuildContext context, Widget? child) {
+          final double animValue = Curves.easeInOut.transform(animation.value);
+          final double elevation = lerpDouble(0, 6, animValue)!;
+          return Material(
+            elevation: elevation,
+            color: draggableItemColor,
+            shadowColor: draggableItemColor,
+            child: child,
+          );
+        },
+        child: child,
+      );
+    }
+
+    return _items.isEmpty
+        ? const Center(child: Text('No shelf in the list. Tap + to add.'))
+        : ReorderableListView.builder(
+            proxyDecorator: proxyDecorator,
+            itemCount: _items.length,
+            onReorder: _onReorder,
+            itemBuilder: (context, index) {
+              final item = _items[index];
+
+              return ListTile(
+                // Key must also be unique across items for ReorderableListView
+                key: ValueKey(item),
+                tileColor: index.isOdd ? oddItemColor : evenItemColor,
+                leading: CircleAvatar(child: Text('${index + 1}')),
+                title: Text('${item.name}, ${item.items.length}'),
+                onTap: () => _showRenameDialog(index),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.merge, color: Colors.blue),
+                      onPressed: () {},
+                      tooltip: 'Merge With',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                      onPressed: () => _showRenameDialog(index),
+                      tooltip: 'Rename',
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () => _deleteItem(index),
+                      tooltip: 'Delete',
+                    ),
+                    SizedBox(width: 12),
+                  ],
+                ),
+              );
+            },
+          );
   }
 
   @override
@@ -223,6 +260,6 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
 
   /// update provider
   void update() {
-    ref.read(shopProvider.notifier).update(_items);
+    ref.read(shopProvider.notifier).update(shelves: _items);
   }
 }

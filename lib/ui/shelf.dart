@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lingua/ui/book_edit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
@@ -11,6 +12,7 @@ import 'package:path/path.dart' as p;
 import '../data/model.dart';
 import '../g.dart';
 import 'open.dart';
+import 'book_edit.dart';
 
 class ShelfFrame extends ConsumerStatefulWidget {
   const ShelfFrame({super.key});
@@ -24,16 +26,18 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   TabController? _tabController;
   final _searchController = TextEditingController();
   StreamSubscription? subOpenFile;
+  List<Item>? searchResult;
 
   @override
   void initState() {
     super.initState();
 
     subOpenFile = OpenPump.stream.listen((fn) {
-      debugPrint('lib got $fn');
+      debugPrint('lib got relative path:$fn');
       ref
-          .read(itemsProvider.notifier)
-          .add(
+          .read(shopProvider.notifier)
+          .addItemTo(
+            0, // TODO:
             Item(
               id: nextId(),
               type: ItemType.file,
@@ -59,14 +63,17 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     _tabController?.dispose();
 
     length ??= ref.read(shopProvider).shelves.length;
-    _tabController = TabController(length: length, vsync: this);
+    _tabController = TabController(
+      initialIndex: ref.read(shopProvider).current,
+      length: length,
+      vsync: this,
+    );
 
-    // Optional: Add a listener if you need to perform actions when swiping tabs
-    // _tabController!.addListener(() {
-    //   if (!_tabController!.indexIsChanging) {
-    //     setState(() {});
-    //   }
-    // });
+    _tabController!.addListener(() {
+      if (!_tabController!.indexIsChanging) {
+        ref.read(shopProvider.notifier).update(current: _tabController!.index);
+      }
+    });
   }
 
   @override
@@ -88,6 +95,19 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                         child: CupertinoSearchTextField(
                           controller: _searchController,
                           placeholder: 'Search titles or authors...',
+                          onChanged: (v) {
+                            if (v.trim().isEmpty) {
+                              setState(() => searchResult = null);
+                              return;
+                            }
+
+                            setState(() {
+                              searchResult = ref
+                                  .read(shopProvider)
+                                  .search(v.trim());
+                              print('${searchResult?.length}');
+                            });
+                          },
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -123,15 +143,15 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
             ),
 
             // 2. PINNED: The segmented control stays fixed at the top of the viewport
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _TabHeaderDelegate(
-                child: Material(
-                  color: CupertinoColors.systemBackground.resolveFrom(context),
+            if (searchResult == null)
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabHeaderDelegate(
                   child: Row(
                     children: [
                       Expanded(
                         child: TabBar(
+                          isScrollable: true,
                           controller: _tabController,
                           // Styling the TabBar to look cleaner and integrated with iOS styles
                           labelColor: CupertinoColors.activeBlue.resolveFrom(
@@ -154,13 +174,23 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                   ),
                 ),
               ),
-            ),
           ];
         },
-        body: TabBarView(
-          controller: _tabController,
-          children: List.generate(shelves.length, (i) => _buildBookList(i)),
-        ),
+        body: searchResult != null
+            ? ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: searchResult!.length,
+                itemBuilder: (context, index) {
+                  return buildSearchItem(context, searchResult![index]);
+                },
+              )
+            : TabBarView(
+                controller: _tabController,
+                children: List.generate(
+                  shelves.length,
+                  (i) => _buildBookList(i),
+                ),
+              ),
       ),
     );
   }
@@ -175,7 +205,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         itemCount: shelf.items.length,
         itemBuilder: (context, i) {
           final e = shelf.items[i];
-          return CupertinoListTile(
+          return ListTile(
             title: Text(
               '${e.name}/${e.id}',
               maxLines: 3,
@@ -186,18 +216,49 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
               e.subtitle,
               style: TextStyle(fontFamily: '.osdefault'),
             ),
-            leading: boxImage('icon:${e.id}'),
-            leadingSize: 64,
-            padding: EdgeInsets.only(bottom: 8),
+            leading: SizedBox(
+              // width: 64,
+              height: 328, // not work
+              child: boxImage('icon:${e.id}'),
+            ),
             trailing: const CupertinoListTileChevron(),
             onTap: () {
               ref.read(ciip.notifier).update(e.id);
               context.push('/read/${e.id}');
               ref.read(shopProvider.notifier).touch(shelfidx, e.id);
             },
+            onLongPress: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => BookEditScreen(item: e),
+                ),
+              );
+            },
           );
         },
       ),
+    );
+  }
+
+  Widget buildSearchItem(BuildContext context, Item e) {
+    return CupertinoListTile(
+      title: Text(
+        '${e.name}/${e.id}',
+        maxLines: 3,
+        softWrap: true,
+        style: TextStyle(fontFamily: '.osdefault'),
+      ),
+      subtitle: Text(e.subtitle, style: TextStyle(fontFamily: '.osdefault')),
+      leading: boxImage('icon:${e.id}'),
+      leadingSize: 64,
+      padding: EdgeInsets.only(bottom: 8),
+      trailing: const CupertinoListTileChevron(),
+      onTap: () {
+        // TODO: ugly
+        ref.read(ciip.notifier).update(e.id);
+        context.push('/read/${e.id}');
+        // ref.read(shopProvider.notifier).touch(shelfidx, e.id);
+      },
     );
   }
 

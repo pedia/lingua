@@ -121,7 +121,8 @@ class BlockWidget extends ConsumerWidget {
 
     // 2. Apply styling based on the local tag name
     final inside = switch (e.localName) {
-      'figure' || 'div' || 'p' || 'li' => TextSpan(
+      // 'section' || 'figure' || 'div' => trans(),
+      'p' || 'li' => TextSpan(
         text: text,
         children: cr(children),
         style: const TextStyle(
@@ -310,13 +311,12 @@ class BlockWidget extends ConsumerWidget {
         ? TextSpan(
             text: w.text,
             children: w.children?.map((e) => clickable(e, index, ref)).toList(),
-            recognizer:
-                w.recognizer ??
-                (TapGestureRecognizer()
-                  ..onTap = () {
-                    debugPrint('click $index');
-                    ref.read(linep.notifier).updateActive(index);
-                  }),
+            recognizer: w.recognizer ?? Tapper(index, ref),
+            // (TapGestureRecognizer()
+            //   ..onTap = () {
+            //     debugPrint('click $index');
+            //     ref.read(linep.notifier).updateActive(index);
+            //   }),
             style: w.style,
             mouseCursor: w.mouseCursor,
             onEnter: w.onEnter,
@@ -335,6 +335,18 @@ class BlockWidget extends ConsumerWidget {
     'h3' => 18,
     _ => 18,
   };
+}
+
+class Tapper extends TapGestureRecognizer {
+  Tapper(this.i, this.ref) {
+    onTap = tap;
+  }
+  final int i;
+  final WidgetRef ref;
+  void tap() {
+    ref.read(linep.notifier).updateActive(i);
+    onTapCancel?.call();
+  }
 }
 
 class Doc {
@@ -362,22 +374,29 @@ class Doc {
   }) {
     final doc = dom.parse(html);
     final body = doc.body ?? dom.Element.tag('body');
-    body.children.length;
     final ks = <String, GlobalKey>{};
+
+    final bs = <Block>[];
+    for (final e in unwrap(body).children) {
+      final i = bs.length;
+      bs.add(
+        Block(
+          i: i,
+          e: e,
+          key: ks.putIfAbsent('$i', () => GlobalKey()),
+          selected: false,
+        ),
+      );
+    }
+
+    print('ks: ${ks.length}');
+
     return Doc(
       provider: provider,
       activeIndex: activeIndex,
       offset: offset,
       topks: ks,
-      blocks: [
-        for (int i = 0; i < body.children.length; i++)
-          Block(
-            i: i,
-            e: body.children[i],
-            key: ks.putIfAbsent('$i', () => GlobalKey()),
-            selected: false,
-          ),
-      ],
+      blocks: bs,
     );
   }
 
@@ -586,3 +605,35 @@ final linep = NotifierProvider<LineNotifier, int?>(
   LineNotifier.new,
   name: 'CurrentLine',
 );
+
+const wrapperTags = {
+  'section',
+  'div',
+  'article',
+  'main',
+  'header',
+  'footer',
+  'aside',
+  'figure',
+  // 'body',
+};
+
+dom.Element unwrap(dom.Element element) {
+  // Recursively process children first (depth-first traversal)
+  for (var child in List.from(element.children)) {
+    unwrap(child);
+  }
+
+  // If the element is a container/wrapper, unwrap it by moving its children to its parent
+  if (wrapperTags.contains(element.localName)) {
+    var parent = element.parent;
+    if (parent != null) {
+      int index = parent.nodes.indexOf(element);
+      for (var child in List.from(element.nodes)) {
+        parent.nodes.insert(index++, child);
+      }
+      element.remove();
+    }
+  }
+  return element;
+}

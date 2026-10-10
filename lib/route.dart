@@ -32,9 +32,9 @@ class RouteScreen extends ConsumerWidget {
               '/read/4',
               '/master-detail',
             ].map(
-              (e) => CupertinoButton(
-                onPressed: () => context.push(e),
-                child: Text('Push $e'),
+              (e) => ListTile(
+                onTap: () => context.push(e),
+                title: Text('Push $e'),
               ),
             ),
 

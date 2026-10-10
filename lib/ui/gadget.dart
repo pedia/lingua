@@ -16,7 +16,7 @@ class _FullScreenState extends State<FullScreen> {
     super.initState();
     if (widget.on) {
       // Hide status bar when entering this screen
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual);
     }
   }
 

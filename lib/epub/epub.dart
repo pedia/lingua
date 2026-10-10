@@ -138,7 +138,7 @@ class ChapterStub implements Chapter {
     // Prefer the body if present; otherwise start from the document root.
     final root = dom.body ?? dom.documentElement ?? dom;
 
-    for (final p in root.querySelectorAll('p')) {
+    for (final p in root.querySelectorAll('h1, h2, h3, h4, h5, p')) {
       final text = p.text.trim();
       if (text.isEmpty) continue;
 
