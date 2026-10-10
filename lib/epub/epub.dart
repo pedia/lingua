@@ -173,6 +173,7 @@ class Book {
   const Book({
     required this.title,
     required this.author,
+    required this.description,
     this.language,
     required this.chapters,
     this.files = const <String, ArchiveFile>{},
@@ -181,12 +182,14 @@ class Book {
 
   final String title;
   final String author;
+  final String description;
   final String? language;
   final List<Chapter> chapters;
   final Map<String, ArchiveFile> files;
   final String? cover;
 
-  factory Book.empty() => Book(title: '', author: '', chapters: []);
+  factory Book.empty() =>
+      Book(title: '', author: '', description: '', chapters: []);
 
   Uint8List? get coverBytes {
     if (cover != null) {

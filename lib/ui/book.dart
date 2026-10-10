@@ -495,7 +495,13 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   if (book.author.isNotEmpty && item.author == null) {
     gbox.put(
       'item:$id',
-      item.copyWith(author: book.author, name: book.title).toJson(),
+      item
+          .copyWith(
+            author: book.author,
+            name: book.title,
+            description: book.description,
+          )
+          .toJson(),
     );
   }
 

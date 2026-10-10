@@ -8,6 +8,7 @@ Book sample() {
   return Book(
     title: 'Sample',
     author: 'dev',
+    description: 'desc',
     chapters: [
       Chapter.cache(title: 'ch5', href: '', chunks: md2ch(ch5)),
       Chapter.cache(title: 'ch1', href: '', chunks: md2ch(ch1)),

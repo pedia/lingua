@@ -45,6 +45,7 @@ class EpubParser {
     final title = _firstText(opf, 'title') ?? '';
     final author = _firstText(opf, 'creator') ?? '';
     final language = _firstText(opf, 'language') ?? 'en';
+    final description = _firstText(opf, 'description') ?? '-';
 
     final manifest = <String, String>{};
     for (final item in opf.findAllElements('item')) {
@@ -131,6 +132,7 @@ class EpubParser {
       chapters: chapters,
       files: files,
       cover: cover,
+      description: description,
     );
   }
 
