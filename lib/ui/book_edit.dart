@@ -32,17 +32,17 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   @override
   void initState() {
     super.initState();
+
     _selectedShelf = 'Want to Read';
     _item = widget.item;
     if (widget.item.author == null) {
-      final ab = ref.watch(bookProvider(widget.item.id));
-      AsyncValueX(ab).when(
-        data: (book) {
-          setState(() => _book = book);
-        },
-        loading: () {},
-        error: (error, stackTrace) {},
-      );
+      widget.item.open().then((book) {
+        print('book parsed');
+        setState(() {
+          _book = book;
+          _item = _item.apply(_book!);
+        });
+      });
     }
   }
 
@@ -50,7 +50,6 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      // Return the updated data back to the previous screen
       Navigator.pop(context, _item);
     }
   }
@@ -74,34 +73,10 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              Consumer(
-                builder: (context, ref, child) {
-                  final ab = ref.watch(bookProvider(widget.item.id));
-                  return AsyncValueX(ab).when(
-                    data: (book) {
-                      if (book == null) {
-                        return Text('Unable to open item:${widget.item.id}');
-                      }
-                      final bc = book.coverBytes;
-                      if (bc != null) {
-                        return Image.memory(
-                          book.coverBytes!,
-                          fit: BoxFit.fitWidth,
-                        );
-                      } else {
-                        return Icon(Icons.broken_image, size: 100);
-                      }
-                    },
-                    loading: () => const Center(), // TODO: better solution
-                    error: (err, stackTrace) {
-                      print(stackTrace.toString().substring(0, 1000));
-                      return Text('Unable to open it\n$err');
-                    },
-                  );
-                },
-              ),
-              Divider(),
-              // Image.memory()
+              if (_book?.coverBytes != null) ...[
+                Image.memory(_book!.coverBytes!, fit: BoxFit.fitWidth),
+                Divider(),
+              ],
               TextFormField(
                 initialValue: _item.name,
                 decoration: const InputDecoration(

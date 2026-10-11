@@ -460,51 +460,11 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   final m = gbox.get('item:$id');
   if (m == null) throw Exception('item:$id not exist');
 
-  epub.Book? book;
   final item = Item.fromJson((m as Map).cast<String, dynamic>());
-  if (id == 5) {
-    book = freya;
-  } else if (id == 6) {
-    book = sample();
-  } else if (item.type == ItemType.file) {
-    final appDir = await getApplicationDocumentsDirectory();
-    final booksDir = Directory(p.join(appDir.path, 'books'));
-
-    final file = File(p.join(booksDir.path, item.path));
-    if (!file.existsSync()) {
-      return null;
-    }
-    book = const epub.EpubParser().parseBytes(await file.readAsBytes());
-  } else if (item.type == ItemType.assets) {
-    final d = await rootBundle.load(item.path);
-    book = epub.EpubParser().parseBytes(d.buffer.asInt8List());
+  final book = await item.open();
+  if (book != null) {
+    item.apply(book);
   }
-
-  if (book == null) {
-    throw Exception('book:${item.type}/${item.path} not exist');
-  }
-
-  // // book cover image thumbnail
-  if (gbox.get('icon:$id') == null) {
-    final cb = book.coverBytes;
-    if (cb != null) {
-      gbox.put('icon:$id', iconify(cb));
-    }
-  }
-
-  if (book.author.isNotEmpty && item.author == null) {
-    gbox.put(
-      'item:$id',
-      item
-          .copyWith(
-            author: book.author,
-            name: book.title,
-            description: book.description,
-          )
-          .toJson(),
-    );
-  }
-
   return book;
 });
 
@@ -582,3 +542,47 @@ final isp = NotifierProvider.family<ItemStateNotifier, ItemState, int>(
   ItemStateNotifier.new,
   name: 'ItemState',
 );
+
+extension ItemExt on Item {
+  Item apply(epub.Book book) {
+    if (gbox.get('icon:$id') == null && book.coverBytes != null) {
+      gbox.put('icon:$id', iconify(book.coverBytes!));
+    }
+
+    final ni = copyWith(
+      name: book.title,
+      author: book.author,
+      description: book.description,
+    );
+
+    if ((book.author.isNotEmpty && author == null) ||
+        (book.description.isNotEmpty && description == null)) {
+      gbox.put('item:$id', ni.toJson());
+    }
+
+    return ni;
+  }
+
+  Future<epub.Book?> open() async {
+    epub.Book? book;
+    if (id == 5) {
+      book = freya;
+    } else if (id == 6) {
+      book = sample();
+    } else if (type == ItemType.file) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final booksDir = Directory(p.join(appDir.path, 'books'));
+
+      final file = File(p.join(booksDir.path, path));
+      if (!file.existsSync()) {
+        throw Exception('book:$type/$path not exist');
+      }
+      book = const epub.EpubParser().parseBytes(await file.readAsBytes());
+    } else if (type == ItemType.assets) {
+      final d = await rootBundle.load(path);
+      book = epub.EpubParser().parseBytes(d.buffer.asInt8List());
+    }
+
+    return book;
+  }
+}

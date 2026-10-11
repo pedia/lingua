@@ -16,6 +16,7 @@ void main() {
     final book = const EpubParser().parseBytes(zip);
     expect(book.title, 'Test Book');
     expect(book.author, 'Ada');
+    expect(book.description, 'nd');
     expect(book.chapters, hasLength(1));
     expect(book.chapters.first.chunks.first.text, contains('One'));
     expect(book.chapters.first.chunks[1].text, contains('Once upon a time'));
@@ -98,6 +99,7 @@ Uint8List _minimalEpub({bool encrypted = false}) {
     <dc:title>Test Book</dc:title>
     <dc:creator>Ada</dc:creator>
     <dc:language>en</dc:language>
+    <description xmlns="http://purl.org/dc/elements/1.1/">nd</description>
   </metadata>
   <manifest>
     <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
