@@ -8,10 +8,9 @@ import '../imap.dart';
 import '../g.dart';
 
 class BookEditScreen extends ConsumerStatefulWidget {
-  final Item item;
-  final int shelfidx;
+  final int id;
 
-  const BookEditScreen({super.key, required this.item, required this.shelfidx});
+  const BookEditScreen({super.key, required this.id});
 
   @override
   ConsumerState<BookEditScreen> createState() => _BookEditScreenState();
@@ -28,17 +27,15 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   void initState() {
     super.initState();
 
-    _selectedShelf = widget.shelfidx;
-    _item = widget.item;
+    _selectedShelf = 0;
+    _item = Item.fromJson(gbox.get('item:${widget.id}'));
 
-    if (widget.item.author == null) {
-      widget.item.open().then((book) {
-        setState(() {
-          _book = book;
-          _item = _item.apply(_book!);
-        });
+    _item.open().then((book) {
+      setState(() {
+        _book = book;
+        _item = _item.apply(_book!);
       });
-    }
+    });
   }
 
   void _saveBook() {
@@ -47,9 +44,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
 
       gbox.put('item:${_item.id}', _item.toJson());
 
-      if (_selectedShelf != widget.shelfidx) {
-        
-      }
+      if (_selectedShelf != 0) {}
 
       Navigator.pop(context, _item);
     }

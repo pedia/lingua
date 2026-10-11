@@ -312,7 +312,6 @@ class ShopNotifier extends Notifier<Shop> {
     save(state);
   }
 
-
   void touch(int shelfidx, int itemId) {
     print('touch $shelfidx/$itemId');
     final old = state.shelves[shelfidx];
@@ -350,12 +349,6 @@ class ShopNotifier extends Notifier<Shop> {
   }
 
   static final builtin = [
-    const Item(
-      id: 1,
-      name: 'The Little Prince',
-      path: 'assets/the-little-prince-dual.epub',
-      type: ItemType.assets,
-    ),
     const Item(
       id: 2,
       name: 'Super Supportive',

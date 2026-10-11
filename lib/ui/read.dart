@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../epub/epub.dart' as epub;
 import 'book.dart';
 import 'gadget.dart';
@@ -189,6 +190,10 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 IconButton(
                   icon: const Icon(Icons.menu),
                   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => context.push('/book/edit/${widget.id}'),
                 ),
                 ElevatedButton(onPressed: () {}, child: const Text('Checkout')),
               ],

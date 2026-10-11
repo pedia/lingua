@@ -95,6 +95,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                         child: CupertinoSearchTextField(
                           controller: _searchController,
                           placeholder: 'Search titles or authors...',
+                          style: TextStyle(fontFamily: '.osdefault'),
                           onChanged: (v) {
                             if (v.trim().isEmpty) {
                               setState(() => searchResult = null);
@@ -224,14 +225,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
               context.push('/read/${e.id}');
               ref.read(shopProvider.notifier).touch(shelfidx, e.id);
             },
-            onLongPress: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (context) =>
-                      BookEditScreen(item: e, shelfidx: shelfidx),
-                ),
-              );
-            },
+            onLongPress: () => context.push('/edit/${e.id}'),
           );
         },
       ),

@@ -18,6 +18,7 @@ import 'ui/read.dart';
 import 'ui/lib.dart';
 import 'ui/shelf_mgmt.dart';
 import 'ui/md.dart';
+import 'ui/book_edit.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
   CupertinoTextThemeData withFontFamily(String family) {
@@ -112,14 +113,8 @@ class MainApp extends ConsumerWidget {
       ],
       routerConfig: GoRouter(
         routes: [
-          GoRoute(
-            path: '/',
-            builder: (_, _) => RouteScreen(),
-          ),
-          GoRoute(
-            path: '/shelf',
-            builder: (_, _) => ShelfFrame(),
-          ),
+          GoRoute(path: '/', builder: (_, _) => RouteScreen()),
+          GoRoute(path: '/shelf', builder: (_, _) => ShelfFrame()),
           GoRoute(
             path: '/book/:id',
             builder: (_, state) =>
@@ -138,13 +133,24 @@ class MainApp extends ConsumerWidget {
             builder: (_, _) => TestProviderScreen(bookId: '3'),
           ),
           GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
-          GoRoute(path: '/shelf-mgmt', builder: (_, _) => ShelfManagementScreen()),
+          GoRoute(
+            path: '/shelf-mgmt',
+            builder: (_, _) => ShelfManagementScreen(),
+          ),
           GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
-          GoRoute(path: '/master-detail', builder: (_, _) => TabletReadFrame(2)),
+          GoRoute(
+            path: '/master-detail',
+            builder: (_, _) => TabletReadFrame(2),
+          ),
           GoRoute(
             path: '/read/:id',
             builder: (_, state) =>
                 ReadFrame(id: int.parse(state.pathParameters['id'] ?? '')),
+          ),
+          GoRoute(
+            path: '/edit/:id',
+            builder: (_, state) =>
+                BookEditScreen(id: int.parse(state.pathParameters['id'] ?? '')),
           ),
         ],
       ),
