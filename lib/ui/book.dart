@@ -550,8 +550,8 @@ extension ItemExt on Item {
     }
 
     final ni = copyWith(
-      name: book.title,
-      author: book.author,
+      name: book.title.isEmpty ? null : book.title,
+      author: book.author.isEmpty ? null : book.author,
       description: book.description,
     );
 

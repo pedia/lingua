@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../settings/setting.dart';
 import '../tts/dualtts.dart';
+import '../imap.dart';
 
 class EngineSettingPage extends StatefulWidget {
   const EngineSettingPage(this.ess, {super.key});
@@ -145,7 +146,7 @@ class _EngineSettingPageState extends State<EngineSettingPage> {
         body: Padding(
           padding: EdgeInsets.all(16),
           child: ListView(
-            children: List.generate(ess.length, (i) => card(context, i)),
+            children: ess.imap((i, _) => card(context, i)).toList(),
           ),
         ),
       ),

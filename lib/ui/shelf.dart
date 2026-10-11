@@ -12,7 +12,7 @@ import 'package:path/path.dart' as p;
 import '../data/model.dart';
 import '../g.dart';
 import 'open.dart';
-import 'book_edit.dart';
+import '../imap.dart';
 
 class ShelfFrame extends ConsumerStatefulWidget {
   const ShelfFrame({super.key});
@@ -37,7 +37,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
       ref
           .read(shopProvider.notifier)
           .addItemTo(
-            0, // TODO:
+            ref.read(shopProvider.select((s) => s.current)),
             Item(
               id: nextId(),
               type: ItemType.file,
@@ -186,10 +186,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
               )
             : TabBarView(
                 controller: _tabController,
-                children: List.generate(
-                  shelves.length,
-                  (i) => _buildBookList(i),
-                ),
+                children: shelves.imap((i, _) => _buildBookList(i)).toList(),
               ),
       ),
     );
@@ -230,7 +227,8 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
             onLongPress: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (context) => BookEditScreen(item: e),
+                  builder: (context) =>
+                      BookEditScreen(item: e, shelfidx: shelfidx),
                 ),
               );
             },

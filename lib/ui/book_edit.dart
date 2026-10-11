@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/model.dart';
 import '../epub/epub.dart' as epub;
 import 'book.dart';
+import '../imap.dart';
+import '../g.dart';
 
 class BookEditScreen extends ConsumerStatefulWidget {
   final Item item;
+  final int shelfidx;
 
-  const BookEditScreen({super.key, required this.item});
+  const BookEditScreen({super.key, required this.item, required this.shelfidx});
 
   @override
   ConsumerState<BookEditScreen> createState() => _BookEditScreenState();
@@ -18,26 +21,18 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late Item _item;
-  late String? _selectedShelf;
+  late int _selectedShelf;
   epub.Book? _book;
-
-  // Available shelves options for the dropdown
-  final List<String> _shelves = [
-    'Want to Read',
-    'Currently Reading',
-    'Finished',
-    'Favorites',
-  ];
 
   @override
   void initState() {
     super.initState();
 
-    _selectedShelf = 'Want to Read';
+    _selectedShelf = widget.shelfidx;
     _item = widget.item;
+
     if (widget.item.author == null) {
       widget.item.open().then((book) {
-        print('book parsed');
         setState(() {
           _book = book;
           _item = _item.apply(_book!);
@@ -49,6 +44,12 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   void _saveBook() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+
+      gbox.put('item:${_item.id}', _item.toJson());
+
+      if (_selectedShelf != widget.shelfidx) {
+        
+      }
 
       Navigator.pop(context, _item);
     }
@@ -75,12 +76,14 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
             children: [
               if (_book?.coverBytes != null) ...[
                 Image.memory(_book!.coverBytes!, fit: BoxFit.fitWidth),
-                Divider(),
+                const SizedBox(height: 16),
               ],
               TextFormField(
+                key: UniqueKey(),
                 initialValue: _item.name,
+                maxLines: null, // softWrap
                 decoration: const InputDecoration(
-                  labelText: 'Title',
+                  labelText: 'Title *',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
@@ -95,6 +98,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
 
               // Author Field
               TextFormField(
+                key: UniqueKey(),
                 initialValue: _item.author,
                 decoration: const InputDecoration(
                   labelText: 'Author',
@@ -112,19 +116,24 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
               const SizedBox(height: 16),
 
               // Shelf Dropdown Choice
-              DropdownButtonFormField<String>(
-                value: _selectedShelf,
+              DropdownButtonFormField<int>(
+                key: UniqueKey(),
+                initialValue: _selectedShelf,
                 decoration: const InputDecoration(
                   labelText: 'Shelf',
                   border: OutlineInputBorder(),
                 ),
-                items: _shelves.map((String shelf) {
-                  return DropdownMenuItem<String>(
-                    value: shelf,
-                    child: Text(shelf),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
+                items: ref
+                    .watch(shopProvider.select((s) => s.shelves))
+                    .imap(
+                      (i, shelf) => DropdownMenuItem<int>(
+                        key: UniqueKey(),
+                        value: i,
+                        child: Text(shelf.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (int? newValue) {
                   if (newValue != null) {
                     setState(() {
                       _selectedShelf = newValue;
@@ -136,6 +145,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
 
               // Description Field
               TextFormField(
+                key: UniqueKey(),
                 initialValue: _item.description,
                 decoration: const InputDecoration(
                   labelText: 'Description',

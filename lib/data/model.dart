@@ -298,10 +298,9 @@ class ShopNotifier extends Notifier<Shop> {
     save(state);
   }
 
-  void updateItem(int shelfidx, Item target) {
+  void removeItemFrom(int shelfidx, Item target) {
     final ns = state.shelves[shelfidx];
-    final ii = ns.items.indexWhere((item) => item.id == target.id);
-    if (ii != -1) ns.items[ii] = target;
+    ns.items.insert(0, target);
 
     state = Shop(
       shelves: [
@@ -312,6 +311,7 @@ class ShopNotifier extends Notifier<Shop> {
     );
     save(state);
   }
+
 
   void touch(int shelfidx, int itemId) {
     print('touch $shelfidx/$itemId');
