@@ -1,0 +1,60 @@
+name: Flutter CI/CD
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows you to trigger the workflow manually from GitHub
+
+jobs:
+  test-and-build:
+    # Use ubuntu-latest for testing and Android builds (use macos-latest if you need iOS builds)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Java environment (Required for Android builds)
+      - name: Set up Java SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Step 3: Set up the Flutter SDK environment
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable' # Options: 'stable', 'beta', or 'master'
+          # Optional: cache: true (caches pub dependencies automatically)
+
+      # Step 4: Install project dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Step 5: Check code formatting (Fails if code isn't formatted properly)
+      - name: Check formatting
+        run: flutter format --set-exit-if-changed .
+
+      # Step 6: Run static analysis (Linter check)
+      - name: Analyze code
+        run: flutter analyze
+
+      # Step 7: Run Unit and Widget tests
+      - name: Run tests
+        run: flutter test
+
+      # Step 8: Build the release APK (Android application package)
+      - name: Build APK
+        run: flutter build apk --release
+
+      # Step 9: Upload the built APK as a GitHub artifact
+      - name: Upload Build Artifact
+        uses: actions/artifacts/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
