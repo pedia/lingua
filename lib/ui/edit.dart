@@ -28,7 +28,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     super.initState();
 
     _selectedShelf = 0;
-    _item = Item.fromJson(gbox.get('item:${widget.id}'));
+    _item = Item.fromJson(gbox.get('item:${widget.id}').cast<String, dynamic>());
 
     _item.open().then((book) {
       setState(() {

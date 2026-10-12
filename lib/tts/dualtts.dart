@@ -74,8 +74,7 @@ class Voice extends UnmodifiableMapView<String, String> {
   bool operator ==(Object other) =>
       other is Voice &&
       this['name'] == other['name'] &&
-      this['locale'] == other['locale'] &&
-      this['identifier'] == other['identifier'];
+      this['locale'] == other['locale'];
 
   @override
   int get hashCode => Object.hashAll(entries);

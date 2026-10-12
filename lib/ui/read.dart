@@ -84,7 +84,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   Playback playback = Playback.stop;
 
   List<epub.Chunk> get lines {
-    final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
+    final lang = ref.read(
+      settingProvider.select((m) => m.stringOf('tts.mode')),
+    );
     final chi = ref.read(isp(widget.id)).read.ci;
     return book.chapters[chi].chunks
         .where((line) => lang == '' || line.lang == lang)
@@ -104,8 +106,24 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     return dt.apply(vs).then((x) => debugPrint('dualtts inited ${vs.length}'));
   }
 
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  void play() async {
+    final lang = ref.read(
+      settingProvider.select((m) => m.stringOf('tts.mode')),
+    );
+    final chi = ref.read(isp(widget.id)).read.ci;
+    final lines = book.chapters[chi].chunks
+        .where((line) => lang == '' || line.lang == lang)
+        .toList();
 
+    if (!dt.inited) {
+      await applyVoice(context);
+    }
+    final start = ref.read(linep) ?? 0;
+    dt.load(lines.sublist(start));
+    dt.play();
+  }
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Widget builds(BuildContext context, epub.Book book) {
     if (book.chapters.isEmpty) {
       return ErrScreen('Book is empty');
@@ -138,36 +156,15 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 pinned: false,
                 elevation: 2.0,
                 systemOverlayStyle: SystemUiOverlayStyle(),
-                actions: [
-                  IconButton(
-                    tooltip: switch (playback) {
-                      Playback.stop => 'Play',
-                      _ => 'Stop',
-                    },
-                    icon: Icon(switch (playback) {
-                      Playback.stop => Icons.play_arrow_rounded,
-                      _ => Icons.stop_rounded,
-                    }),
-                    onPressed: () async {
-                      if (playback.isPlaying) {
-                        dt.stop();
-                      } else {
-                        if (!dt.inited) {
-                          await applyVoice(context);
-                        }
-                        final start = ref.read(linep) ?? 0;
-                        dt.load(lines.sublist(start));
-                        dt.play();
-                      }
-                    },
-                  ),
-                ],
               ),
               HtmlWidget(
                 html: ch.content,
                 mode: Mode.sliver,
                 roller: roller,
                 provider: ArchiveProvider(ch.href, book.files),
+                lang: ref.watch(
+                  settingProvider.select((m) => m.stringOf('ui.mode')),
+                ),
               ),
             ],
           ),
@@ -195,11 +192,16 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                   icon: const Icon(Icons.edit),
                   onPressed: () => context.push('/edit/${widget.id}'),
                 ),
+                if (dt.state == Playback.stop)
+                  IconButton(icon: const Icon(Icons.hearing), onPressed: play),
+                if (dt.state != Playback.stop)
+                  IconButton(icon: const Icon(Icons.stop), onPressed: dt.stop),
                 IconButton(
-                  icon: const Icon(Icons.hearing),
-                  onPressed: () => context.push('/edit/${widget.id}'),
+                  icon: const Icon(Icons.settings),
+                  onPressed: () => context.push('/setting'),
                 ),
-                ElevatedButton(onPressed: () {}, child: const Text('Checkout')),
+
+                ElevatedButton(onPressed: () {}, child: Text('$playback')),
               ],
             ),
           ),

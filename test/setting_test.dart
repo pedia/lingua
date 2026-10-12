@@ -1,7 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lingua/settings/setting.dart';
+import 'package:lingua/tts/dualtts.dart';
 
 void main() {
+  test('voice', () {
+    final m = Voice({'locale': 'zh-TW', 'name': 'Meijia'});
+    final m2 = Voice({
+      'name': 'Meijia',
+      'gender': 'female',
+      'identifier': 'com.apple.voice.premium.zh-TW.Meijia',
+      'locale': 'zh-TW',
+      'quality': 'premium',
+    });
+    expect(m == m2, isTrue);
+  });
   test('settings all', () {
     final jd = {
       "tts": {

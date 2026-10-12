@@ -107,7 +107,7 @@ class BlockWidget extends ConsumerWidget {
         if (children.isEmpty && c.text != null) {
           text = t;
           // TODO: space deal right?
-          if (t != ' ') forceInlineHeight ??= fontSize(e.localName ?? '');
+          if (t != ' ') forceInlineHeight ??= estyle(e).fontSize;
         } else {
           children.add(TextSpan(text: t));
         }
@@ -122,42 +122,11 @@ class BlockWidget extends ConsumerWidget {
     // 2. Apply styling based on the local tag name
     final inside = switch (e.localName) {
       // 'section' || 'figure' || 'div' => trans(),
-      'p' || 'li' => TextSpan(
-        text: text,
-        children: cr(children),
-        style: const TextStyle(
-          fontFamily: '.osdefault',
-          fontSize: 16.0,
-          height: 1.55,
-        ),
-      ),
-      'h1' => TextSpan(
-        text: text,
-        children: cr(children),
-        style: const TextStyle(
-          fontFamily: '.osdefault',
-          fontSize: 32.0,
-          height: 1.55,
-        ),
-      ),
-      'h2' => TextSpan(
-        text: text,
-        children: cr(children),
-        style: const TextStyle(
-          fontFamily: '.osdefault',
-          fontSize: 24.0,
-          height: 1.55,
-        ),
-      ),
-      'h3' => TextSpan(
-        text: text,
-        children: cr(children),
-        style: const TextStyle(
-          fontFamily: '.osdefault',
-          fontSize: 18.0,
-          height: 1.55,
-        ),
-      ),
+      'p' ||
+      'li' => TextSpan(text: text, children: cr(children), style: estyle(e)),
+      'h1' => TextSpan(text: text, children: cr(children), style: estyle(e)),
+      'h2' => TextSpan(text: text, children: cr(children), style: estyle(e)),
+      'h3' => TextSpan(text: text, children: cr(children), style: estyle(e)),
 
       'b' || 'strong' => TextSpan(
         children: children,
@@ -185,15 +154,7 @@ class BlockWidget extends ConsumerWidget {
         ),
       ),
 
-      'span' => TextSpan(
-        text: text,
-        children: children,
-        style: const TextStyle(
-          fontFamily: '.osdefault',
-          fontSize: 16.0,
-          height: 1.55,
-        ),
-      ),
+      'span' => TextSpan(text: text, children: children, style: estyle(e)),
 
       'img' => WidgetSpan(
         child: Image.memory(
@@ -209,15 +170,7 @@ class BlockWidget extends ConsumerWidget {
       ),
 
       'a' => linkify(
-        TextSpan(
-          text: text,
-          children: children,
-          style: const TextStyle(
-            fontFamily: '.osdefault',
-            fontSize: 16.0,
-            height: 1.55,
-          ),
-        ),
+        TextSpan(text: text, children: children, style: estyle(e)),
         e.attributes['href'] ?? '',
         ref,
       ),
@@ -329,12 +282,33 @@ class BlockWidget extends ConsumerWidget {
         : w;
   }
 
-  double fontSize(String tag) => switch (tag) {
-    'h1' => 32,
-    'h2' => 24,
-    'h3' => 18,
-    _ => 18,
-  };
+  /// simple Element style
+  TextStyle estyle(dom.Element e) {
+    final lang = e.attributes['lang'];
+    if (lang == 'zh') {
+      return TextStyle(
+        fontFamily: '.osdefault',
+        fontSize: switch (e.localName) {
+          'h1' => 32,
+          'h2' => 24,
+          'h3' => 20,
+          _ => 18,
+        },
+        height: 1.55,
+      );
+    } else {
+      return TextStyle(
+        fontFamily: '.osdefault',
+        fontSize: switch (e.localName) {
+          'h1' => 30,
+          'h2' => 22,
+          'h3' => 18,
+          _ => 16,
+        },
+        height: 1.55,
+      );
+    }
+  }
 }
 
 class Tapper extends TapGestureRecognizer {
@@ -345,7 +319,7 @@ class Tapper extends TapGestureRecognizer {
   final WidgetRef ref;
   void tap() {
     ref.read(linep.notifier).updateActive(i);
-    onTapCancel?.call();
+    onTapCancel?.call(); // is this work?
   }
 }
 
@@ -371,6 +345,7 @@ class Doc {
     int? activeIndex,
     double? offset,
     FileProvider? provider,
+    String lang = '',
   }) {
     final doc = dom.parse(html);
     final body = doc.body ?? dom.Element.tag('body');
@@ -378,6 +353,11 @@ class Doc {
 
     final bs = <Block>[];
     for (final e in unwrap(body).children) {
+      final el = e.attributes['lang'];
+      if (el != null && lang != '' && el != lang) {
+        continue;
+      }
+
       final i = bs.length;
       bs.add(
         Block(
@@ -388,8 +368,6 @@ class Doc {
         ),
       );
     }
-
-    print('ks: ${ks.length}');
 
     return Doc(
       provider: provider,
@@ -437,6 +415,7 @@ enum Mode { auto, rich, list, sliver }
 class HtmlWidget extends ConsumerStatefulWidget {
   final Doc doc;
   final Mode mode;
+  final String lang;
   final ScrollController? roller;
 
   HtmlWidget({
@@ -444,8 +423,9 @@ class HtmlWidget extends ConsumerStatefulWidget {
     required this.mode,
     FileProvider? provider,
     this.roller,
+    this.lang = '',
     super.key,
-  }) : doc = Doc.create(html: html, provider: provider);
+  }) : doc = Doc.create(html: html, provider: provider, lang: lang);
 
   @override
   ConsumerState<HtmlWidget> createState() => _HtmlWidgetState();

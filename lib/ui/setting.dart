@@ -32,17 +32,19 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
         ('Dark', ThemeMode.dark.index),
       ],
     ),
+    SettingItem(type: SettingType.title, title: 'Read', key: ''),
     SettingItem(
       type: SettingType.choice,
-      key: 'ui.lang',
-      title: 'Language',
+      key: 'ui.mode',
+      title: 'Mode',
+      defaults: '',
       choices: [('Only English', 'en'), ('Only Chinese', 'zh'), ('All', '')],
     ),
     SettingItem(
       type: SettingType.choice,
-      key: 'ui.font-size',
-      title: 'Font Size',
-      description: 'Font size in reader view',
+      key: 'ui.en.font-size',
+      title: 'English font size',
+      defaults: 14,
       choices: [
         ('12', 12),
         ('14', 14),
@@ -51,6 +53,28 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
         ('20', 20),
         ('24', 24),
       ],
+    ),
+    SettingItem(
+      type: SettingType.choice,
+      key: 'ui.zh.font-size',
+      title: 'Chinese font size',
+      defaults: 18,
+      choices: [
+        ('12', 12),
+        ('14', 14),
+        ('16', 16),
+        ('18', 18),
+        ('20', 20),
+        ('24', 24),
+      ],
+    ),
+    SettingItem(type: SettingType.title, title: 'TTS Speak', key: ''),
+    SettingItem(
+      type: SettingType.choice,
+      key: 'tts.mode',
+      title: 'Mode',
+      defaults: '',
+      choices: [('Only English', 'en'), ('Only Chinese', 'zh'), ('All', '')],
     ),
     SettingItem(
       type: SettingType.readonly,
@@ -98,7 +122,7 @@ class Tile extends ConsumerWidget {
         subtitle: item.description == null ? null : Text(item.description!),
         trailing: DropdownButton<Object>(
           key: Key(item.key),
-          value: v,
+          value: v ?? item.defaults,
           underline: null,
           onChanged: (v) {
             debugPrint('v: ${v.runtimeType}');

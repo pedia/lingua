@@ -136,7 +136,7 @@ class Setting extends Notifier<TypedMap> {
               },
             },
             'ui': {
-              'mode': 'all',
+              'mode': '',
               'en': {'font-size': 14},
               'zh': {'font-size': 18},
               'theme-mode': 0,

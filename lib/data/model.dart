@@ -26,11 +26,14 @@ class Item {
 
   String get subtitle => [
     if (author != null) author,
-    if (percent > 0) '${percent.toStringAsFixed(0)}%',
+    if (percent > 0) '${(percent * 100).toInt()}%',
   ].join(' ');
 
+  factory Item.fromBox(int id) =>
+      Item.fromJson(gbox.get('item:$id').cast<String, dynamic>());
+
   factory Item.fromJson(Map<String, dynamic> json) => Item(
-    id: (json['id'] as num).toInt(),
+    id: json['id'],
     type: json['type'] is int
         ? ItemType.values[json['type'] as int]
         : ItemType.values[[
