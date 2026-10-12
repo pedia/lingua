@@ -19,7 +19,7 @@ import '../data/model.dart';
 import '../epub/epub.dart' as epub;
 import '../epub/parser.dart' as epub;
 import '../tts/dualtts.dart';
-import '../freya.dart';
+import '../demo/freya.dart';
 import '../data/sample.dart';
 import 'gadget.dart';
 import 'shelf.dart';

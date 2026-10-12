@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'hw.dart';
-import 'data/sample.dart';
+import '../hw.dart';
+import '../data/sample.dart';
 
 class DemoFrame extends StatefulWidget {
   const DemoFrame({super.key});

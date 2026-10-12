@@ -14,10 +14,10 @@ import 'font.dart';
 import 'setting.dart';
 import 'voice_setting.dart';
 import 'shelf.dart' as experiment;
-import 'dep.dart' as experiment;
-import '../sliver.dart';
-import '../rich.dart';
-import '../demo.dart';
+import '../demo/dep.dart' as experiment;
+import '../demo/sliver.dart';
+import '../demo/rich.dart';
+import '../demo/demo.dart';
 import '../hive.dart';
 
 import '../data/model.dart';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'ui/shelf.dart';
+import '../ui/shelf.dart';
 
 class RouteScreen extends ConsumerWidget {
   const RouteScreen({super.key});
