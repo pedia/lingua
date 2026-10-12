@@ -22,10 +22,11 @@ class _ChapterListState extends ConsumerState<ChapterList> {
   @override
   Widget build(BuildContext context) {
     final chs = widget.book.chapters;
+    final ci = ref.watch(isp(widget.id).select((s) => s.read.ci));
     return ScrollablePositionedList.builder(
       itemScrollController: itemroller,
       key: PageStorageKey<String>('cl:${widget.id}'),
-      initialScrollIndex: 0,
+      initialScrollIndex: ci,
       itemCount: chs.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
@@ -40,7 +41,7 @@ class _ChapterListState extends ConsumerState<ChapterList> {
         }
         final i = index - 1;
         return ListTile(
-          selected: i == ref.watch(isp(widget.id)).read.ci,
+          selected: i == ci,
           title: Text(chs[i].title),
           onTap: () {
             if (!widget.isTablet) Navigator.pop(context);

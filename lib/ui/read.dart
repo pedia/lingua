@@ -193,7 +193,11 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit),
-                  onPressed: () => context.push('/book/edit/${widget.id}'),
+                  onPressed: () => context.push('/edit/${widget.id}'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.hearing),
+                  onPressed: () => context.push('/edit/${widget.id}'),
                 ),
                 ElevatedButton(onPressed: () {}, child: const Text('Checkout')),
               ],

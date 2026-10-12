@@ -121,6 +121,7 @@ class Setting extends Notifier<TypedMap> {
         : TypedMap({
             // defaults
             'tts': {
+              'mode': 'zh',
               'en': {
                 'rate': 0.44,
                 'pitch': 1.0,
@@ -134,10 +135,17 @@ class Setting extends Notifier<TypedMap> {
                 'voice': {'locale': 'zh-TW', 'name': 'Meijia'},
               },
             },
-            'ui': {'lang': '', 'theme-mode': 0},
+            'ui': {
+              'mode': 'all',
+              'en': {'font-size': 14},
+              'zh': {'font-size': 18},
+              'theme-mode': 0,
+            },
           });
   }
 }
+
+enum Lang { zh, en, all }
 
 final settingProvider = NotifierProvider<Setting, TypedMap>(
   Setting.new,

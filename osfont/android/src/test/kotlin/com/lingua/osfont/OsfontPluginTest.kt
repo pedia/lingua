@@ -1,4 +1,4 @@
-package com.example.osfont
+package com.lingua.osfont
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel

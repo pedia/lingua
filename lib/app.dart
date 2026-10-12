@@ -18,7 +18,7 @@ import 'ui/read.dart';
 import 'ui/lib.dart';
 import 'ui/shelf_mgmt.dart';
 import 'ui/md.dart';
-import 'ui/book_edit.dart';
+import 'ui/edit.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
   CupertinoTextThemeData withFontFamily(String family) {

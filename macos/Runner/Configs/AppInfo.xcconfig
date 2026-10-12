@@ -8,7 +8,7 @@
 PRODUCT_NAME = lingua
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.lingua.reader.lingua
+PRODUCT_BUNDLE_IDENTIFIER = com.lingua.read
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.lingua.reader. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.lingua.read. All rights reserved.
