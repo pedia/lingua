@@ -38,6 +38,7 @@ void main() {
     expect(m.flag("t"), isTrue);
     expect(m.stringOf("s"), "foo");
     expect(m.intOf("i"), 13);
+    expect(m.doubleOf("i"), 13.0);
     expect(m.flag("tts.zh.system"), isTrue);
     expect(m.doubleOf("tts.zh.rate"), equals(0.4));
     expect(m.listOf("seq"), equals([13, 24]));

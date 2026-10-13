@@ -1,6 +1,6 @@
 # Default target when running just `make`
 .PHONY: all
-build/app/outputs/flutter-apk/app-release.apk: lib
+build/app/outputs/flutter-apk/app-release.apk: lib/*.dart lib/ui/*.dart
 	@flutter build apk --release --target-platform android-arm64 --no-tree-shake-icons
 
 # Handle numeric arguments like `make 5` or `make 42`

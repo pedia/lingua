@@ -56,7 +56,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Book'),
+        title: Text('Edit Book ${widget.id}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),

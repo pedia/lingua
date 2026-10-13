@@ -7,6 +7,7 @@ import '../epub/epub.dart' as epub;
 import 'book.dart';
 import 'gadget.dart';
 import '../hw.dart';
+import '../g.dart';
 import 'chapter_list.dart';
 import '../tts/dualtts.dart';
 import '../settings/setting.dart';
@@ -145,6 +146,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
           child: TheDrawer(widget.id, book, initialIndex: initialDrawerIndex),
         ),
         body: SelectableRegion(
+          focusNode: FocusNode(),
           selectionControls: materialTextSelectionHandleControls,
           contextMenuBuilder: selectToolbar,
           child: CustomScrollView(
@@ -216,7 +218,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                   onPressed: () => context.push('/setting'),
                 ),
 
-                ElevatedButton(onPressed: () {}, child: Text('$playback')),
+                // ElevatedButton(onPressed: () {}, child: Text('$playback')),
               ],
             ),
           ),
@@ -229,21 +231,30 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     BuildContext context,
     SelectableRegionState editableTextState,
   ) {
+    // find `copy`
+    final cp = editableTextState.contextMenuButtonItems
+        .where((i) => i.type == ContextMenuButtonType.copy)
+        .first;
     return AdaptiveTextSelectionToolbar.buttonItems(
       anchors: editableTextState.contextMenuAnchors,
       buttonItems: [
-        ...editableTextState.contextMenuButtonItems, // Copy, Select all, …
-        ContextMenuButtonItem(
-          label: 'Highlight',
+        cp.copyWith(
+          label: 'Hightlight',
+          type: ContextMenuButtonType.custom,
           onPressed: () {
-            final value = editableTextState.textEditingValue;
-            final sel = value.selection;
-            if (!sel.isValid || sel.isCollapsed) return;
-            final selected = value.text.substring(sel.start, sel.end);
-            debugPrint('Highlight: $selected');
-            ContextMenuController.removeAny();
+            cp.onPressed?.call();
+
+            Clipboard.getData(Clipboard.kTextPlain).then((data) {
+              final String? selectedText = data?.text;
+
+              int ci = ref.watch(isp(widget.id).select((o) => o.read.ci));
+              if (selectedText != null) {
+                newNote(widget.id, Note(ci: ci, note: selectedText));
+              }
+            });
           },
         ),
+        ...editableTextState.contextMenuButtonItems, // Copy, Select all, …
       ],
     );
   }

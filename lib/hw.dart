@@ -4,6 +4,7 @@ import 'package:html/parser.dart' as dom;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingua/settings/setting.dart';
 import 'data/sample.dart';
 
 bool canLaunchUrl(Uri _) => false;
@@ -107,7 +108,7 @@ class BlockWidget extends ConsumerWidget {
         if (children.isEmpty && c.text != null) {
           text = t;
           // TODO: space deal right?
-          if (t != ' ') forceInlineHeight ??= estyle(e).fontSize;
+          if (t != ' ') forceInlineHeight ??= estyle(e, ref).fontSize;
         } else {
           children.add(TextSpan(text: t));
         }
@@ -122,11 +123,26 @@ class BlockWidget extends ConsumerWidget {
     // 2. Apply styling based on the local tag name
     final inside = switch (e.localName) {
       // 'section' || 'figure' || 'div' => trans(),
-      'p' ||
-      'li' => TextSpan(text: text, children: cr(children), style: estyle(e)),
-      'h1' => TextSpan(text: text, children: cr(children), style: estyle(e)),
-      'h2' => TextSpan(text: text, children: cr(children), style: estyle(e)),
-      'h3' => TextSpan(text: text, children: cr(children), style: estyle(e)),
+      'p' || 'li' => TextSpan(
+        text: text,
+        children: cr(children),
+        style: estyle(e, ref),
+      ),
+      'h1' => TextSpan(
+        text: text,
+        children: cr(children),
+        style: estyle(e, ref),
+      ),
+      'h2' => TextSpan(
+        text: text,
+        children: cr(children),
+        style: estyle(e, ref),
+      ),
+      'h3' => TextSpan(
+        text: text,
+        children: cr(children),
+        style: estyle(e, ref),
+      ),
 
       'b' || 'strong' => TextSpan(
         text: text,
@@ -155,7 +171,7 @@ class BlockWidget extends ConsumerWidget {
         ),
       ),
 
-      'span' => TextSpan(text: text, children: children, style: estyle(e)),
+      'span' => TextSpan(text: text, children: children, style: estyle(e, ref)),
 
       'img' => WidgetSpan(
         child: Image.memory(
@@ -171,7 +187,7 @@ class BlockWidget extends ConsumerWidget {
       ),
 
       'a' => linkify(
-        TextSpan(text: text, children: children, style: estyle(e)),
+        TextSpan(text: text, children: children, style: estyle(e, ref)),
         e.attributes['href'] ?? '',
         ref,
       ),
@@ -284,27 +300,37 @@ class BlockWidget extends ConsumerWidget {
   }
 
   /// simple Element style
-  TextStyle estyle(dom.Element e) {
+  TextStyle estyle(dom.Element e, WidgetRef ref) {
     final lang = e.attributes['lang'];
     if (lang == 'zh') {
+      final bfs = ref.watch(
+        settingProvider.select(
+          (m) => m.doubleOf('ui.zh.font-size', defaults: 18),
+        ),
+      ); // 18.0;
       return TextStyle(
         fontFamily: '.osdefault',
         fontSize: switch (e.localName) {
-          'h1' => 32,
-          'h2' => 24,
-          'h3' => 20,
-          _ => 18,
+          'h1' => bfs + 6,
+          'h2' => bfs + 4,
+          'h3' => bfs + 2,
+          _ => bfs,
         },
         height: 1.55,
       );
     } else {
+      final bfs = ref.watch(
+        settingProvider.select(
+          (m) => m.doubleOf('ui.en.font-size', defaults: 14.0),
+        ),
+      );
       return TextStyle(
         fontFamily: '.osdefault',
         fontSize: switch (e.localName) {
-          'h1' => 30,
-          'h2' => 22,
-          'h3' => 18,
-          _ => 16,
+          'h1' => bfs + 6,
+          'h2' => bfs + 4,
+          'h3' => bfs + 2,
+          _ => bfs,
         },
         height: 1.55,
       );

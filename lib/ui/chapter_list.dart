@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/ui/search.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../epub/epub.dart' as epub;
-import '../../g.dart';
 import 'book.dart';
+import '../../g.dart';
 import '../../hw.dart';
 
 @immutable
@@ -86,11 +86,55 @@ class _TheDrawerState extends ConsumerState<TheDrawer>
             children: [
               ChapterList(widget.id, widget.book),
               SearchView(widget.book),
-              Placeholder(),
+              NoteList(widget.id),
             ],
           ),
         ),
       ],
     );
   }
+}
+
+class Note {
+  Note({required this.ci, required this.note});
+  final int ci;
+  final String note;
+
+  Map<String, dynamic> toJson() => {'ci': ci, 'note': note};
+  factory Note.fromJson(Map<String, dynamic> m) =>
+      Note(ci: m['ci'], note: m['note']);
+}
+
+class NoteList extends ConsumerWidget {
+  const NoteList(this.id, {super.key});
+  final int id;
+
+  List<Note> get notes {
+    final m = gbox.get('note:$id');
+    if (m != null && m is List) {
+      return m
+          .map((i) => Note.fromJson((i as Map).cast<String, dynamic>()))
+          .toList();
+    }
+    return [];
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ns = notes;
+    return ListView.builder(
+      itemCount: ns.length,
+      itemBuilder: (context, index) => ListTile(),
+    );
+  }
+}
+
+void newNote(int id, Note note) {
+  final m = gbox.get('note:$id');
+  final ns = <Note>[];
+  if (m != null && m is List) {
+    ns.addAll(m.map((i) => Note.fromJson((i as Map).cast<String, dynamic>())));
+  }
+  ns.add(note);
+  gbox.put('note:$id', ns.map((n) => n.toJson()).toList());
 }

@@ -205,7 +205,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
           final e = shelf.items[i];
           return ListTile(
             title: Text(
-              '${e.name}/${e.id}',
+              e.name!,
               maxLines: 3,
               softWrap: true,
               style: TextStyle(fontFamily: '.osdefault'),
