@@ -1,25 +1,33 @@
+# Default target when running just `make`
+.PHONY: all
+build/app/outputs/flutter-apk/app-release.apk: lib
+	@flutter build apk --release --target-platform android-arm64 --no-tree-shake-icons
+
+# Handle numeric arguments like `make 5` or `make 42`
+# If the argument is an integer, it echos that integer.
+# Otherwise, it falls back to treating it as a standard make target.
+%:
+	@if [ "$@" -eq "$@" ] 2>/dev/null; then \
+		echo connect to 192.168.31.105:$@; \
+		adb connect 192.168.31.105:"$@"; \
+		adb -s 192.168.31.105:"$@" install build/app/outputs/flutter-apk/app-release.apk; \
+	else \
+		$(MAKE) -f $(MAKEFILE_LIST) build-$@; \
+	fi
+
+# Define your custom compilation targets below (e.g., `make target` -> `make build-target`)
+build-target:
+	@echo "Compiling target..."
+	# Add your actual compilation commands here, for example:
+	# gcc -o target target.c
+
+
+
 .PHONY: all freya
 
 PORT := $(firstword $(MAKECMDGOALS))
 
-# usage:
-# make 32322 all
-
-
-
-all:
-ifeq ($(strip $(PORT)),all)
-	@echo "do sth without port (Running default 'all')"
-else ifeq ($(strip $(PORT)),)
-	@echo "do sth without port (Port is empty)"
-	flutter build apk --release --target-platform android-arm64 --no-tree-shake-icons
-else
-	@echo "do sth with port: $(PORT)"
-	adb connect 192.168.31.105:$(PORT)
-	adb -s 192.168.31.105:$(PORT) install build/app/outputs/flutter-apk/app-release.apk
-endif
-
-freya: freya/ch001.md
+build-freya: freya/ch001.md
 	unzip -o -d freya ~/Downloads/freya-cycle.zip
 	rm -f ~/Downloads/freya-cycle.zip
 	cd freya; git commit -am '-'
@@ -34,7 +42,3 @@ lib/data/modle.g.dart: lib/data/modle.dart
 
 lib/riverpod_dependencies.json:
 	dart run riverpod_devtools:analyze
-
-# Catch-all rule so make doesn't look for a file named after the port number
-%:
-	@:

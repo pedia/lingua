@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../epub/epub.dart' as epub;
 
 class SearchView extends ConsumerStatefulWidget {
-  const SearchView({super.key});
+  const SearchView(this.book, {super.key});
+  final epub.Book book;
 
   @override
   ConsumerState<SearchView> createState() => _SearchScreenState();
@@ -42,7 +45,7 @@ class _SearchScreenState extends ConsumerState<SearchView> {
     // Initialize filtered list with all items
     _filteredItems = _allItems;
     // Listen for changes in the text field
-    _searchController.addListener(_filterSearchResults);
+    _searchController.addListener(_search);
   }
 
   @override
@@ -51,15 +54,14 @@ class _SearchScreenState extends ConsumerState<SearchView> {
     super.dispose();
   }
 
-  // Filtering logic
-  void _filterSearchResults() {
-    String query = _searchController.text.toLowerCase();
+  void _search() {
+    String q = _searchController.text.toLowerCase();
     setState(() {
-      if (query.isEmpty) {
+      if (q.isEmpty) {
         _filteredItems = _allItems;
       } else {
         _filteredItems = _allItems
-            .where((item) => item.toLowerCase().contains(query))
+            .where((item) => item.toLowerCase().contains(q))
             .toList();
       }
     });
@@ -69,28 +71,12 @@ class _SearchScreenState extends ConsumerState<SearchView> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Search Input Field
-        TextField(
+        CupertinoSearchTextField(
           controller: _searchController,
-          decoration: InputDecoration(
-            labelText: 'Search',
-            hintText: 'Type to search items...',
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                    },
-                  )
-                : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-          ),
+          placeholder: 'Search...',
+          style: TextStyle(fontFamily: '.osdefault'),
         ),
         const SizedBox(height: 16.0),
-        // Search Result List
         Expanded(
           child: _filteredItems.isEmpty
               ? const Center(
@@ -103,19 +89,14 @@ class _SearchScreenState extends ConsumerState<SearchView> {
                   itemCount: _filteredItems.length,
                   itemBuilder: (context, index) {
                     final item = _filteredItems[index];
-                    return Card(
-                      elevation: 1,
-                      margin: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: ListTile(
-                        title: Text(item),
-                        leading: const Icon(Icons.label_outline),
-                        onTap: () {
-                          // Handle item tap action
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Selected: $item')),
-                          );
-                        },
-                      ),
+                    return ListTile(
+                      title: Text(item),
+                      leading: const Icon(Icons.label_outline),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Selected: $item')),
+                        );
+                      },
                     );
                   },
                 ),

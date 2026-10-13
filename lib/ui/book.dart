@@ -163,7 +163,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   Widget build(BuildContext context) {
     ref.listen(isp(widget.id), (previous, next) {
       if (next.read.li != previous?.read.li) {
-        ref.read(linep.notifier).updateActive(next.read.li);
+        ref.read(linep.notifier).update(next.read.li);
       }
     });
 

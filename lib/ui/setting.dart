@@ -113,15 +113,16 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
                     runSpacing: 8.0, // Vertical gap between lines
                     children:
                         [
+                          '/',
                           '/shelf-mgmt',
                           '/book/4',
-                          '/shelf',
                           '/read/4',
                           '/hive',
                           '/setting',
                           '/engine',
                           '/library',
                           '/prototype',
+                          '/demo',
                           '/sliver',
                           '/search',
                           '/master-detail',

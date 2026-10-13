@@ -129,6 +129,7 @@ class BlockWidget extends ConsumerWidget {
       'h3' => TextSpan(text: text, children: cr(children), style: estyle(e)),
 
       'b' || 'strong' => TextSpan(
+        text: text,
         children: children,
         style: const TextStyle(
           fontFamily: '.osdefault',
@@ -184,7 +185,7 @@ class BlockWidget extends ConsumerWidget {
         ),
       ),
 
-      'br' => const TextSpan(text: '\n'),
+      'br' => const TextSpan(text: '\n', style: TextStyle(fontSize: 0)),
 
       _ => TextSpan(text: text, children: children),
     };
@@ -318,7 +319,7 @@ class Tapper extends TapGestureRecognizer {
   final int i;
   final WidgetRef ref;
   void tap() {
-    ref.read(linep.notifier).updateActive(i);
+    ref.read(linep.notifier).update(i);
     onTapCancel?.call(); // is this work?
   }
 }
@@ -454,7 +455,6 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
 
   @override
   void dispose() {
-    // TODO: widget.roller?.dispose();
     super.dispose();
   }
 
@@ -486,7 +486,7 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
 
     if (idx != null && idx != firstVisibleIdx) {
       firstVisibleIdx = idx;
-      ref.read(linep.notifier).updateActive(firstVisibleIdx!);
+      ref.read(linep.notifier).update(firstVisibleIdx!);
     }
 
     offset = widget.roller?.offset;
@@ -575,7 +575,7 @@ class LineNotifier extends Notifier<int?> {
   @override
   int? build() => null;
 
-  void updateActive(int activeIndex) {
+  void update(int activeIndex) {
     state = activeIndex;
   }
 }

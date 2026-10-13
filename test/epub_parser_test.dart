@@ -8,9 +8,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lingua/epub/epub.dart';
 import 'package:lingua/epub/parser.dart';
 import 'package:lingua/epub/writer.dart';
+import 'package:lingua/hw.dart';
 import 'package:lingua/settings/app_settings.dart';
 
 void main() {
+  test('unwrap', () {
+    final doc = dom.parse('''<div id="chapter01.xhtml" class="calibre3">
+</div><div class="calibre3"><h1 class="calibre4"><span id="sigil_toc_id_1" class="calibre5"><b class="calibre6">前</b><b class="calibre6">言</b></span></h1></div>
+<div class="calibre3">
+	<p class="calibre7"><span class="calibre10">非常幸运</span></p>
+</div>
+''');
+    final ces = unwrap(doc.body!).children;
+    expect(ces.length, 2);
+    expect(ces.first.localName, 'h1');
+    expect(ces.first.text, '前言');
+    expect(ces[1].localName, 'p');
+    expect(ces[1].text, '非常幸运');
+    expect(ces[1].innerHtml, '<span class="calibre10">非常幸运</span>');
+    ces.forEach((e) => print(e.outerHtml));
+  });
   test('parses inside', () {
     expect(EpubParser.html2text('<div>hello</div>'), 'hello');
   });

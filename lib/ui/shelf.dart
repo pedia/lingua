@@ -31,6 +31,8 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   void initState() {
     super.initState();
 
+    _searchController.addListener(_search);
+
     subOpenFile = OpenPump.stream.listen((fn) {
       debugPrint('lib got relative path:$fn');
       ref
@@ -55,6 +57,18 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     _tabController?.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// search book's title|author|description
+  void _search() {
+    String q = _searchController.text.trim().toLowerCase();
+    setState(() {
+      if (q.isEmpty) {
+        searchResult = null;
+      } else {
+        searchResult = ref.read(shopProvider).search(q);
+      }
+    });
   }
 
   void _initTabController({int? length}) {
@@ -95,19 +109,6 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                           controller: _searchController,
                           placeholder: 'Search titles or authors...',
                           style: TextStyle(fontFamily: '.osdefault'),
-                          onChanged: (v) {
-                            if (v.trim().isEmpty) {
-                              setState(() => searchResult = null);
-                              return;
-                            }
-
-                            setState(() {
-                              searchResult = ref
-                                  .read(shopProvider)
-                                  .search(v.trim());
-                              print('${searchResult?.length}');
-                            });
-                          },
                         ),
                       ),
                       const SizedBox(width: 8),

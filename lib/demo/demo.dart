@@ -10,7 +10,7 @@ class DemoFrame extends StatefulWidget {
 }
 
 class _DemoFrameState extends State<DemoFrame> {
-  Mode _mode = Mode.list;
+  Mode _mode = Mode.sliver;
   Timer? _timer;
   @override
   void initState() {
@@ -49,6 +49,12 @@ class _DemoFrameState extends State<DemoFrame> {
   <p><span>- End -</span></p>
 </body>''';
 
+    final h2 = '''<b>black</b><br>
+    <p>a <b>black</b> man</p>
+    <p>a <p>inner paragraph</p> outside</p>
+    <p>a normal paragraph</p>
+    ''';
+
     return Scaffold(
       appBar: AppBar(
         title: Text('HtmlWidget Demo(Debug)'),
@@ -69,7 +75,12 @@ class _DemoFrameState extends State<DemoFrame> {
       body: SelectableRegion(
         contextMenuBuilder: selectToolbar,
         selectionControls: materialTextSelectionHandleControls,
-        child: HtmlWidget(html: h, mode: _mode),
+        child: CustomScrollView(
+          slivers: [
+            HtmlWidget(html: h, mode: _mode),
+            HtmlWidget(html: h2, mode: _mode),
+          ],
+        ),
       ),
     );
   }

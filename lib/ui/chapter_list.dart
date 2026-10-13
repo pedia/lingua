@@ -22,19 +22,8 @@ class ChapterList extends ConsumerWidget {
       itemScrollController: ItemScrollController(),
       key: PageStorageKey<String>('cl:$id'),
       initialScrollIndex: ci,
-      itemCount: chs.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return DrawerHeader(
-            decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-            child: ListTile(
-              leading: boxImage('icon:$id'),
-              title: Text(book.title),
-              subtitle: Text(book.author),
-            ),
-          );
-        }
-        final i = index - 1;
+      itemCount: chs.length,
+      itemBuilder: (context, i) {
         return ListTile(
           selected: i == ci,
           title: Text(chs[i].title),
@@ -44,7 +33,7 @@ class ChapterList extends ConsumerWidget {
             ref
                 .read(isp(id).notifier)
                 .updateRead(chapterIndex: i, lineIndex: 0);
-            ref.read(linep.notifier).updateActive(0);
+            ref.read(linep.notifier).update(0);
           },
         );
       },
@@ -71,12 +60,36 @@ class _TheDrawerState extends ConsumerState<TheDrawer>
   );
   @override
   Widget build(BuildContext context) {
-    return TabBarView(
-      controller: _tabController,
+    return Column(
       children: [
-        ChapterList(widget.id, widget.book),
-        Padding(padding: const EdgeInsets.all(8.0), child: SearchView()),
-        SearchView(),
+        DrawerHeader(
+          decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+          child: ListTile(
+            leading: boxImage('icon:${widget.id}'),
+            title: Text(widget.book.title),
+            subtitle: Text(widget.book.author),
+          ),
+        ),
+        TabBar(
+          isScrollable: true,
+          controller: _tabController,
+          indicatorSize: TabBarIndicatorSize.tab,
+          tabs: [
+            Tab(text: 'Chapters'),
+            Tab(text: 'Search'),
+            Tab(text: 'Highlight'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              ChapterList(widget.id, widget.book),
+              SearchView(widget.book),
+              Placeholder(),
+            ],
+          ),
+        ),
       ],
     );
   }
