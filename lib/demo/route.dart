@@ -21,6 +21,8 @@ class RouteScreen extends ConsumerWidget {
             ...[
               '/shelf-mgmt',
               '/book/4',
+              '/shelf',
+              '/read/4',
               '/hive',
               '/setting',
               '/engine',
@@ -28,8 +30,6 @@ class RouteScreen extends ConsumerWidget {
               '/prototype',
               '/sliver',
               '/search',
-              '/shelf',
-              '/read/4',
               '/master-detail',
             ].map(
               (e) => ListTile(

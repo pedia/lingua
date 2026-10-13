@@ -123,6 +123,8 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     dt.play();
   }
 
+  int initialDrawerIndex = 0;
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Widget builds(BuildContext context, epub.Book book) {
     if (book.chapters.isEmpty) {
@@ -138,7 +140,10 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       on: false,
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(width: 280, child: ChapterList(widget.id, book)),
+        drawer: Drawer(
+          width: 280,
+          child: TheDrawer(widget.id, book, initialIndex: initialDrawerIndex),
+        ),
         body: SelectableRegion(
           selectionControls: materialTextSelectionHandleControls,
           contextMenuBuilder: selectToolbar,
@@ -186,7 +191,17 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.menu),
-                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  onPressed: () {
+                    setState(() => initialDrawerIndex = 0);
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    setState(() => initialDrawerIndex = 1);
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../settings/setting.dart';
 
 class SettingFrame extends ConsumerStatefulWidget {
@@ -89,10 +90,52 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
     final m = ref.watch(settingProvider);
     debugPrint('all setting: $m');
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Setting')),
+      navigationBar: const CupertinoNavigationBar(middle: Text('Settings')),
       child: SafeArea(
         child: Material(
-          child: ListView(children: items.map((e) => Tile(e)).toList()),
+          child: ListView(
+            children: [
+              ...items.map((e) => Tile(e)),
+              Padding(
+                padding: EdgeInsets.only(left: 8, top: 20),
+                child: Text('Debug'),
+              ),
+              Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  // Wrap automatically flows items to the next line
+                  child: Wrap(
+                    spacing: 8.0, // Horizontal gap between buttons
+                    runSpacing: 8.0, // Vertical gap between lines
+                    children:
+                        [
+                          '/shelf-mgmt',
+                          '/book/4',
+                          '/shelf',
+                          '/read/4',
+                          '/hive',
+                          '/setting',
+                          '/engine',
+                          '/library',
+                          '/prototype',
+                          '/sliver',
+                          '/search',
+                          '/master-detail',
+                        ].map((action) {
+                          return CupertinoButton(
+                            onPressed: () => context.push(action),
+                            child: Text(action),
+                          );
+                        }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

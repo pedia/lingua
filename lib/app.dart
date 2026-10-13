@@ -114,8 +114,7 @@ class MainApp extends ConsumerWidget {
       ],
       routerConfig: GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, _) => RouteScreen()),
-          GoRoute(path: '/shelf', builder: (_, _) => ShelfFrame()),
+          GoRoute(path: '/', builder: (_, _) => ShelfFrame()),
           GoRoute(
             path: '/book/:id',
             builder: (_, state) => BookFrame(id: state.pint('id', 4)),
@@ -150,7 +149,7 @@ class MainApp extends ConsumerWidget {
             path: '/edit/:id',
             builder: (_, state) => BookEditScreen(id: state.pint('id', 4)),
           ),
-          GoRoute(path: '/search', builder: (_, state) => SearchScreen()),
+          GoRoute(path: '/search', builder: (_, state) => SearchView()),
         ],
       ),
     );

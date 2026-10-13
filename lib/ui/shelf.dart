@@ -133,7 +133,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                       ),
                       CupertinoButton(
                         padding: EdgeInsets.zero,
-                        onPressed: () => context.push('/route'),
+                        onPressed: () => context.push('/setting'),
                         child: const Icon(CupertinoIcons.settings, size: 28),
                       ),
                     ],
