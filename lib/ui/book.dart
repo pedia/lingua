@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +21,6 @@ import '../tts/dualtts.dart';
 import '../demo/freya.dart';
 import '../data/sample.dart';
 import 'gadget.dart';
-import 'shelf.dart';
 
 class ArchiveProvider extends FileProvider {
   ArchiveProvider(String base, this.files) : base = Uri(path: base);

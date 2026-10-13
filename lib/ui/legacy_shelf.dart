@@ -2,8 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../epub/epub.dart';
-import '../data/model.dart';
-import '../g.dart';
 
 const kFontFamily = '.osdefault';
 
@@ -537,7 +535,7 @@ class _BookShelfScreenState extends State<BookShelfScreen> {
                       borderRadius: BorderRadius.circular(12.0),
                       boxShadow: [
                         BoxShadow(
-                          color: CupertinoColors.systemGrey.withOpacity(0.1),
+                          color: CupertinoColors.systemGrey.withValues(alpha: 0.1),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),

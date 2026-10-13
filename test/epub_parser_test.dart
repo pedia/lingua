@@ -11,6 +11,9 @@ import 'package:lingua/epub/writer.dart';
 import 'package:lingua/settings/app_settings.dart';
 
 void main() {
+  test('parses inside', () {
+    expect(EpubParser.html2text('<div>hello</div>'), 'hello');
+  });
   test('parses a minimal epub', () {
     final zip = _minimalEpub();
     final book = const EpubParser().parseBytes(zip);

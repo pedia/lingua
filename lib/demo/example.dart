@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DrawerScrollExample extends StatefulWidget {
-  const DrawerScrollExample({Key? key}) : super(key: key);
+  const DrawerScrollExample({super.key});
 
   @override
   State<DrawerScrollExample> createState() => _DrawerScrollExampleState();

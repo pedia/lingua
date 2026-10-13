@@ -13,7 +13,7 @@ import '../settings/setting.dart';
 
 /// Material Silver Style Reader
 class ReadFrame extends ConsumerStatefulWidget {
-  ReadFrame({required this.id, super.key});
+  const ReadFrame({required this.id, super.key});
   final int id;
 
   @override

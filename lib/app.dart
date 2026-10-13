@@ -7,6 +7,7 @@ import 'package:lingua/demo/prototype.dart';
 import 'package:lingua/demo/route.dart';
 import 'package:lingua/demo/sliver.dart';
 import 'package:lingua/ui/book.dart';
+import 'package:lingua/ui/search.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
 import 'package:lingua/ui/voice_setting.dart';
@@ -104,7 +105,7 @@ class MainApp extends ConsumerWidget {
         Locale('zh', 'TW'),
         Locale('jp', 'JP'),
         Locale('ko', 'KR'),
-        // Locale('es', 'ES'),
+        Locale('es', 'ES'),
       ],
       localizationsDelegates: <LocalizationsDelegate<dynamic>>[
         DefaultMaterialLocalizations.delegate, // <-- THIS FIXES THE ERROR
@@ -117,8 +118,7 @@ class MainApp extends ConsumerWidget {
           GoRoute(path: '/shelf', builder: (_, _) => ShelfFrame()),
           GoRoute(
             path: '/book/:id',
-            builder: (_, state) =>
-                BookFrame(id: int.parse(state.pathParameters['id'] ?? '')),
+            builder: (_, state) => BookFrame(id: state.pint('id', 4)),
           ),
           GoRoute(path: '/hive', builder: (_, _) => HiveFrame()),
           GoRoute(path: '/setting', builder: (_, _) => SettingFrame()),
@@ -144,14 +144,13 @@ class MainApp extends ConsumerWidget {
           ),
           GoRoute(
             path: '/read/:id',
-            builder: (_, state) =>
-                ReadFrame(id: int.parse(state.pathParameters['id'] ?? '')),
+            builder: (_, state) => ReadFrame(id: state.pint('id', 4)),
           ),
           GoRoute(
             path: '/edit/:id',
-            builder: (_, state) =>
-                BookEditScreen(id: int.parse(state.pathParameters['id'] ?? '')),
+            builder: (_, state) => BookEditScreen(id: state.pint('id', 4)),
           ),
+          GoRoute(path: '/search', builder: (_, state) => SearchScreen()),
         ],
       ),
     );
@@ -169,7 +168,7 @@ class MainApp extends ConsumerWidget {
     }
   }
 
-  Widget c2(BuildContext context, WidgetRef ref) {
+  Widget cupertinoapp(BuildContext context, WidgetRef ref) {
     final tm = ref.watch(
       settingProvider.select((m) => m.intOf('ui.theme-mode', defaults: 0)),
     );
@@ -188,5 +187,13 @@ class MainApp extends ConsumerWidget {
       ),
       // routerConfig: GoRouter(),
     );
+  }
+}
+
+extension _StateEx on GoRouterState {
+  int pint(String key, int defaults) {
+    final v = pathParameters[key] ?? '';
+    final n = int.tryParse(v);
+    return n ?? defaults;
   }
 }

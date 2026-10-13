@@ -38,6 +38,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
       key: 'ui.mode',
       title: 'Mode',
       defaults: '',
+      description: 'List en|zh|all in read view',
       choices: [('Only English', 'en'), ('Only Chinese', 'zh'), ('All', '')],
     ),
     SettingItem(

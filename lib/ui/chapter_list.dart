@@ -5,27 +5,20 @@ import '../epub/epub.dart' as epub;
 import '../../g.dart';
 import 'book.dart';
 
-class ChapterList extends ConsumerStatefulWidget {
+@immutable
+class ChapterList extends ConsumerWidget {
   const ChapterList(this.id, this.book, {this.isTablet = false, super.key});
   final int id;
   final epub.Book book;
   final bool isTablet;
 
   @override
-  ConsumerState<ChapterList> createState() => _ChapterListState();
-}
-
-class _ChapterListState extends ConsumerState<ChapterList> {
-  // not work for 0.3.8 final roller = ScrollController();
-  final itemroller = ItemScrollController();
-
-  @override
-  Widget build(BuildContext context) {
-    final chs = widget.book.chapters;
-    final ci = ref.watch(isp(widget.id).select((s) => s.read.ci));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chs = book.chapters;
+    final ci = ref.watch(isp(id).select((s) => s.read.ci));
     return ScrollablePositionedList.builder(
-      itemScrollController: itemroller,
-      key: PageStorageKey<String>('cl:${widget.id}'),
+      itemScrollController: ItemScrollController(),
+      key: PageStorageKey<String>('cl:$id'),
       initialScrollIndex: ci,
       itemCount: chs.length + 1,
       itemBuilder: (context, index) {
@@ -33,9 +26,9 @@ class _ChapterListState extends ConsumerState<ChapterList> {
           return DrawerHeader(
             decoration: BoxDecoration(color: Theme.of(context).primaryColor),
             child: ListTile(
-              leading: boxImage('icon:${widget.id}'),
-              title: Text(widget.book.title),
-              subtitle: Text(widget.book.author),
+              leading: boxImage('icon:$id'),
+              title: Text(book.title),
+              subtitle: Text(book.author),
             ),
           );
         }
@@ -44,9 +37,9 @@ class _ChapterListState extends ConsumerState<ChapterList> {
           selected: i == ci,
           title: Text(chs[i].title),
           onTap: () {
-            if (!widget.isTablet) Navigator.pop(context);
+            if (!isTablet) Navigator.pop(context);
             ref
-                .read(isp(widget.id).notifier)
+                .read(isp(id).notifier)
                 .updateRead(chapterIndex: i, lineIndex: 0);
           },
         );

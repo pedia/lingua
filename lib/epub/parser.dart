@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
+import 'package:html/parser.dart' show parse;
 
 import 'epub.dart';
 
@@ -132,7 +133,7 @@ class EpubParser {
       chapters: chapters,
       files: files,
       cover: cover,
-      description: description,
+      description: html2text(description),
     );
   }
 
@@ -173,5 +174,13 @@ class EpubParser {
         .replaceAll('\\', '/')
         .replaceFirst(RegExp(r'^/'), '')
         .toLowerCase();
+  }
+
+  static String html2text(String src) {
+    if (src.contains('<div>')) {
+      final doc = parse(src);
+      return doc.body?.text ?? '';
+    }
+    return src;
   }
 }

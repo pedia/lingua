@@ -27,7 +27,7 @@ class RouteScreen extends ConsumerWidget {
               '/library',
               '/prototype',
               '/sliver',
-              '/error',
+              '/search',
               '/shelf',
               '/read/4',
               '/master-detail',

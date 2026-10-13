@@ -28,7 +28,9 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     super.initState();
 
     _selectedShelf = 0;
-    _item = Item.fromJson(gbox.get('item:${widget.id}').cast<String, dynamic>());
+    _item = Item.fromJson(
+      gbox.get('item:${widget.id}').cast<String, dynamic>(),
+    );
 
     _item.open().then((book) {
       setState(() {
@@ -70,9 +72,24 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
           child: ListView(
             children: [
               if (_book?.coverBytes != null) ...[
-                Image.memory(_book!.coverBytes!, fit: BoxFit.fitWidth),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Image.memory(_book!.coverBytes!, fit: BoxFit.fitWidth),
+                ),
                 const SizedBox(height: 16),
               ],
+
+              TextFormField(
+                key: UniqueKey(),
+                readOnly: true,
+                initialValue: _item.path,
+                maxLines: null, // softWrap
+                decoration: const InputDecoration(
+                  labelText: 'Path',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 key: UniqueKey(),
                 initialValue: _item.name,
