@@ -65,8 +65,9 @@ class BlockWidget extends ConsumerWidget {
   });
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint("🟢 Building BlockWidget[$index]");
     final b = doc.blocks[index];
+    debugPrint('🟢 Building BlockWidget[$index] ${b.e.innerHtml}');
+    debugPrint('${b.e.attributes}');
 
     return Text.rich(
       clickable(trans(b.e, ref), b.i, ref),
@@ -186,6 +187,9 @@ class BlockWidget extends ConsumerWidget {
               double.tryParse(e.attributes['height'] ?? ''),
         ),
       ),
+
+      // svg image, just ignore it
+      'image' => const TextSpan(text: '\n', style: TextStyle(fontSize: 0)),
 
       'a' => linkify(
         TextSpan(text: text, children: children, style: estyle(e, ref)),
@@ -612,7 +616,7 @@ class LineNotifier extends Notifier<int?> {
   @override
   int? build() => null;
 
-  void update(int activeIndex) {
+  void update(int? activeIndex) {
     state = activeIndex;
   }
 }
@@ -630,6 +634,7 @@ const wrapperTags = {
   'main',
   'header',
   'footer',
+  // 'svg',
   'aside',
   'figure',
   // 'body',

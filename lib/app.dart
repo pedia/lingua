@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lingua/demo/demo.dart';
 import 'package:lingua/hive.dart';
-import 'package:lingua/demo/prototype.dart';
+import 'package:lingua/demo/provider.dart';
 import 'package:lingua/demo/route.dart';
 import 'package:lingua/demo/sliver.dart';
 import 'package:lingua/ui/book.dart';
@@ -128,10 +128,7 @@ class MainApp extends ConsumerWidget {
           GoRoute(path: '/route', builder: (_, _) => RouteScreen()),
           GoRoute(path: '/library', builder: (_, _) => LibraryFrame()),
           GoRoute(path: '/demo', builder: (_, _) => DemoFrame()),
-          GoRoute(
-            path: '/prototype',
-            builder: (_, _) => TestProviderScreen(bookId: '3'),
-          ),
+          GoRoute(path: '/provider', builder: (_, _) => ProviderScreen(id: 3)),
           GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
           GoRoute(
             path: '/shelf-mgmt',

@@ -82,7 +82,6 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   }
 
   final dt = DualTts();
-  Playback playback = Playback.stop;
 
   List<epub.Chunk> get lines {
     final lang = ref.read(
@@ -213,10 +212,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                   icon: const Icon(Icons.edit),
                   onPressed: () => context.push('/edit/${widget.id}'),
                 ),
-                if (dt.state == Playback.stop)
-                  IconButton(icon: const Icon(Icons.hearing), onPressed: play),
-                if (dt.state != Playback.stop)
-                  IconButton(icon: const Icon(Icons.stop), onPressed: dt.stop),
+                ...speak(),
                 IconButton(
                   icon: const Icon(Icons.settings),
                   onPressed: () => context.push('/setting'),
@@ -229,6 +225,21 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
         ),
       ),
     );
+  }
+
+  List<Widget> speak() {
+    final pb = ref.watch(spsp.select((p) => p.$1));
+    return [
+      if (pb == Playback.stop)
+        IconButton(icon: const Icon(Icons.hearing), onPressed: play),
+      if (pb != Playback.stop)
+        IconButton(icon: const Icon(Icons.stop), onPressed: dt.stop),
+      if (pb != Playback.stop)
+        IconButton(
+          icon: const Icon(Icons.forward_10),
+          onPressed: () => dt.skip(10),
+        ),
+    ];
   }
 
   AdaptiveTextSelectionToolbar selectToolbar(

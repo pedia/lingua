@@ -127,7 +127,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
                           '/setting',
                           '/engine',
                           '/library',
-                          '/prototype',
+                          '/provider',
                           '/demo',
                           '/font',
                           '/sliver',

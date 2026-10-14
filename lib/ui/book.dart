@@ -29,8 +29,13 @@ class ArchiveProvider extends FileProvider {
 
   @override
   Uint8List bytes(String path) {
-    debugPrint('$path => ${base.resolve(path).path}');
-    final fp = base.resolve(path).path.toLowerCase();
+    String fp = base.resolve(path).path.toLowerCase();
+
+    // Uri decode
+    if (fp.contains('%')) {
+      fp = Uri.decodeComponent(fp);
+    }
+    debugPrint('$path => $fp');
     return files[fp]?.content ?? Uint8List.fromList([]);
   }
 }
