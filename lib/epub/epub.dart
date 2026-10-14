@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' show parse;
 import 'package:archive/archive.dart';
+import 'package:lingua/epub/lang.dart';
 
 /// text only for paragraph
 class Chunk {
@@ -108,6 +109,19 @@ class ChapterStub implements Chapter {
           break;
         }
       }
+
+      // fallback, use first line as title
+      if (_title == null) {
+        final arr = dom.body?.text.split('\n');
+        if (arr != null) {
+          _title = arr.where((line) => line.trim().isNotEmpty).firstOrNull;
+          if (_title != null && _title!.length > 100) {
+            _title = _title!.substring(0, 8);
+          }
+        }
+      }
+      // fallback, as href
+      _title ??= href;
     }
 
     if (_chunks == null && body) {
@@ -165,7 +179,8 @@ class ChapterStub implements Chapter {
 
       current = current.parent;
     }
-    return '';
+
+    return detectLang(element.text);
   }
 }
 

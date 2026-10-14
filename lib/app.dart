@@ -138,6 +138,7 @@ class MainApp extends ConsumerWidget {
             builder: (_, _) => ShelfManagementScreen(),
           ),
           GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
+          GoRoute(path: '/font', builder: (_, _) => FontFrame()),
           GoRoute(
             path: '/master-detail',
             builder: (_, _) => TabletReadFrame(2),

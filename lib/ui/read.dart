@@ -34,9 +34,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     sub = dt.stream.listen((pp) {
       debugPrint('$pp');
       if (mounted) {
-        setState(() {
-          playback = pp.$1;
-        });
+        // setState(() {
+        //   playback = pp.$1;
+        // });
       }
     });
   }
@@ -113,7 +113,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     );
     final chi = ref.read(isp(widget.id)).read.ci;
     final lines = book.chapters[chi].chunks
-        .where((line) => lang == '' || line.lang == lang)
+        .where((c) => lang == '' || c.lang == lang)
         .toList();
 
     if (!dt.inited) {
@@ -154,7 +154,8 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
             controller: roller,
             slivers: [
               SliverAppBar(
-                title: Text(ch.title),
+                /// CASE:
+                title: SelectionContainer.disabled(child: Text(ch.title)),
                 // Disappears on scroll down, reveals immediately on scroll up
                 floating: true,
                 // Snaps fully open with a slight upward swipe (highly recommended)
@@ -172,12 +173,15 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 lang: ref.watch(
                   settingProvider.select((m) => m.stringOf('ui.mode')),
                 ),
+                detect: ref.watch(
+                  settingProvider.select((m) => m.flag('detect')),
+                ),
               ),
             ],
           ),
         ),
         bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(

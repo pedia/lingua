@@ -55,6 +55,7 @@ class FontFrame extends StatelessWidget {
   const FontFrame({super.key});
 
   final List<String> fonts = const [
+    'sans-serif',
     '.osdefault', // osfont
     '.AppleSystemUIFont',
     'CupertinoSystemDisplay',
@@ -63,6 +64,7 @@ class FontFrame extends StatelessWidget {
   ];
 
   final demo = """English is hard, right? 123.
+  'hello' say "good"
 「私は、ガラスを食べられますか？」――いいえ！それは私を傷つけません。
 『我能吞下玻璃嗎？』——不，這傷不到我的身體！
 “나는유리를먹을수있습니까?”…… 아니요! 그래도 아프지 않아요.

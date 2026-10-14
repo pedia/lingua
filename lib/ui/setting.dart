@@ -33,6 +33,12 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
         ('Dark', ThemeMode.dark.index),
       ],
     ),
+    SettingItem(
+      type: SettingType.bool,
+      key: 'detect',
+      defaults: false,
+      title: 'Detect lang',
+    ),
     SettingItem(type: SettingType.title, title: 'Read', key: ''),
     SettingItem(
       type: SettingType.choice,
@@ -123,6 +129,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
                           '/library',
                           '/prototype',
                           '/demo',
+                          '/font',
                           '/sliver',
                           '/search',
                           '/master-detail',

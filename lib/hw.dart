@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/settings/setting.dart';
 import 'data/sample.dart';
+import 'epub/lang.dart';
 
 bool canLaunchUrl(Uri _) => false;
 Future<void> launchUrl(Uri _) => Future.value();
@@ -325,7 +326,7 @@ class BlockWidget extends ConsumerWidget {
         ),
       );
       return TextStyle(
-        fontFamily: '.osdefault',
+        fontFamily: 'sans-serif',
         fontSize: switch (e.localName) {
           'h1' => bfs + 6,
           'h2' => bfs + 4,
@@ -345,7 +346,7 @@ class Tapper extends TapGestureRecognizer {
   final int i;
   final WidgetRef ref;
   void tap() {
-    ref.read(linep.notifier).update(i);
+    // ref.read(linep.notifier).update(i);
     onTapCancel?.call(); // is this work?
   }
 }
@@ -373,6 +374,7 @@ class Doc {
     double? offset,
     FileProvider? provider,
     String lang = '',
+    bool detect = false,
   }) {
     final doc = dom.parse(html);
     final body = doc.body ?? dom.Element.tag('body');
@@ -380,7 +382,10 @@ class Doc {
 
     final bs = <Block>[];
     for (final e in unwrap(body).children) {
-      final el = e.attributes['lang'];
+      String? el = e.attributes['lang'];
+      if (detect) {
+        el ??= detectLang(e.text);
+      }
       if (el != null && lang != '' && el != lang) {
         continue;
       }
@@ -451,8 +456,14 @@ class HtmlWidget extends ConsumerStatefulWidget {
     FileProvider? provider,
     this.roller,
     this.lang = '',
+    bool detect = false,
     super.key,
-  }) : doc = Doc.create(html: html, provider: provider, lang: lang);
+  }) : doc = Doc.create(
+         html: html,
+         provider: provider,
+         lang: lang,
+         detect: detect,
+       );
 
   @override
   ConsumerState<HtmlWidget> createState() => _HtmlWidgetState();
