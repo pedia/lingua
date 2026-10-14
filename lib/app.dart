@@ -7,6 +7,7 @@ import 'package:lingua/hive.dart';
 import 'package:lingua/demo/provider.dart';
 import 'package:lingua/demo/route.dart';
 import 'package:lingua/demo/sliver.dart';
+import 'package:lingua/demo/sliver2.dart';
 import 'package:lingua/ui/book.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
@@ -130,6 +131,7 @@ class MainApp extends ConsumerWidget {
           GoRoute(path: '/demo', builder: (_, _) => DemoFrame()),
           GoRoute(path: '/provider', builder: (_, _) => ProviderScreen(id: 3)),
           GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
+          GoRoute(path: '/sliver2', builder: (_, _) => DynamicTabScreen()),
           GoRoute(
             path: '/shelf-mgmt',
             builder: (_, _) => ShelfManagementScreen(),

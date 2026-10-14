@@ -46,7 +46,10 @@ Future<Uint8List?> iconify2(Uint8List imageBytes, {int width = 64}) async {
 Widget? boxImage(String key) {
   final cb = gbox.get(key);
   if (cb != null) {
-    return Image.memory(cb, width: 48, fit: BoxFit.fitWidth);
+    return SizedBox(
+      height: 64, // not worked in ListTile
+      child: Image.memory(cb, width: 48, fit: BoxFit.fitWidth),
+    );
   }
   return null;
 }

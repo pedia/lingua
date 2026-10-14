@@ -131,6 +131,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
                           '/demo',
                           '/font',
                           '/sliver',
+                          '/sliver2',
                           '/search',
                           '/master-detail',
                         ].map((action) {

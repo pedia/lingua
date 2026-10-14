@@ -23,7 +23,9 @@ class ShelfFrame extends ConsumerStatefulWidget {
 class _ShelfFrameState extends ConsumerState<ShelfFrame>
     with TickerProviderStateMixin {
   TabController? _tabController;
+  late List<ScrollController> _rollers;
   final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
   StreamSubscription? subOpenFile;
   List<Item>? searchResult;
 
@@ -55,6 +57,9 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   void dispose() {
     subOpenFile?.cancel();
     _tabController?.dispose();
+    for (var controller in _rollers) {
+      controller.dispose();
+    }
     _searchController.dispose();
     super.dispose();
   }
@@ -87,6 +92,8 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         ref.read(shopProvider.notifier).update(current: _tabController!.index);
       }
     });
+
+    _rollers = List.generate(_tabController!.length, (_) => ScrollController());
   }
 
   @override
@@ -95,99 +102,100 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            // 1. SCROLLABLE: This row disappears up and out of view when scrolling down
-            SliverToBoxAdapter(
-              child: Container(
-                color: CupertinoColors.systemBackground.resolveFrom(context),
-                padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 4.0),
-                child: SafeArea(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CupertinoSearchTextField(
-                          controller: _searchController,
-                          placeholder: 'Search titles or authors...',
-                          style: TextStyle(fontFamily: '.osdefault'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        // minSize: 36,
-                        onPressed: () async {
-                          final result = await FilePicker.pickFiles(
-                            type: FileType.custom,
-                            allowedExtensions: const ['epub'],
-                            allowMultiple: true,
-                          );
-                          if (result?.files != null) {
-                            for (final file in result!.files) {
-                              OpenPump.send(file.path!);
-                            }
-                          }
-                        },
-                        child: const Icon(
-                          CupertinoIcons.add_circled_solid,
-                          size: 28,
-                        ),
-                      ),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () => context.push('/setting'),
-                        child: const Icon(CupertinoIcons.settings, size: 28),
-                      ),
-                    ],
+          return [
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              elevation: 0,
+              // Top Row: Search box + button
+              title: Row(
+                children: [
+                  Expanded(
+                    child: CupertinoSearchTextField(
+                      focusNode: _searchFocus,
+                      controller: _searchController,
+                      placeholder: 'Search titles or authors...',
+                      style: TextStyle(fontFamily: '.osdefault'),
+                      onSuffixTap: () {
+                        _searchController.clear();
+                        if (_searchFocus.hasFocus) {
+                          _searchFocus.unfocus();
+                        }
+                      },
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    // minSize: 36,
+                    onPressed: () async {
+                      final result = await FilePicker.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: const ['epub'],
+                        allowMultiple: true,
+                      );
+                      if (result?.files != null) {
+                        for (final file in result!.files) {
+                          OpenPump.send(file.path!);
+                        }
+                      }
+                    },
+                    child: const Icon(
+                      CupertinoIcons.add_circled_solid,
+                      size: 28,
+                    ),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => context.push('/setting'),
+                    child: const Icon(CupertinoIcons.settings, size: 28),
+                  ),
+                ],
               ),
-            ),
-
-            // 2. PINNED: The segmented control stays fixed at the top of the viewport
-            if (searchResult == null)
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _TabHeaderDelegate(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TabBar(
-                          isScrollable: true,
-                          controller: _tabController,
-                          // Styling the TabBar to look cleaner and integrated with iOS styles
-                          labelColor: CupertinoColors.activeBlue.resolveFrom(
-                            context,
+              // Second Row: Dynamic TabBar + button
+              bottom: searchResult == null
+                  ? PreferredSize(
+                      preferredSize: const Size.fromHeight(48),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TabBar(
+                              controller: _tabController,
+                              isScrollable: true,
+                              tabs: shelves
+                                  .map((s) => Tab(text: s.name))
+                                  .toList(),
+                            ),
                           ),
-                          unselectedLabelColor: CupertinoColors.systemGrey
-                              .resolveFrom(context),
-                          indicatorColor: CupertinoColors.activeBlue
-                              .resolveFrom(context),
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          tabs: shelves.map((s) => Tab(text: s.name)).toList(),
-                        ),
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () => context.push('/shelf-mgmt'),
+                            child: Icon(Icons.edit),
+                          ),
+                        ],
                       ),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () => context.push('/shelf-mgmt'),
-                        child: Icon(Icons.edit),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                    )
+                  : PreferredSize(
+                      preferredSize: const Size.fromHeight(48),
+                      child: Text('History'),
+                    ),
+            ),
           ];
         },
-        body: searchResult != null
-            ? ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: searchResult!.length,
-                itemBuilder: (context, index) {
-                  return buildSearchItem(context, searchResult![index]);
-                },
-              )
-            : TabBarView(
+        body: searchResult == null
+            ? TabBarView(
                 controller: _tabController,
-                children: shelves.imap((i, _) => _buildBookList(i)).toList(),
+                children: shelves
+                    .imap((i, shelf) => _buildBookList(i))
+                    .toList(),
+              )
+            : Scrollbar(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: searchResult!.length,
+                  itemBuilder: (context, index) =>
+                      buildTile(context, searchResult![index]),
+                ),
               ),
       ),
     );
@@ -197,62 +205,36 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     final shelf = ref.watch(shopProvider.select((s) => s.shelves[shelfidx]));
     return Scrollbar(
       child: ListView.builder(
+        key: PageStorageKey<String>('tab$shelfidx'),
         primary: true,
         restorationId: 'shelf:$shelfidx',
         padding: const EdgeInsets.all(16.0),
         itemCount: shelf.items.length,
-        itemBuilder: (context, i) {
-          final e = shelf.items[i];
-          return ListTile(
-            title: Text(
-              e.name!,
-              maxLines: 3,
-              softWrap: true,
-              style: TextStyle(fontFamily: '.osdefault'),
-            ),
-            subtitle: Text(
-              e.subtitle,
-              style: TextStyle(fontFamily: '.osdefault'),
-            ),
-            leading: SizedBox(
-              // width: 64,
-              height: 328, // not work
-              child: boxImage('icon:${e.id}'),
-            ),
-            trailing: const CupertinoListTileChevron(),
-            onTap: () {
-              ref.read(ciip.notifier).update(e.id);
-              context.push('/read/${e.id}');
-              ref.read(shopProvider.notifier).touch(shelfidx, e.id);
-            },
-            onLongPress: () => context.push('/edit/${e.id}'),
-          );
-        },
+        itemBuilder: (context, i) => buildTile(context, shelf.items[i]),
       ),
     );
   }
 
-  Widget buildSearchItem(BuildContext context, Item e) {
-    return CupertinoListTile(
-      title: Text(
-        '${e.name}/${e.id}',
-        maxLines: 3,
-        softWrap: true,
-        style: TextStyle(fontFamily: '.osdefault'),
-      ),
-      subtitle: Text(e.subtitle, style: TextStyle(fontFamily: '.osdefault')),
-      leading: boxImage('icon:${e.id}'),
-      leadingSize: 64,
-      padding: EdgeInsets.only(bottom: 8),
-      trailing: const CupertinoListTileChevron(),
-      onTap: () {
-        // TODO: ugly
-        ref.read(ciip.notifier).update(e.id);
-        context.push('/read/${e.id}');
-        // ref.read(shopProvider.notifier).touch(shelfidx, e.id);
-      },
-    );
-  }
+  Widget buildTile(BuildContext context, Item e) => ListTile(
+    title: Text(
+      e.name!,
+      maxLines: 3,
+      softWrap: true,
+      style: TextStyle(fontFamily: '.osdefault'),
+    ),
+    subtitle: e.subtitle.isEmpty
+        ? null
+        : Text(e.subtitle, style: TextStyle(fontFamily: '.osdefault')),
+    leading: boxImage('icon:${e.id}'),
+    trailing: const CupertinoListTileChevron(),
+    onTap: () {
+      // TODO: ugly
+      ref.read(ciip.notifier).update(e.id);
+      context.push('/read/${e.id}');
+      ref.read(shopProvider.notifier).touch(0, e.id);
+    },
+    onLongPress: () => context.push('/edit/${e.id}'),
+  );
 
   void _showNewShelfDialog() {
     final TextEditingController controller = TextEditingController();
