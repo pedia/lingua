@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 /// stupid global instance
 late final Box gbox;
@@ -52,22 +50,4 @@ Widget? boxImage(String key) {
     );
   }
   return null;
-}
-
-/// check file from pick_file
-bool isSharedStorage(String path) {
-  // If it's running on iOS or macOS
-  if (!kIsWeb && (Platform.isMacOS || Platform.isIOS)) {
-    // On macOS/iOS, picked files are typically sandbox-secured or temporary.
-    // Usually, you treat them based on whether they are in your app's documents directory.
-    return false;
-  }
-
-  // Android-specific checks
-  if (path.startsWith('content://') ||
-      path.startsWith('/storage/emulated/0/')) {
-    return true;
-  }
-
-  return false;
 }

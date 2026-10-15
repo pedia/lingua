@@ -221,7 +221,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         ? null
         : Text(e.subtitle, style: TextStyle(fontFamily: '.osdefault')),
     leading: boxImage('icon:${e.id}'),
-    trailing: const CupertinoListTileChevron(),
+    // trailing: const CupertinoListTileChevron(),
     onTap: () {
       // TODO: ugly
       ref.read(ciip.notifier).update(e.id);
@@ -269,19 +269,20 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   }
 }
 
+/// Scan application documents books/
 void scan(WidgetRef ref) async {
   final appDir = await getApplicationDocumentsDirectory();
   final booksDir = Directory(p.join(appDir.path, 'books'));
 
   int c = 0;
   final shelfidx = ref.read(shopProvider.select((s) => s.current));
-  final shelf = ref.read(shopProvider.select((s) => s.shelves[shelfidx]));
+  final shop = ref.read(shopProvider);
 
   await for (final e in booksDir.list()) {
     if (e.path.endsWith('.epub')) {
       final fp = e.path.substring(booksDir.path.length + 1); // +1 for last /
 
-      if (!shelf.items.any((i) => i.path == fp)) {
+      if (-1 == shop.find(fp)) {
         ref
             .read(shopProvider.notifier)
             .addItemTo(

@@ -152,41 +152,43 @@ final settingProvider = NotifierProvider<Setting, TypedMap>(
 );
 
 enum SettingType {
-  slider,
   bool, // switch
-  title, // group title, stub
-  readonly,
   choice,
+  group,
+  readonly,
+  slider,
   builder,
 }
 
 class SettingItem {
-  SettingItem({
+  const SettingItem({
     required this.type,
-    required this.key,
+    this.key,
     required this.title,
     this.defaults,
     this.description,
     this.choices,
-    this.range,
-    this.gentitle,
+    this.range = const Range(0, 1.0),
     this.builder,
+    this.tailBuilder,
+    this.children = const [],
   });
-  final String key;
+  final String? key;
   final dynamic defaults;
   final SettingType type;
   final String title;
   final String? description;
   // title, value
   final List<(String, Object)>? choices;
-  final Range? range;
-  final String Function(Object)? gentitle; // generate title
-  final Widget Function(BuildContext context, WidgetRef ref)? builder;
+  final Range range;
+  final ConsumerBuilder? builder;
+  final ConsumerBuilder? tailBuilder;
+  final List<SettingItem> children;
 }
 
 class Range<T extends num> {
   final T min;
   final T max;
 
-  Range(this.min, this.max);
+  const Range(this.min, this.max);
 }

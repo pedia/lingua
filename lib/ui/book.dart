@@ -554,7 +554,7 @@ extension ItemExt on Item {
 
     if ((book.author.isNotEmpty && author == null) ||
         (book.description.isNotEmpty && description == null)) {
-      print('Item.apply $this');
+      print('$this.apply $book');
       return copyWith(
         // make sure apply once
         name: book.title.isEmpty ? null : book.title,
@@ -572,10 +572,13 @@ extension ItemExt on Item {
     } else if (id == 6) {
       book = sample();
     } else if (type == ItemType.file) {
-      final appDir = await getApplicationDocumentsDirectory();
-      final booksDir = Directory(p.join(appDir.path, 'books'));
+      String fp = path;
+      if (!path.startsWith('/')) {
+        final appDir = await getApplicationDocumentsDirectory();
+        fp = p.join(appDir.path, 'books', path);
+      }
 
-      final file = File(p.join(booksDir.path, path));
+      final file = File(fp);
       if (!file.existsSync()) {
         throw Exception('book:$type/$path not exist');
       }
