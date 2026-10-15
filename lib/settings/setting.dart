@@ -146,8 +146,6 @@ class Setting extends Notifier<TypedMap> {
   }
 }
 
-enum Lang { zh, en, all }
-
 final settingProvider = NotifierProvider<Setting, TypedMap>(
   Setting.new,
   name: 'Setting',

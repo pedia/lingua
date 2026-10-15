@@ -11,6 +11,7 @@ import '../g.dart';
 import 'chapter_list.dart';
 import '../tts/dualtts.dart';
 import '../settings/setting.dart';
+import '../epub/lang.dart';
 
 /// Material Silver Style Reader
 class ReadFrame extends ConsumerStatefulWidget {
@@ -75,7 +76,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       },
       loading: () => const Center(), // TODO: better solution
       error: (err, stackTrace) {
-        print(stackTrace.toString().substring(0, 1000));
+        print(stackTrace);
         return ErrScreen('Unable to open it\n$err');
       },
     );
@@ -170,7 +171,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 roller: roller,
                 provider: ArchiveProvider(ch.href, book.files),
                 lang: ref.watch(
-                  settingProvider.select((m) => m.stringOf('ui.mode')),
+                  settingProvider.select(
+                    (m) => Lang.from(m.stringOf('ui.mode')),
+                  ),
                 ),
                 detect: ref.watch(
                   settingProvider.select((m) => m.flag('detect')),

@@ -7,11 +7,11 @@ import 'package:lingua/epub/lang.dart';
 
 /// text only for paragraph
 class Chunk {
-  Chunk(this.text, {this.lang = ''});
+  Chunk(this.text, {this.lang = Lang.unknown});
   final String text;
 
   /// hardcode: en, zh, es, jp, kr
-  final String lang;
+  final Lang lang;
   @override
   String toString() => '$lang: $text';
 }
@@ -166,16 +166,16 @@ class ChapterStub implements Chapter {
   /// Returns the effective language for [element] by walking up the
   /// ancestor chain. Looks for both the HTML `lang` attribute and the
   /// XHTML `xml:lang` attribute. Returns an empty string when none is found.
-  String _effectiveLang(dom.Element element) {
+  Lang _effectiveLang(dom.Element element) {
     dom.Element? current = element;
     while (current != null) {
       // Prefer the explicit HTML lang attribute.
       final lang = current.attributes['lang']?.trim();
-      if (lang != null && lang.isNotEmpty) return lang;
+      if (lang != null) return Lang.from(lang);
 
       // Fall back to the XML namespace form commonly used in EPUB/XHTML.
       final xmlLang = current.attributes['xml:lang']?.trim();
-      if (xmlLang != null && xmlLang.isNotEmpty) return xmlLang;
+      if (xmlLang != null) return Lang.from(xmlLang);
 
       current = current.parent;
     }
@@ -233,11 +233,12 @@ class EpubParseException implements Exception {
   String toString() => message;
 }
 
+/// only used in frya
 List<Chunk> md2ch(String md) {
   final rs = <Chunk>[];
   for (final line in md.split('\n')) {
     final s = line.trim();
-    if (s.isNotEmpty) rs.add(Chunk(line, lang: 'zh'));
+    if (s.isNotEmpty) rs.add(Chunk(line, lang: Lang.zh));
   }
   return rs;
 }

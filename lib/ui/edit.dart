@@ -27,10 +27,8 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   void initState() {
     super.initState();
 
-    _selectedShelf = 0;
-    _item = Item.fromJson(
-      gbox.get('item:${widget.id}').cast<String, dynamic>(),
-    );
+    _item = Item.fromBox(widget.id);
+    _selectedShelf = ref.read(shopProvider).find(_item.path);
 
     _item.open().then((book) {
       setState(() {
@@ -45,8 +43,11 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
       _formKey.currentState!.save();
 
       gbox.put('item:${_item.id}', _item.toJson());
+      ref.read(shopProvider.notifier).reload(_item.id);
 
-      if (_selectedShelf != 0) {}
+      if (_selectedShelf != 0) {
+        ref.read(shopProvider.notifier).moveItemTo(_item.id, _selectedShelf);
+      }
 
       Navigator.pop(context, _item);
     }
@@ -56,7 +57,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Book ${widget.id}'),
+        title: Text('Edit ${widget.id}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -79,17 +80,6 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                 const SizedBox(height: 16),
               ],
 
-              TextFormField(
-                key: UniqueKey(),
-                readOnly: true,
-                initialValue: _item.path,
-                maxLines: null, // softWrap
-                decoration: const InputDecoration(
-                  labelText: 'Path',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
               TextFormField(
                 key: UniqueKey(),
                 initialValue: _item.name,
@@ -168,6 +158,29 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                 onSaved: (value) =>
                     _item = _item.copyWith(description: value!.trim()),
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                key: UniqueKey(),
+                readOnly: true,
+                initialValue: _item.path,
+                maxLines: null, // softWrap
+                decoration: const InputDecoration(
+                  labelText: 'Path',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                key: UniqueKey(),
+                readOnly: true,
+                initialValue: _item.ctime.toString(),
+                maxLines: null, // softWrap
+                decoration: const InputDecoration(
+                  labelText: 'Add Date',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),

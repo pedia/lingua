@@ -552,18 +552,17 @@ extension ItemExt on Item {
       gbox.put('icon:$id', iconify(book.coverBytes!));
     }
 
-    final ni = copyWith(
-      name: book.title.isEmpty ? null : book.title,
-      author: book.author.isEmpty ? null : book.author,
-      description: book.description,
-    );
-
     if ((book.author.isNotEmpty && author == null) ||
         (book.description.isNotEmpty && description == null)) {
-      gbox.put('item:$id', ni.toJson());
+      print('Item.apply $this');
+      return copyWith(
+        // make sure apply once
+        name: book.title.isEmpty ? null : book.title,
+        author: author != null ? null : book.author,
+        description: description != null ? null : book.description,
+      );
     }
-
-    return ni;
+    return this;
   }
 
   Future<epub.Book?> open() async {

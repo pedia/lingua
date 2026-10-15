@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:go_router/go_router.dart';
 import '../settings/setting.dart';
 
@@ -102,6 +105,26 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
           child: ListView(
             children: [
               ...items.map((e) => Tile(e)),
+
+              Divider(),
+              ListTile(
+                title: Text('Storage'),
+                trailing: FutureBuilder<int>(
+                  future: hiveFileSize(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text('...');
+                    } else if (snapshot.hasError) {
+                      return const Text('error');
+                    }
+                    return Text(
+                      snapshot.data?.kb ?? 'fail',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    );
+                  },
+                ),
+              ),
+
               Padding(
                 padding: EdgeInsets.only(left: 8, top: 20),
                 child: Text('Debug'),
@@ -229,4 +252,14 @@ class Tile extends ConsumerWidget {
       return tile;
     }
   }
+}
+
+Future<int> hiveFileSize() async {
+  final docs = await getApplicationDocumentsDirectory();
+  final fp = p.join(docs.path, 'all.hive');
+  return File(fp).length();
+}
+
+extension KB on int {
+  String get kb => '${(this / 1024).toStringAsFixed(2)}KB';
 }

@@ -23,9 +23,9 @@ class EpubParser {
       files[_normalize(file.name)] = file;
     }
 
-    if (files.keys.any((name) => name.endsWith('meta-inf/encryption.xml'))) {
-      throw const DrmEpubException();
-    }
+    // if (files.keys.any((name) => name.endsWith('meta-inf/encryption.xml'))) {
+    // throw const DrmEpubException();
+    // }
 
     final container = _xml(files, 'meta-inf/container.xml');
     final rootPath = container

@@ -41,7 +41,9 @@ class ErrScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Error')),
-      body: Center(child: Text(text)),
+      body: Center(
+        child: Padding(padding: EdgeInsets.all(16), child: Text(text)),
+      ),
     );
   }
 }

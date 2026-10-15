@@ -82,6 +82,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
           .add(
             Item(
               id: nextId(),
+              ctime: DateTime.now(),
               type: ItemType.file,
               path: fn,
               name: p.basename(fn).replaceAll('.epub', ''),
@@ -265,6 +266,7 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
               .add(
                 Item(
                   id: nextId(),
+                  ctime: DateTime.now(),
                   type: ItemType.file,
                   path: e.path,
                   name: p.basename(e.path).replaceAll('.epub', ''),

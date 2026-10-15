@@ -23,7 +23,6 @@ class ShelfFrame extends ConsumerStatefulWidget {
 class _ShelfFrameState extends ConsumerState<ShelfFrame>
     with TickerProviderStateMixin {
   TabController? _tabController;
-  late List<ScrollController> _rollers;
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
   StreamSubscription? subOpenFile;
@@ -43,6 +42,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
             ref.read(shopProvider.select((s) => s.current)),
             Item(
               id: nextId(),
+              ctime: DateTime.now(),
               type: ItemType.file,
               path: fn,
               name: p.basename(fn).replaceAll('.epub', ''),
@@ -57,9 +57,6 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   void dispose() {
     subOpenFile?.cancel();
     _tabController?.dispose();
-    for (var controller in _rollers) {
-      controller.dispose();
-    }
     _searchController.dispose();
     super.dispose();
   }
@@ -92,8 +89,6 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         ref.read(shopProvider.notifier).update(current: _tabController!.index);
       }
     });
-
-    _rollers = List.generate(_tabController!.length, (_) => ScrollController());
   }
 
   @override
@@ -231,7 +226,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
       // TODO: ugly
       ref.read(ciip.notifier).update(e.id);
       context.push('/read/${e.id}');
-      ref.read(shopProvider.notifier).touch(0, e.id);
+      ref.read(shopProvider.notifier).touch(e.id);
     },
     onLongPress: () => context.push('/edit/${e.id}'),
   );
@@ -274,35 +269,6 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   }
 }
 
-class _TabHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  // Compact height since it only contains the Segmented Control widget now
-  final double height = 48.0;
-
-  _TabHeaderDelegate({required this.child});
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return SizedBox(height: height, child: child);
-  }
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  bool shouldRebuild(covariant _TabHeaderDelegate oldDelegate) {
-    return oldDelegate.child != child;
-  }
-}
-
 void scan(WidgetRef ref) async {
   final appDir = await getApplicationDocumentsDirectory();
   final booksDir = Directory(p.join(appDir.path, 'books'));
@@ -322,6 +288,7 @@ void scan(WidgetRef ref) async {
               shelfidx,
               Item(
                 id: nextId(),
+                ctime: DateTime.now(),
                 type: ItemType.file,
                 path: fp,
                 name: p.basename(fp).replaceAll('.epub', ''),

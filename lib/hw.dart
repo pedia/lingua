@@ -19,15 +19,17 @@ abstract class FileProvider {
 class Block {
   const Block({
     required this.i,
-    required this.key,
-    required this.selected,
     required this.e,
+    this.key,
+    this.selected = false,
+    this.lang = Lang.all,
   });
   // clickable
   final int i; // index from Doc.blocks
-  final GlobalKey key;
+  final GlobalKey? key;
   final bool selected;
   final dom.Element e;
+  final Lang lang;
 
   @override
   bool operator ==(Object other) =>
@@ -42,13 +44,19 @@ class Block {
   @override
   int get hashCode => Object.hash(i, key, selected, e);
 
-  Block copyWith({int? i, GlobalKey? key, bool? selected, dom.Element? e}) =>
-      Block(
-        i: i ?? this.i,
-        key: key ?? this.key,
-        selected: selected ?? this.selected,
-        e: e ?? this.e,
-      );
+  Block copyWith({
+    int? i,
+    GlobalKey? key,
+    bool? selected,
+    dom.Element? e,
+    Lang? lang,
+  }) => Block(
+    i: i ?? this.i,
+    key: key ?? this.key,
+    selected: selected ?? this.selected,
+    e: e ?? this.e,
+    lang: lang ?? this.lang,
+  );
 }
 
 class BlockWidget extends ConsumerWidget {
@@ -66,11 +74,11 @@ class BlockWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final b = doc.blocks[index];
-    debugPrint('🟢 Building BlockWidget[$index] ${b.e.innerHtml}');
-    debugPrint('${b.e.attributes}');
+    // debugPrint('🟢 Building BlockWidget[$index] ${b.lang} ${b.e.innerHtml}');
+    // debugPrint('${b.e.attributes}');
 
     return Text.rich(
-      clickable(trans(b.e, ref), b.i, ref),
+      clickable(trans(b, ref), b.i, ref),
       key: b.key,
       // CASE: selection style
       // style: ref.watch(linep) == index
@@ -97,20 +105,26 @@ class BlockWidget extends ConsumerWidget {
   /// Translate or transform html tag into InlineSpan
   /// force img height
   /// <p><sup><a><img></a></p>
-  InlineSpan trans(dom.Element e, WidgetRef ref, {double? forceInlineHeight}) {
+  InlineSpan trans(Block b, WidgetRef ref, {double? forceInlineHeight}) {
     // 1. Recursively parse all child nodes (text and nested tags)
     List<InlineSpan>? children = [];
     String? text;
-    for (var c in e.nodes) {
+    for (var c in b.e.nodes) {
       if (c is dom.Element) {
         // Recursive call for nested elements
-        children.add(trans(c, ref, forceInlineHeight: forceInlineHeight));
+        children.add(
+          trans(
+            Block(i: -1, e: c, lang: b.lang),
+            ref,
+            forceInlineHeight: forceInlineHeight,
+          ),
+        );
       } else if (c.nodeType == dom.Node.TEXT_NODE) {
         final t = _removeUnnecessaryWhitespace(c.text ?? '');
         if (children.isEmpty && c.text != null) {
           text = t;
           // TODO: space deal right?
-          if (t != ' ') forceInlineHeight ??= estyle(e, ref).fontSize;
+          if (t != ' ') forceInlineHeight ??= estyle(b, ref).fontSize;
         } else {
           children.add(TextSpan(text: t));
         }
@@ -123,27 +137,26 @@ class BlockWidget extends ConsumerWidget {
     }
 
     // 2. Apply styling based on the local tag name
-    final inside = switch (e.localName) {
-      // 'section' || 'figure' || 'div' => trans(),
+    final inside = switch (b.e.localName) {
       'p' || 'li' => TextSpan(
         text: text,
         children: cr(children),
-        style: estyle(e, ref),
+        style: estyle(b, ref),
       ),
       'h1' => TextSpan(
         text: text,
         children: cr(children),
-        style: estyle(e, ref),
+        style: estyle(b, ref),
       ),
       'h2' => TextSpan(
         text: text,
         children: cr(children),
-        style: estyle(e, ref),
+        style: estyle(b, ref),
       ),
       'h3' => TextSpan(
         text: text,
         children: cr(children),
-        style: estyle(e, ref),
+        style: estyle(b, ref),
       ),
 
       'b' || 'strong' => TextSpan(
@@ -173,18 +186,18 @@ class BlockWidget extends ConsumerWidget {
         ),
       ),
 
-      'span' => TextSpan(text: text, children: children, style: estyle(e, ref)),
+      'span' => TextSpan(text: text, children: children, style: estyle(b, ref)),
 
       'img' => WidgetSpan(
         child: Image.memory(
-          provider?.bytes(e.attributes['src'] ?? '') ?? note,
+          provider?.bytes(b.e.attributes['src'] ?? '') ?? note,
           fit: BoxFit.fitWidth,
           width: forceInlineHeight != null
               ? null
-              : double.tryParse(e.attributes['width'] ?? ''),
+              : double.tryParse(b.e.attributes['width'] ?? ''),
           height:
               forceInlineHeight ??
-              double.tryParse(e.attributes['height'] ?? ''),
+              double.tryParse(b.e.attributes['height'] ?? ''),
         ),
       ),
 
@@ -192,8 +205,8 @@ class BlockWidget extends ConsumerWidget {
       'image' => const TextSpan(text: '\n', style: TextStyle(fontSize: 0)),
 
       'a' => linkify(
-        TextSpan(text: text, children: children, style: estyle(e, ref)),
-        e.attributes['href'] ?? '',
+        TextSpan(text: text, children: children, style: estyle(b, ref)),
+        b.e.attributes['href'] ?? '',
         ref,
       ),
 
@@ -223,7 +236,7 @@ class BlockWidget extends ConsumerWidget {
       }
     }
 
-    final id = e.attributes['id'];
+    final id = b.e.attributes['id'];
     if (id == null) {
       return inside;
     }
@@ -305,17 +318,17 @@ class BlockWidget extends ConsumerWidget {
   }
 
   /// simple Element style
-  TextStyle estyle(dom.Element e, WidgetRef ref) {
-    final lang = e.attributes['lang'];
-    if (lang == 'zh') {
+  TextStyle estyle(Block b, WidgetRef ref) {
+    if (b.lang == Lang.zh || b.lang == Lang.jp || b.lang == Lang.kr) {
       final bfs = ref.watch(
         settingProvider.select(
           (m) => m.doubleOf('ui.zh.font-size', defaults: 18),
         ),
-      ); // 18.0;
+      );
+      // print('${b.lang} font-size: $bfs');
       return TextStyle(
         fontFamily: '.osdefault',
-        fontSize: switch (e.localName) {
+        fontSize: switch (b.e.localName) {
           'h1' => bfs + 6,
           'h2' => bfs + 4,
           'h3' => bfs + 2,
@@ -329,9 +342,10 @@ class BlockWidget extends ConsumerWidget {
           (m) => m.doubleOf('ui.en.font-size', defaults: 14.0),
         ),
       );
+      // print('${b.lang} font-size: $bfs');
       return TextStyle(
         fontFamily: 'sans-serif',
-        fontSize: switch (e.localName) {
+        fontSize: switch (b.e.localName) {
           'h1' => bfs + 6,
           'h2' => bfs + 4,
           'h3' => bfs + 2,
@@ -377,7 +391,7 @@ class Doc {
     int? activeIndex,
     double? offset,
     FileProvider? provider,
-    String lang = '',
+    Lang lang = Lang.all,
     bool detect = false,
   }) {
     final doc = dom.parse(html);
@@ -386,11 +400,11 @@ class Doc {
 
     final bs = <Block>[];
     for (final e in unwrap(body).children) {
-      String? el = e.attributes['lang'];
-      if (detect) {
-        el ??= detectLang(e.text);
+      Lang el = Lang.from(e.attributes['lang']);
+      if (el == Lang.unknown && detect) {
+        el = detectLang(e.text);
       }
-      if (el != null && lang != '' && el != lang) {
+      if (el != Lang.unknown && lang != Lang.all && el != lang) {
         continue;
       }
 
@@ -401,6 +415,7 @@ class Doc {
           e: e,
           key: ks.putIfAbsent('$i', () => GlobalKey()),
           selected: false,
+          lang: el,
         ),
       );
     }
@@ -451,7 +466,6 @@ enum Mode { auto, rich, list, sliver }
 class HtmlWidget extends ConsumerStatefulWidget {
   final Doc doc;
   final Mode mode;
-  final String lang;
   final ScrollController? roller;
 
   HtmlWidget({
@@ -459,7 +473,7 @@ class HtmlWidget extends ConsumerStatefulWidget {
     required this.mode,
     FileProvider? provider,
     this.roller,
-    this.lang = '',
+    Lang lang = Lang.all,
     bool detect = false,
     super.key,
   }) : doc = Doc.create(

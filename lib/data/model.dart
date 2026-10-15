@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingua/imap.dart';
 import 'package:pinyin_pro_flutter/pinyin_pro_flutter.dart';
 
 import '../g.dart';
@@ -10,6 +11,7 @@ class Item {
     required this.id,
     required this.type,
     required this.path,
+    required this.ctime,
     this.name,
     this.author,
     this.description,
@@ -17,6 +19,7 @@ class Item {
   });
 
   final int id;
+  final DateTime ctime;
   final ItemType type;
   final String path;
   final String? name;
@@ -43,6 +46,9 @@ class Item {
             'debug',
           ].indexOf(json['type'] as String)],
     path: json['path'] as String,
+    ctime: json['ctime'] != null
+        ? json['ctime'] as DateTime
+        : DateTime(2026), // fix, old items
     name: json['name'] as String?,
     author: json['author'] as String?,
     description: json['description'] as String?,
@@ -52,6 +58,7 @@ class Item {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'type': type.index,
+    'ctime': ctime,
     'path': path,
     'name': name,
     'author': author,
@@ -61,6 +68,7 @@ class Item {
 
   Item copyWith({
     int? id,
+    DateTime? ctime,
     ItemType? type,
     String? path,
     String? name,
@@ -69,6 +77,7 @@ class Item {
     double? percent,
   }) => Item(
     id: id ?? this.id,
+    ctime: ctime ?? this.ctime,
     type: type ?? this.type,
     path: path ?? this.path,
     name: name ?? this.name,
@@ -216,6 +225,31 @@ class Shelf {
     }
     return rs;
   }
+
+  Shelf touch(int itemId) {
+    int i = items.indexWhere((item) => item.id == itemId);
+    if (i != -1 && i != 0) {
+      final old = items.removeAt(i);
+      items.insert(0, old);
+    }
+    return this;
+  }
+
+  Shelf reload(int itemId) {
+    int i = items.indexWhere((item) => item.id == itemId);
+    if (i != -1) {
+      items[i] = Item.fromBox(itemId);
+    }
+    return this;
+  }
+
+  Shelf remove(int itemId) {
+    int i = items.indexWhere((item) => item.id == itemId);
+    if (i != -1) {
+      items.removeAt(i);
+    }
+    return this;
+  }
 }
 
 /// Short for Shelves, mean bookshop
@@ -230,6 +264,16 @@ class Shop {
         .toList(),
     current: (json['id'] as int?)?.toInt() ?? 0,
   );
+
+  int find(String path) {
+    for (int i = 0; i < shelves.length; ++i) {
+      int j = shelves[i].items.indexWhere((i) => i.path == path);
+      if (j != -1) {
+        return i;
+      }
+    }
+    return -1;
+  }
 
   Map<String, dynamic> toJson() => {
     'shelves': shelves.map((e) => e.toJson()).toList(),
@@ -301,33 +345,37 @@ class ShopNotifier extends Notifier<Shop> {
     save(state);
   }
 
-  void removeItemFrom(int shelfidx, Item target) {
+  void moveItemTo(int itemId, int shelfidx) {
     final ns = state.shelves[shelfidx];
-    ns.items.insert(0, target);
+    ns.items.insert(0, Item.fromBox(itemId));
 
     state = Shop(
       shelves: [
         for (int i = 0; i < state.shelves.length; i++)
-          i == shelfidx ? ns : state.shelves[i],
+          i == shelfidx ? ns : state.shelves[i].remove(itemId),
       ],
       current: state.current,
     );
     save(state);
   }
 
-  void touch(int shelfidx, int itemId) {
-    print('touch $shelfidx/$itemId');
-    final old = state.shelves[shelfidx];
-    final ns = old.copyWith(
-      items: <Item>[
-        ...old.items.where((i) => i.id == itemId),
-        ...old.items.where((i) => i.id != itemId),
-      ],
-    );
+  /// find item, move it to top
+  void touch(int itemId) {
     state = Shop(
       shelves: [
         for (int i = 0; i < state.shelves.length; i++)
-          i == shelfidx ? ns : state.shelves[i],
+          state.shelves[i].touch(itemId),
+      ],
+      current: state.current,
+    );
+    save(state);
+  }
+
+  void reload(int itemId) {
+    state = Shop(
+      shelves: [
+        for (int i = 0; i < state.shelves.length; i++)
+          state.shelves[i].reload(itemId),
       ],
       current: state.current,
     );
@@ -352,30 +400,40 @@ class ShopNotifier extends Notifier<Shop> {
   }
 
   static final builtin = [
-    const Item(
+    Item(
       id: 2,
+      ctime: DateTime.now(),
       name: 'Super Supportive',
       path: 'assets/super-supportive-dual.epub',
       type: ItemType.assets,
     ),
-    const Item(
+    Item(
       id: 3,
+      ctime: DateTime.now(),
       name: 'Paranoid Mage',
       path: 'assets/paranoid-mage-dual.epub',
       type: ItemType.assets,
     ),
-    const Item(
+    Item(
       id: 4,
+      ctime: DateTime.now(),
       name: 'Mother of Learning',
       path: 'assets/mother-of-learning-dual.epub',
       type: ItemType.assets,
     ),
 
-    const Item(id: 5, name: 'Freya Cycle', path: '', type: ItemType.demo),
+    Item(
+      id: 5,
+      ctime: DateTime.now(),
+      name: 'Freya Cycle',
+      path: '',
+      type: ItemType.demo,
+    ),
 
     if (!bool.fromEnvironment('dart.vm.product'))
-      const Item(
+      Item(
         id: 6,
+        ctime: DateTime.now(),
         name: 'Debug, 中文',
         path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
         type: ItemType.debug,
