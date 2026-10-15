@@ -129,10 +129,13 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                         allowedExtensions: const ['epub'],
                         allowMultiple: true,
                       );
+                      // /data/user/0/com.lingua.reader.lingua/cache/file_picker/1792052890257/最后...
                       if (result?.files != null) {
                         for (final file in result!.files) {
                           OpenPump.send(file.path!);
                         }
+
+                        FilePicker.clearTemporaryFiles();
                       }
                     },
                     child: const Icon(
@@ -219,7 +222,10 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     ),
     subtitle: e.subtitle.isEmpty
         ? null
-        : Text(e.subtitle, style: TextStyle(fontFamily: '.osdefault')),
+        : Text(
+            e.subtitle,
+            style: TextStyle(fontFamily: '.osdefault', fontSize: 12),
+          ),
     leading: boxImage('icon:${e.id}'),
     // trailing: const CupertinoListTileChevron(),
     onTap: () {
@@ -270,7 +276,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
 }
 
 /// Scan application documents books/
-void scan(WidgetRef ref) async {
+Future<int> scan(WidgetRef ref) async {
   final appDir = await getApplicationDocumentsDirectory();
   final booksDir = Directory(p.join(appDir.path, 'books'));
 
@@ -303,4 +309,5 @@ void scan(WidgetRef ref) async {
   // ScaffoldMessenger.of(
   //   context,
   // ).showSnackBar(SnackBar(content: Text('$c added')));
+  return Future.value(c);
 }

@@ -47,7 +47,7 @@ class Item {
           ].indexOf(json['type'] as String)],
     path: json['path'] as String,
     ctime: json['ctime'] != null
-        ? json['ctime'] as DateTime
+        ? DateTime.parse(json['ctime'] as String)
         : DateTime(2026), // fix, old items
     name: json['name'] as String?,
     author: json['author'] as String?,
@@ -58,7 +58,7 @@ class Item {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'type': type.index,
-    'ctime': ctime,
+    'ctime': ctime.toString(),
     'path': path,
     'name': name,
     'author': author,
@@ -379,6 +379,17 @@ class ShopNotifier extends Notifier<Shop> {
       shelves: [
         for (int i = 0; i < state.shelves.length; i++)
           state.shelves[i].reload(itemId),
+      ],
+      current: state.current,
+    );
+    save(state);
+  }
+
+  void remove(int itemId) {
+    state = Shop(
+      shelves: [
+        for (int i = 0; i < state.shelves.length; i++)
+          state.shelves[i].remove(itemId),
       ],
       current: state.current,
     );

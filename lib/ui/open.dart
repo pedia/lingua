@@ -10,6 +10,7 @@ class OpenPump {
   static Stream<String> get stream => _controller.stream;
 
   static void send(String fp) async {
+    print('$fp, ${isSharedStorage(fp)}');
     if (!isSharedStorage(fp)) {
       fp = await cp(fp);
     }

@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:go_router/go_router.dart';
 import '../settings/setting.dart';
+import 'shelf.dart';
 
 class SettingFrame extends ConsumerStatefulWidget {
   const SettingFrame({super.key});
@@ -165,6 +166,22 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
     ),
     SettingItem(
       type: SettingType.builder,
+      title: 'Scan app documents folder',
+      tailBuilder: (context, ref, child) {
+        return GestureDetector(
+          onTap: () async {
+            final c = await scan(ref);
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('$c book added')));
+          },
+          child: Text('Start'),
+        );
+      },
+    ),
+
+    SettingItem(
+      type: SettingType.builder,
       title: 'Debug',
       builder: (context, ref, child) => Wrap(
         spacing: 8.0, // Horizontal gap between buttons
@@ -172,6 +189,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
         children:
             [
               '/',
+              '/note',
               '/shelf-mgmt',
               '/book/4',
               '/read/4',

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -53,12 +54,62 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     }
   }
 
+  Future<void> showDeleteConfirmationDialog(
+    BuildContext context,
+    String bookTitle,
+  ) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Book?'),
+          content: Text(
+            'Are you sure you want to delete "$bookTitle"? This action cannot be undone.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Verification step
+    if (confirm == true && context.mounted) {
+      // Perform the actual delete operation here
+      _deleteBook();
+    }
+  }
+
+  void _deleteBook() {
+    _item.remove();
+
+    ref.read(shopProvider.notifier).remove(_item.id);
+
+    Navigator.pop(context, _item);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Edit ${widget.id}'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () => showDeleteConfirmationDialog(context, _item.name!),
+            tooltip: 'Delete',
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _saveBook,

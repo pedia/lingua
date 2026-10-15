@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/ui/search.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:go_router/go_router.dart';
 import '../epub/epub.dart' as epub;
 import 'book.dart';
+import '../data/model.dart';
 import '../../g.dart';
 import '../../hw.dart';
 
@@ -103,13 +105,8 @@ class Note {
   Map<String, dynamic> toJson() => {'ci': ci, 'note': note};
   factory Note.fromJson(Map<String, dynamic> m) =>
       Note(ci: m['ci'], note: m['note']);
-}
 
-class NoteList extends ConsumerWidget {
-  const NoteList(this.id, {super.key});
-  final int id;
-
-  List<Note> get notes {
+  static List<Note> fromBox(int id) {
     final m = gbox.get('note:$id');
     if (m != null && m is List) {
       return m
@@ -118,23 +115,77 @@ class NoteList extends ConsumerWidget {
     }
     return [];
   }
+}
+
+class NoteList extends ConsumerWidget {
+  const NoteList(this.id, {super.key});
+  final int id;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ns = notes;
+    final ns = Note.fromBox(id);
     return ListView.builder(
       itemCount: ns.length,
-      itemBuilder: (context, index) => ListTile(),
+      itemBuilder: (context, i) => ListTile(
+        title: Text(ns[i].note),
+        subtitle: Text('${i + 1}', style: TextStyle(fontSize: 10)),
+        onTap: () {
+          ref.read(isp(id).notifier).updateRead(chapterIndex: i, lineIndex: 0);
+          ref.read(linep.notifier).update(0);
+          context.push('/read/$id');
+        },
+      ),
     );
   }
 }
 
 void newNote(int id, Note note) {
-  final m = gbox.get('note:$id');
-  final ns = <Note>[];
-  if (m != null && m is List) {
-    ns.addAll(m.map((i) => Note.fromJson((i as Map).cast<String, dynamic>())));
-  }
-  ns.add(note);
+  final ns = Note.fromBox(id);
+  ns.insert(0, note);
   gbox.put('note:$id', ns.map((n) => n.toJson()).toList());
+}
+
+class NoteScreen extends ConsumerWidget {
+  const NoteScreen({super.key});
+
+  Iterable<int> get ids => gbox.keys
+      .cast<String>()
+      .where((k) => k.startsWith('note:'))
+      .map((k) => k.substring(5))
+      .map((k) => int.parse(k));
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bids = ids.toList();
+    return Scaffold(
+      appBar: AppBar(title: Text('Hightlights')),
+      body: ListView.builder(
+        itemCount: bids.length,
+        itemBuilder: (_, i) {
+          final ns = Note.fromBox(bids[i]);
+          return ExpansionTile(
+            title: Text(Item.fromBox(bids[i]).name ?? '${bids[i]}'),
+            children: ns
+                .map(
+                  (n) => ListTile(
+                    title: Text(n.note),
+                    subtitle: Text(
+                      '${n.ci + 1}',
+                      style: TextStyle(fontSize: 10),
+                    ),
+                    onTap: () {
+                      ref
+                          .read(isp(bids[i]).notifier)
+                          .updateRead(chapterIndex: n.ci, lineIndex: 0);
+                      ref.read(linep.notifier).update(0);
+                      context.push('/read/${bids[i]}');
+                    },
+                  ),
+                )
+                .toList(),
+          );
+        },
+      ),
+    );
+  }
 }

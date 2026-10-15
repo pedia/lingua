@@ -9,6 +9,7 @@ import 'package:lingua/demo/route.dart';
 import 'package:lingua/demo/sliver.dart';
 import 'package:lingua/demo/sliver2.dart';
 import 'package:lingua/ui/book.dart';
+import 'package:lingua/ui/chapter_list.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
 import 'package:lingua/ui/voice_setting.dart';
@@ -150,6 +151,7 @@ class MainApp extends ConsumerWidget {
             path: '/edit/:id',
             builder: (_, state) => BookEditScreen(id: state.pint('id', 4)),
           ),
+          GoRoute(path: '/note', builder: (_, state) => NoteScreen()),
         ],
       ),
     );

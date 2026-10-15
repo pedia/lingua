@@ -590,4 +590,17 @@ extension ItemExt on Item {
 
     return book;
   }
+
+  Future<void> remove() async {
+    if (type == ItemType.file) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fp = p.join(appDir.path, 'books', path);
+      await File(fp).delete();
+    }
+
+    gbox.delete('item:$id');
+    gbox.delete('item-state:$id');
+    gbox.delete('icon:$id');
+    gbox.delete('note:$id');
+  }
 }
