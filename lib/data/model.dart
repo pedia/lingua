@@ -298,6 +298,7 @@ class ShopNotifier extends Notifier<Shop> {
       shelves: shelves ?? state.shelves,
       current: current ?? state.current,
     );
+    save(state);
   }
 
   /// add means, put it at 1st place
