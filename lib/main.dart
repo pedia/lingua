@@ -9,6 +9,7 @@ import 'package:macos_file_open_handler/macos_file_open_handler.dart';
 import 'package:riverpod_devtools/riverpod_devtools.dart';
 import 'package:open_with_app/open_with_app.dart';
 import 'package:hive_ce/hive_ce.dart';
+import 'hive/hive_registrar.g.dart';
 
 import 'app.dart';
 import 'g.dart';
@@ -24,6 +25,8 @@ Future<void> main() async {
   } catch (_) {
     // DevTools shows setup instructions
   }
+
+  Hive.registerAdapters();
 
   final docs = await getApplicationDocumentsDirectory();
   gbox = await Hive.openBox('all', path: docs.path);

@@ -47,7 +47,9 @@ class Item {
           ].indexOf(json['type'] as String)],
     path: json['path'] as String,
     ctime: json['ctime'] != null
-        ? DateTime.parse(json['ctime'] as String)
+        ? ((json['ctime'] is DateTime)
+              ? (json['ctime'] as DateTime)
+              : DateTime.parse(json['ctime']))
         : DateTime(2026), // fix, old items
     name: json['name'] as String?,
     author: json['author'] as String?,
@@ -296,17 +298,7 @@ class ShopNotifier extends Notifier<Shop> {
       return init();
     }
     try {
-      final current = Shop.fromJson((m as Map).cast<String, dynamic>());
-      final all = <Item>[];
-      for (var s in current.shelves) {
-        all.addAll(s.items);
-      }
-      for (final bi in builtin) {
-        if (!all.contains(bi)) {
-          current.shelves.first.items.add(bi);
-        }
-      }
-      return current;
+      return m is Map ? Shop.fromJson(m.cast<String, dynamic>()) : m as Shop;
     } catch (e, stackTrace) {
       print('load shop failed $e\n$stackTrace');
       return init();
@@ -350,12 +342,15 @@ class ShopNotifier extends Notifier<Shop> {
 
   void moveItemTo(int itemId, int shelfidx) {
     final ns = state.shelves[shelfidx];
-    ns.items.insert(0, Item.fromBox(itemId));
+    // avoid duplicated
+    if (-1 == ns.items.indexWhere((i) => i.id == itemId)) {
+      ns.items.insert(0, Item.fromBox(itemId));
+    }
 
     state = Shop(
       shelves: [
         for (int i = 0; i < state.shelves.length; i++)
-          i == shelfidx ? ns : state.shelves[i].remove(itemId),
+          i == shelfidx ? state.shelves[i] : state.shelves[i].remove(itemId),
       ],
       current: state.current,
     );
@@ -397,7 +392,7 @@ class ShopNotifier extends Notifier<Shop> {
   }
 
   void save(Shop shop) {
-    gbox.put('shop', shop.toJson());
+    gbox.put('shop', shop);
   }
 
   void saveItem(Item target) {

@@ -306,8 +306,5 @@ Future<int> scan(WidgetRef ref) async {
     }
   }
 
-  // ScaffoldMessenger.of(
-  //   context,
-  // ).showSnackBar(SnackBar(content: Text('$c added')));
   return Future.value(c);
 }

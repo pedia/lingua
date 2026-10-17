@@ -46,7 +46,7 @@ void main() {
     final zip = _minimalEpub(encrypted: true);
     expect(
       () => const EpubParser().parseBytes(zip),
-      throwsA(isA<DrmEpubException>()),
+      throwsA(isA<DRMException>()),
     );
   });
 

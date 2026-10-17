@@ -13,34 +13,17 @@ movie list [count of subtitles]
 ...
 ...
 
-## EPUB Reader
-```txt
-[menu]  [chapter title]       [en|zh|dual][play] [...]
-list of text lines
 
-more function
-  Search
-  Replace globally
-    src(s) -> dest
-  TTS Engine
-    Stop
-    Bottom control panel?
-  
-  Selectable
-  Tap item entering inline edit mode
-    How to save?
-  Dictionary
-```
 
 ## Key Readability Tips (Especially for Chinese)
 
-|Property|Recommended Value|Reason|
-|---|---|---|
-|height | 1.5 ~ 1.65(body) | Chinese needs more vertical space|
-|fontSize | 15–16 (body), 14 min | Too small hurts CJK readability|
-|fontWeight |w400 / w500 (body) | Avoid pure bold on long text|
-|letterSpacing |0 ~ 0.3|Slight positive helps English|
-|Line length |≤ 35–40 Chinese characters|Better reading comfort|
+| Property      | Recommended Value          | Reason                            |
+| ------------- | -------------------------- | --------------------------------- |
+| height        | 1.5 ~ 1.65(body)           | Chinese needs more vertical space |
+| fontSize      | 15–16 (body), 14 min       | Too small hurts CJK readability   |
+| fontWeight    | w400 / w500 (body)         | Avoid pure bold on long text      |
+| letterSpacing | 0 ~ 0.3                    | Slight positive helps English     |
+| Line length   | ≤ 35–40 Chinese characters | Better reading comfort            |
 
 Start with GoogleFonts.notoSansTcTextTheme() + height: 1.55.
 
@@ -86,37 +69,6 @@ read progress
 
 # legacy code
 
-drawer: Drawer(
-        child: Scrollbar(
-          child: ListView.builder(
-            primary: true,
-            key: PageStorageKey<String>(widget.book.title),
-            itemCount: widget.book.chapters.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  child: ListTile(
-                    title: Text(widget.book.title),
-                    subtitle: Text(widget.book.author),
-                  ),
-                );
-              }
-              final i = index - 1;
-              return ListTile(
-                selected: i == progress.chapterIndex,
-                title: Text(widget.book.chapters[i].title),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() => progress = Progress(chapterIndex: i));
-                },
-              );
-            },
-          ),
-        ),
-      )
 
 
 // CASE: get provider in context
@@ -147,5 +99,7 @@ drawer: Drawer(
 
 
 # shelf management
-- delete, merge
-- 
+- Shop.map
+- Shelf.items + item:{id} detail
+
+In Hive (and Hive CE), handling large lists and big individual items requires care because of how Hive stores data: an open Hive box keeps all its keys and values loaded directly in RAM for maximum speed.

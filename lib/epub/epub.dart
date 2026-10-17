@@ -215,10 +215,13 @@ class Book {
 
   int get sentenceCount =>
       chapters.fold(0, (sum, chapter) => sum + chapter.chunks.length);
+
+  @override
+  String toString() => 'Book($title, $author)';
 }
 
-class DrmEpubException implements Exception {
-  const DrmEpubException();
+class DRMException implements Exception {
+  const DRMException();
 
   @override
   String toString() =>
