@@ -4,8 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 
 import '../data/model.dart';
@@ -36,6 +34,13 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
 
     subOpenFile = OpenPump.stream.listen((fn) {
       debugPrint('lib got relative path:$fn');
+
+      String name = p.basename(fn).replaceAll('.epub', '');
+      if (name.contains('%3A') && fn.startsWith('content://')) {
+        name = Uri.decodeComponent(name);
+        name = p.basename(name).replaceAll('.epub', '');
+      }
+
       ref
           .read(shopProvider.notifier)
           .addItemTo(
@@ -45,7 +50,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
               ctime: DateTime.now(),
               type: ItemType.file,
               path: fn,
-              name: p.basename(fn).replaceAll('.epub', ''),
+              name: name,
             ),
           );
     });
@@ -124,19 +129,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                     padding: EdgeInsets.zero,
                     // minSize: 36,
                     onPressed: () async {
-                      final result = await FilePicker.pickFiles(
-                        type: FileType.custom,
-                        allowedExtensions: const ['epub'],
-                        allowMultiple: true,
-                      );
-                      // /data/user/0/com.lingua.reader.lingua/cache/file_picker/1792052890257/最后...
-                      if (result?.files != null) {
-                        for (final file in result!.files) {
-                          OpenPump.send(file.path!);
-                        }
-
-                        FilePicker.clearTemporaryFiles();
-                      }
+                      pickFiles();
                     },
                     child: const Icon(
                       CupertinoIcons.add_circled_solid,
@@ -167,7 +160,11 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                           ),
                           CupertinoButton(
                             padding: EdgeInsets.zero,
-                            onPressed: () => context.push('/shelf-mgmt'),
+                            onPressed: () async {
+                              final n = await context.push<int>('/shelf-mgmt');
+                              _initTabController(length: n);
+                              setState(() {});
+                            },
                             child: Icon(Icons.edit),
                           ),
                         ],
@@ -207,8 +204,8 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
         primary: true,
         restorationId: 'shelf:$shelfidx',
         padding: const EdgeInsets.all(16.0),
-        itemCount: shelf.items.length,
-        itemBuilder: (context, i) => buildTile(context, shelf.items[i]),
+        itemCount: shelf.iids.length,
+        itemBuilder: (context, i) => buildTile(context, shelf.item(i)),
       ),
     );
   }
@@ -236,75 +233,4 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     },
     onLongPress: () => context.push('/edit/${e.id}'),
   );
-
-  void _showNewShelfDialog() {
-    final TextEditingController controller = TextEditingController();
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('New Shelf'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 10.0),
-          child: CupertinoTextField(
-            controller: controller,
-            placeholder: 'Shelf Name',
-            autofocus: true,
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Create'),
-            onPressed: () {
-              Navigator.pop(context);
-
-              if (controller.text.trim().isNotEmpty) {
-                String name = controller.text.trim();
-                int n = ref.read(shopProvider.notifier).add(name);
-                _initTabController(length: n);
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Scan application documents books/
-Future<int> scan(WidgetRef ref) async {
-  final appDir = await getApplicationDocumentsDirectory();
-  final booksDir = Directory(p.join(appDir.path, 'books'));
-
-  int c = 0;
-  final shelfidx = ref.read(shopProvider.select((s) => s.current));
-  final shop = ref.read(shopProvider);
-
-  await for (final e in booksDir.list()) {
-    if (e.path.endsWith('.epub')) {
-      final fp = e.path.substring(booksDir.path.length + 1); // +1 for last /
-
-      if (-1 == shop.find(fp)) {
-        ref
-            .read(shopProvider.notifier)
-            .addItemTo(
-              shelfidx,
-              Item(
-                id: nextId(),
-                ctime: DateTime.now(),
-                type: ItemType.file,
-                path: fp,
-                name: p.basename(fp).replaceAll('.epub', ''),
-              ),
-            );
-        c += 1;
-      }
-    }
-  }
-
-  return Future.value(c);
 }

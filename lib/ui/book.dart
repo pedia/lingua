@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:archive/archive.dart';
+import 'package:saf/saf.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../settings/setting.dart';
 import 'setting.dart';
@@ -460,10 +462,10 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   ref,
   id,
 ) async {
-  final m = gbox.get('item:$id');
+  final m = gbox.get('item2:$id');
   if (m == null) throw Exception('item:$id not exist');
 
-  final item = Item.fromJson((m as Map).cast<String, dynamic>());
+  final item = m as Item;
   final book = await item.open();
   if (book != null) {
     item.apply(book);
@@ -527,16 +529,13 @@ class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
   @override
   ItemState build(int id) {
     final m = gbox.get('item-state:$id');
-    if (m == null) {
-      return ItemState(id: id);
-    }
-    return ItemState.fromJson(m.cast<String, dynamic>());
+    return m == null ? ItemState(id: id) : m as ItemState;
   }
 
   void updateRead({int? chapterIndex, int? lineIndex}) async {
     final nr = state.read.copyWith(ci: chapterIndex, li: lineIndex);
     state = state.copyWith(read: nr);
-    gbox.put('item-state:${state.id}', state.toJson());
+    gbox.put('item-state:${state.id}', state);
   }
 }
 
@@ -573,16 +572,22 @@ extension ItemExt on Item {
       book = sample();
     } else if (type == ItemType.file) {
       String fp = path;
-      if (!path.startsWith('/')) {
+      if (path.startsWith('content://')) {
+        await requestStoragePermission();
+
+        book = const epub.EpubParser().parseBytes(
+          await Saf().readFileBytes(fp),
+        );
+      } else {
         final appDir = await getApplicationDocumentsDirectory();
         fp = p.join(appDir.path, 'books', path);
-      }
 
-      final file = File(fp);
-      if (!file.existsSync()) {
-        throw Exception('book:$type/$path not exist');
+        final file = File(fp);
+        if (!file.existsSync()) {
+          throw Exception('book:$type/$path not exist');
+        }
+        book = const epub.EpubParser().parseBytes(await file.readAsBytes());
       }
-      book = const epub.EpubParser().parseBytes(await file.readAsBytes());
     } else if (type == ItemType.assets) {
       final d = await rootBundle.load(path);
       book = epub.EpubParser().parseBytes(d.buffer.asInt8List());
@@ -592,9 +597,9 @@ extension ItemExt on Item {
   }
 
   Future<void> remove() async {
-    if (type == ItemType.file) {
-      final appDir = await getApplicationDocumentsDirectory();
-      final fp = p.join(appDir.path, 'books', path);
+    if (type == ItemType.file && !path.startsWith('content://')) {
+      final docs = await getApplicationDocumentsDirectory();
+      final fp = p.join(docs.path, 'books', path);
       await File(fp).delete();
     }
 
@@ -603,4 +608,21 @@ extension ItemExt on Item {
     gbox.delete('icon:$id');
     gbox.delete('note:$id');
   }
+}
+
+Future<bool> requestStoragePermission() async {
+  // For Android 13+ (API 33+), specific granular media permissions are used,
+  // but for general folder access/documents use storage status:
+  var status = await Permission.storage.request();
+
+  if (status.isGranted) {
+    print('Storage permission granted.');
+    return true;
+  } else if (status.isPermanentlyDenied) {
+    // Open app settings if the user permanently denied
+    openAppSettings();
+  }
+
+  print('Storage permission denied.');
+  return false;
 }

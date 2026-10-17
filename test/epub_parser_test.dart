@@ -6,6 +6,7 @@ import 'package:html/parser.dart' as dom;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lingua/epub/epub.dart';
+import 'package:lingua/epub/lang.dart';
 import 'package:lingua/epub/parser.dart';
 import 'package:lingua/epub/writer.dart';
 import 'package:lingua/hw.dart';
@@ -60,8 +61,8 @@ void main() {
           href: '',
           title: 'One',
           chunks: [
-            Chunk('Hello world.', lang: 'en'),
-            Chunk('你好世界。', lang: 'zh'),
+            Chunk('Hello world.', lang: Lang.en),
+            Chunk('你好世界。', lang: Lang.zh),
           ],
         ),
       ],

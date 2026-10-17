@@ -113,7 +113,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     );
     final chi = ref.read(isp(widget.id)).read.ci;
     final lines = book.chapters[chi].chunks
-        .where((c) => lang == '' || c.lang == lang)
+        .where((c) => lang == '' || c.lang == Lang.from(lang))
         .toList();
 
     if (!dt.inited) {

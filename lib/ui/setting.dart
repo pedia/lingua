@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:go_router/go_router.dart';
 import '../settings/setting.dart';
-import 'shelf.dart';
+import 'open.dart';
 
 class SettingFrame extends ConsumerStatefulWidget {
   const SettingFrame({super.key});
@@ -167,16 +167,23 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
     SettingItem(
       type: SettingType.builder,
       title: 'Scan app documents folder',
-      tailBuilder: (context, ref, child) {
-        return GestureDetector(
-          onTap: () async {
-            final c = await scan(ref);
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('$c book added')));
-          },
-          child: Text('Start'),
-        );
+      tailBuilder: (context, ref, child) => Icon(Icons.folder_special),
+      onTap: (context, ref) async {
+        final c = await scan();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$c book added')));
+      },
+    ),
+    SettingItem(
+      type: SettingType.builder,
+      title: 'Scan custom folder',
+      tailBuilder: (context, ref, child) => Icon(Icons.folder_open),
+      onTap: (context, ref) async {
+        final c = await pickDir();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$c book added')));
       },
     ),
 
@@ -218,11 +225,9 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
   Widget build(BuildContext context) {
     final m = ref.watch(settingProvider);
     debugPrint('all setting: $m');
-    return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Settings')),
-      child: Material(
-        child: ListView(children: [...items.map((e) => Tile(e))]),
-      ),
+    return Scaffold(
+      appBar: AppBar(title: Text('Settings')),
+      body: ListView(children: [...items.map((e) => Tile(e))]),
     );
   }
 }
@@ -246,6 +251,7 @@ class Tile extends ConsumerWidget {
             : ListTile(
                 title: Text(item.title),
                 trailing: item.tailBuilder!(context, ref, null),
+                onTap: () => item.onTap?.call(context, ref),
               ),
       SettingType.bool => SwitchListTile(
         title: Text(item.title),

@@ -32,8 +32,7 @@ class Item {
     if (percent > 0) '${(percent * 100).toInt()}%',
   ].join(' ');
 
-  factory Item.fromBox(int id) =>
-      Item.fromJson(gbox.get('item:$id').cast<String, dynamic>());
+  factory Item.fromBox(int id) => gbox.get('item2:$id') as Item;
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
     id: json['id'],
@@ -189,70 +188,59 @@ final itemsProvider = NotifierProvider<ItemListNotifier, List<Item>>(
 );
 
 class Shelf {
-  Shelf({required this.id, required this.name, required this.items});
+  Shelf({required this.id, required this.name, required this.iids});
   final int id;
   final String name;
-  final List<Item> items;
+  final List<int> iids;
+  List<Item> get items =>
+      iids.map((i) => gbox.get('item2:$i') as Item).toList();
 
-  static List<Item> loadItems(List<int> iids) {
-    final items = <Item>[];
-    for (int iid in iids) {
-      final m = gbox.get('item:$iid');
-      if (m != null) {
-        items.add(Item.fromJson((m as Map).cast<String, dynamic>()));
-      }
-    }
-    return items;
-  }
+  static List<Item> loadItems(List<int> iids) =>
+      iids.map((i) => gbox.get('item2:$i') as Item).toList();
+
+  Item item(int i) => gbox.get('item2:${iids[i]}');
 
   factory Shelf.fromJson(Map<String, dynamic> json) => Shelf(
     id: json['id'] as int,
     name: json['name'] as String,
-    items: loadItems(json['items'] as List<int>),
+    iids: json['iids'] as List<int>,
   );
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'items': items.map((e) => e.id).toList(),
-  };
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'items': iids};
 
-  Shelf copyWith({List<Item>? items, int? id, String? name}) => Shelf(
+  Shelf copyWith({List<int>? iids, int? id, String? name}) => Shelf(
     id: id ?? this.id,
     name: name ?? this.name,
-    items: items ?? this.items,
+    iids: iids ?? this.iids,
   );
 
   List<Item> search(String q) {
     final rs = <Item>[];
-    for (final i in items) {
-      if (i.match(q)) rs.add(i);
+    for (final id in iids) {
+      final item = gbox.get('item2:$id');
+      if (item != null && item.match(q)) rs.add(item);
+    }
+    return rs;
+  }
+
+  List<Item> findByPath(String path) {
+    final rs = <Item>[];
+    for (final i in iids) {
+      final item = gbox.get('item2:$i');
+      if (item.path == path) rs.add(item);
     }
     return rs;
   }
 
   Shelf touch(int itemId) {
-    int i = items.indexWhere((item) => item.id == itemId);
-    if (i != -1 && i != 0) {
-      final old = items.removeAt(i);
-      items.insert(0, old);
-    }
-    return this;
-  }
-
-  Shelf reload(int itemId) {
-    int i = items.indexWhere((item) => item.id == itemId);
-    if (i != -1) {
-      items[i] = Item.fromBox(itemId);
+    if (iids.remove(itemId)) {
+      iids.insert(0, itemId);
     }
     return this;
   }
 
   Shelf remove(int itemId) {
-    int i = items.indexWhere((item) => item.id == itemId);
-    if (i != -1) {
-      items.removeAt(i);
-    }
+    iids.remove(itemId);
     return this;
   }
 }
@@ -272,8 +260,8 @@ class Shop {
 
   int find(String path) {
     for (int i = 0; i < shelves.length; ++i) {
-      int j = shelves[i].items.indexWhere((i) => i.path == path);
-      if (j != -1) {
+      final found = shelves[i].findByPath(path);
+      if (found.isNotEmpty) {
         return i;
       }
     }
@@ -293,7 +281,7 @@ class Shop {
 class ShopNotifier extends Notifier<Shop> {
   @override
   Shop build() {
-    final m = gbox.get('shop');
+    final m = gbox.get('2shop');
     if (m == null) {
       return init();
     }
@@ -316,7 +304,7 @@ class ShopNotifier extends Notifier<Shop> {
   int add(String name) {
     state = Shop(
       shelves: [
-        Shelf(id: nextId(), name: name, items: []),
+        Shelf(id: nextId(), name: name, iids: []),
         ...state.shelves,
       ],
       current: state.current,
@@ -326,9 +314,13 @@ class ShopNotifier extends Notifier<Shop> {
   }
 
   void addItemTo(int shelfidx, Item target) {
+    if (state.find(target.path) != -1) {
+      return;
+    }
+
     saveItem(target);
     final ns = state.shelves[shelfidx];
-    ns.items.insert(0, target);
+    ns.iids.insert(0, target.id);
 
     state = Shop(
       shelves: [
@@ -343,8 +335,8 @@ class ShopNotifier extends Notifier<Shop> {
   void moveItemTo(int itemId, int shelfidx) {
     final ns = state.shelves[shelfidx];
     // avoid duplicated
-    if (-1 == ns.items.indexWhere((i) => i.id == itemId)) {
-      ns.items.insert(0, Item.fromBox(itemId));
+    if (!ns.iids.contains(itemId)) {
+      ns.iids.insert(0, itemId);
     }
 
     state = Shop(
@@ -369,17 +361,6 @@ class ShopNotifier extends Notifier<Shop> {
     save(state);
   }
 
-  void reload(int itemId) {
-    state = Shop(
-      shelves: [
-        for (int i = 0; i < state.shelves.length; i++)
-          state.shelves[i].reload(itemId),
-      ],
-      current: state.current,
-    );
-    save(state);
-  }
-
   void remove(int itemId) {
     state = Shop(
       shelves: [
@@ -392,19 +373,25 @@ class ShopNotifier extends Notifier<Shop> {
   }
 
   void save(Shop shop) {
-    gbox.put('shop', shop);
+    gbox.put('2shop', shop);
   }
 
   void saveItem(Item target) {
-    gbox.put('item:${target.id}', target.toJson());
+    gbox.put('item2:${target.id}', target);
   }
 
   Shop init() {
     for (final bi in builtin) {
-      gbox.put('item:${bi.id}', bi.toJson());
+      gbox.put('item2:${bi.id}', bi);
     }
     return Shop(
-      shelves: [Shelf(id: nextId(), name: 'all', items: builtin)],
+      shelves: [
+        Shelf(
+          id: nextId(),
+          name: 'all',
+          iids: builtin.map((item) => item.id).toList(),
+        ),
+      ],
     );
   }
 

@@ -43,8 +43,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      gbox.put('item:${_item.id}', _item.toJson());
-      ref.read(shopProvider.notifier).reload(_item.id);
+      ref.read(shopProvider.notifier).saveItem(_item);
 
       if (_selectedShelf != 0) {
         ref.read(shopProvider.notifier).moveItemTo(_item.id, _selectedShelf);

@@ -142,7 +142,7 @@ class NoteList extends ConsumerWidget {
 void newNote(int id, Note note) {
   final ns = Note.fromBox(id);
   ns.insert(0, note);
-  gbox.put('note:$id', ns.map((n) => n.toJson()).toList());
+  gbox.put('note:$id', ns);
 }
 
 class NoteScreen extends ConsumerWidget {

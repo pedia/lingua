@@ -171,6 +171,7 @@ class SettingItem {
     this.range = const Range(0, 1.0),
     this.builder,
     this.tailBuilder,
+    this.onTap,
     this.children = const [],
   });
   final String? key;
@@ -183,6 +184,7 @@ class SettingItem {
   final Range range;
   final ConsumerBuilder? builder;
   final ConsumerBuilder? tailBuilder;
+  final Function(BuildContext context, WidgetRef ref)? onTap;
   final List<SettingItem> children;
 }
 

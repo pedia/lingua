@@ -31,7 +31,7 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
   void _addItem(String name) {
     if (name.trim().isEmpty) return;
     setState(() {
-      _items.add(Shelf(id: nextId(), name: name.trim(), items: []));
+      _items.add(Shelf(id: nextId(), name: name.trim(), iids: []));
     });
     _textController.clear();
   }
@@ -152,12 +152,15 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true, // Allows the screen to pop normally
+      canPop: false, // Prevent the default back navigation behavior
       onPopInvokedWithResult: (didPop, result) {
-        // didPop is true if the pop navigation actually occurred
         if (didPop) {
-          update();
+          return; // If it already popped successfully, do nothing
         }
+
+        // 2. Perform custom logic and return your result data
+        ref.read(shopProvider.notifier).update(shelves: _items);
+        Navigator.of(context).pop(_items.length);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -221,7 +224,7 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
                 key: ValueKey(item),
                 tileColor: index.isOdd ? oddItemColor : evenItemColor,
                 leading: CircleAvatar(child: Text('${index + 1}')),
-                title: Text('${item.name}, ${item.items.length}'),
+                title: Text('${item.name}, ${item.iids.length}'),
                 onTap: () => _showRenameDialog(index),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -256,10 +259,5 @@ class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
   void dispose() {
     _textController.dispose();
     super.dispose();
-  }
-
-  /// update provider
-  void update() {
-    ref.read(shopProvider.notifier).update(shelves: _items);
   }
 }
