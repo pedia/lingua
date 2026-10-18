@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
@@ -38,6 +39,8 @@ class OpenPump {
       final u = saf.Saf();
       String fileName = p.basename(fp);
       fileName = Uri.decodeComponent(fileName);
+      fileName = p.basename(fileName);
+      debugPrint('cp $fp -> $fileName');
       await u.copyToLocalFile(fp, p.join(booksDir.path, fileName));
       return fileName;
     } else {
@@ -66,7 +69,7 @@ bool isSharedStorage(String path) {
     return true;
   }
 
-  // file in app documents/books/*.epub
+  /// [scan] app documents/books/*.epub
   if (!path.contains('/')) {
     return true;
   }
@@ -85,22 +88,30 @@ Future<int> scan({String? folder}) async {
   }
   debugPrint('scan $folder');
 
-  int c = 0;
-  await for (final e in dir.list()) {
-    debugPrint('scan loop $e');
+  final c = Completer<int>();
+  int count = 0;
+  dir
+      .list(followLinks: false)
+      .listen(
+        (e) {
+          debugPrint('scan loop $e');
 
-    if (e.path.endsWith('.epub')) {
-      final fp = folder == null
-          ? e.path.substring(dir.path.length + 1) // +1 for last /
-          : e.path; // absolute full path with start /
+          if (e.path.endsWith('.epub')) {
+            final fp = folder == null
+                ? e.path.substring(dir.path.length + 1) // +1 for last /
+                : e.path; // absolute full path with start /
 
-      debugPrint('send $fp');
-      OpenPump.send(fp);
-      c += 1;
-    }
-  }
+            debugPrint('send $fp');
+            OpenPump.send(fp);
+            count += 1;
+          }
+        },
+        onDone: () {
+          c.complete(count);
+        },
+      );
 
-  return c;
+  return c.future;
 }
 
 void pickFiles() async {
@@ -130,7 +141,7 @@ void pickFiles() async {
   }
 }
 
-Future<int> pickDir() async {
+Future<int> pickDirAndScan() async {
   if (Platform.isAndroid) {
     final u = saf.SafUtil();
     final dir = await u.pickDirectory(
@@ -138,19 +149,22 @@ Future<int> pickDir() async {
       persistablePermission: false,
     );
     if (dir != null) {
-      int c = 0;
-      for (final f in await u.list(dir.uri)) {
-        if (!f.isDir && f.name.endsWith('.epub')) {
-          OpenPump.send(f.uri);
-          c += 1;
+      final fs = await u.list(dir.uri);
+
+      Isolate.run(() {
+        for (final f in fs) {
+          if (!f.isDir && f.name.endsWith('.epub')) {
+            OpenPump.send(f.uri);
+          }
         }
-      }
-      return c;
+      });
+
+      return fs.length;
     }
   } else {
     final dir = await FilePicker.getDirectoryPath();
     if (dir != null) {
-      return await scan(folder: dir);
+      return scan(folder: dir);
     }
   }
   return 0;

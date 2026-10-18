@@ -168,22 +168,24 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
       type: SettingType.builder,
       title: 'Scan app documents folder',
       tailBuilder: (context, ref, child) => Icon(Icons.folder_special),
-      onTap: (context, ref) async {
-        final c = await scan();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$c book added')));
+      onTap: (context, ref) {
+        scan().then((c) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('$c book added')));
+        });
       },
     ),
     SettingItem(
       type: SettingType.builder,
       title: 'Scan custom folder',
       tailBuilder: (context, ref, child) => Icon(Icons.folder_open),
-      onTap: (context, ref) async {
-        final c = await pickDir();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$c book added')));
+      onTap: (context, ref) {
+        pickDirAndScan().then((c) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('$c book added')));
+        });
       },
     ),
 
@@ -197,6 +199,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
             [
               '/',
               '/note',
+              '/error',
               '/shelf-mgmt',
               '/book/4',
               '/read/4',

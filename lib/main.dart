@@ -15,10 +15,9 @@ import 'app.dart';
 import 'g.dart';
 import 'ui/lib.dart';
 import 'ui/font.dart';
+import 'err.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
+Future<void> main2() async {
   try {
     final json = await rootBundle.loadString('lib/riverpod_dependencies.json');
     RiverpodDevToolsRegistry.instance.loadFromJson(json);
@@ -69,5 +68,30 @@ Future<void> main() async {
       observers: [RiverpodDevToolsObserver()],
       child: MainApp(family: ff),
     ),
+  );
+}
+
+void main() {
+  final container = ProviderContainer();
+
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      FlutterError.onError = (FlutterErrorDetails details) {
+        FlutterError.dumpErrorToConsole(details);
+        container.read(globalErrorProvider.notifier).reportError(details);
+      };
+
+      await main2();
+    },
+    (error, stackTrace) {
+      final details = FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'Async / Zone',
+      );
+      container.read(globalErrorProvider.notifier).reportError(details);
+    },
   );
 }

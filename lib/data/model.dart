@@ -32,6 +32,9 @@ class Item {
     if (percent > 0) '${(percent * 100).toInt()}%',
   ].join(' ');
 
+  factory Item.stub(int id) =>
+      Item(id: id, type: ItemType.debug, path: '', ctime: DateTime(2026));
+
   factory Item.fromBox(int id) => gbox.get('item2:$id') as Item;
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
@@ -198,7 +201,10 @@ class Shelf {
   static List<Item> loadItems(List<int> iids) =>
       iids.map((i) => gbox.get('item2:$i') as Item).toList();
 
-  Item item(int i) => gbox.get('item2:${iids[i]}');
+  Item item(int i) {
+    final o = gbox.get('item2:${iids[i]}');
+    return o == null ? Item.stub(iids[i]) : o as Item;
+  }
 
   factory Shelf.fromJson(Map<String, dynamic> json) => Shelf(
     id: json['id'] as int,

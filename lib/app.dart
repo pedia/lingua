@@ -21,6 +21,7 @@ import 'ui/lib.dart';
 import 'ui/shelf_mgmt.dart';
 import 'ui/md.dart';
 import 'ui/edit.dart';
+import 'err.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
   CupertinoTextThemeData withFontFamily(String family) {
@@ -150,6 +151,14 @@ class MainApp extends ConsumerWidget {
             builder: (_, state) => BookEditScreen(id: state.pint('id', 4)),
           ),
           GoRoute(path: '/note', builder: (_, state) => NoteScreen()),
+          GoRoute(
+            path: '/error',
+            builder: (context, state) {
+              final errorDetails = ref.watch(globalErrorProvider);
+              if (errorDetails == null) return const ShelfFrame();
+              return ErrorScreen(errorDetails: errorDetails);
+            },
+          ),
         ],
       ),
     );
