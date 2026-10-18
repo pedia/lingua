@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../settings/setting.dart';
+import '../epub/lang.dart';
 import '../tts/dualtts.dart';
 import '../imap.dart';
 
-class EngineSettingPage extends StatefulWidget {
+class EngineSettingPage extends ConsumerStatefulWidget {
   const EngineSettingPage(this.ess, {super.key});
   final List<EngineSetting> ess;
 
@@ -14,7 +15,7 @@ class EngineSettingPage extends StatefulWidget {
     final m = ProviderScope.containerOf(context).read(settingProvider);
     return EngineSettingPage([
       EngineSetting.from(
-        'en',
+        Lang.en,
         m.of('tts.en') ??
             {
               'rate': 0.44,
@@ -24,7 +25,7 @@ class EngineSettingPage extends StatefulWidget {
             },
       ),
       EngineSetting.from(
-        'zh',
+        Lang.zh,
         m.of('tts.zh') ??
             {
               'rate': 0.62,
@@ -37,10 +38,10 @@ class EngineSettingPage extends StatefulWidget {
   }
 
   @override
-  State<EngineSettingPage> createState() => _EngineSettingPageState();
+  ConsumerState<EngineSettingPage> createState() => _EngineSettingPageState();
 }
 
-class _EngineSettingPageState extends State<EngineSettingPage> {
+class _EngineSettingPageState extends ConsumerState<EngineSettingPage> {
   final tts = FlutterTts();
 
   /// engine support voices, item like: {"name": "Karen", "locale": "en-AU"}
@@ -111,7 +112,7 @@ class _EngineSettingPageState extends State<EngineSettingPage> {
 
   Widget chooseVoiceDropdown(BuildContext context, int i) {
     return DropdownButton<Voice>(
-      key: Key(ess[i].lang),
+      key: Key(ess[i].lang.toString()),
       value: ess[i].voice,
       underline: null,
       onChanged: (v) {
@@ -131,12 +132,9 @@ class _EngineSettingPageState extends State<EngineSettingPage> {
       onPopInvokedWithResult: (didPop, result) {
         debugPrint('pop invoked, put settings');
 
-        // CASE: read(settingProvider.notifier)
-        final m = ProviderScope.containerOf(
-          context,
-        ).read(settingProvider.notifier);
+        final m = ref.read(settingProvider.notifier);
         for (final v in ess) {
-          m.put('tts.${v.lang}', v.toSetting());
+          m.put('tts.${v.lang.name}', v.toSetting());
           debugPrint('setting put $v');
         }
       },
@@ -221,8 +219,8 @@ class _EngineSettingPageState extends State<EngineSettingPage> {
                   flex: 3,
                   child: Slider(
                     value: ess[i].rate,
-                    min: 0.0,
-                    max: 1.0,
+                    min: 0.4,
+                    max: 0.7,
                     onChanged: (val) {
                       setState(() => ess[i] = ess[i].copyWith(rate: val));
                     },

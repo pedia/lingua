@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +5,6 @@ import '../data/model.dart';
 import '../epub/epub.dart' as epub;
 import 'book.dart';
 import '../imap.dart';
-import '../g.dart';
 
 class BookEditScreen extends ConsumerStatefulWidget {
   final int id;
@@ -22,6 +20,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
 
   late Item _item;
   late int _selectedShelf;
+  late int _origin;
   epub.Book? _book;
 
   @override
@@ -29,7 +28,8 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     super.initState();
 
     _item = Item.fromBox(widget.id);
-    _selectedShelf = ref.read(shopProvider).find(_item.path);
+    _origin = ref.read(shopProvider).find(_item.path);
+    _selectedShelf = _origin;
 
     _item.open().then((book) {
       setState(() {
@@ -45,7 +45,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
 
       ref.read(shopProvider.notifier).saveItem(_item);
 
-      if (_selectedShelf != 0) {
+      if (_selectedShelf != _origin) {
         ref.read(shopProvider.notifier).moveItemTo(_item.id, _selectedShelf);
       }
 

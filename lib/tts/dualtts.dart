@@ -8,6 +8,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 import 'dart:math';
 import '../epub/epub.dart';
+import '../epub/lang.dart';
 
 extension StringMidExtension on String {
   String mid(String startDelimiter, [String? endDelimiter]) {
@@ -39,9 +40,9 @@ class Voice extends UnmodifiableMapView<String, String> {
       this['gender'] != 'unspecified' && !this['name']!.contains('network');
 
   /// is match en, zh, es, jp, kr?
-  bool match(String lang) {
+  bool match(Lang lang) {
     // 'en-US' => en
-    return this['locale']?.mid('', '-') == lang;
+    return this['locale']?.mid('', '-') == lang.name;
   }
 
   // Karen(Premium),F,TW
@@ -92,7 +93,7 @@ class EngineSetting {
   });
 
   /// hardcode: en, zh, es, jp, kr
-  final String lang;
+  final Lang lang;
   final String language; // in engine en-US
   final double rate;
   final double pitch;
@@ -100,7 +101,7 @@ class EngineSetting {
   final Voice? voice;
 
   EngineSetting copyWith({
-    String? lang,
+    Lang? lang,
     String? language,
     double? rate,
     double? pitch,
@@ -117,7 +118,7 @@ class EngineSetting {
     );
   }
 
-  static EngineSetting from(String lang, Map m) {
+  static EngineSetting from(Lang lang, Map m) {
     return EngineSetting(
       lang: lang,
       language: m['language'] ?? '',
@@ -131,7 +132,7 @@ class EngineSetting {
   }
 
   Map<String, Object> toSetting() => {
-    'lang': lang,
+    'lang': lang.name,
     'language': language,
     'rate': rate,
     'pitch': pitch,
@@ -140,7 +141,7 @@ class EngineSetting {
   };
 
   String get title =>
-      <String, String>{'en': 'English', 'zh': 'Chinese'}[lang] ?? '';
+      <Lang, String>{Lang.en: 'English', Lang.zh: 'Chinese'}[lang] ?? '';
 
   @override
   String toString() =>
@@ -164,7 +165,7 @@ class DualTts {
   DualTts();
 
   final tts = FlutterTts();
-  final Map<String, EngineSetting> ss = {};
+  final Map<Lang, EngineSetting> ss = {};
   List<Chunk> chunks = const [];
   int index = 0;
   Playback state = Playback.stop;
@@ -228,7 +229,7 @@ class DualTts {
       state = Playback.startLine;
       notify();
       final line = chunks[index];
-      final v = ss[line.lang == '' ? 'zh' : line.lang];
+      final v = ss[line.lang];
       if (v != null) {
         await tts.setSpeechRate(v.rate);
         // debugPrint('rate: ${v.rate}');

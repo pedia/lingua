@@ -17,6 +17,7 @@ import '../hw.dart';
 import '../g.dart';
 import 'chapter_list.dart';
 import '../data/model.dart';
+import '../epub/lang.dart';
 import '../epub/epub.dart' as epub;
 import '../epub/parser.dart' as epub;
 import '../tts/dualtts.dart';
@@ -159,8 +160,8 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     // print(m.has('tts.en'));
 
     final vs = [
-      if (m.has('tts.en')) EngineSetting.from('en', m.objectOf('tts.en')),
-      if (m.has('tts.zh')) EngineSetting.from('zh', m.objectOf('tts.zh')),
+      if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
+      if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
     ];
     return dt.apply(vs).then((x) => debugPrint('dualtts inited ${vs.length}'));
   }

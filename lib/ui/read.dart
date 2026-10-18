@@ -7,7 +7,6 @@ import '../epub/epub.dart' as epub;
 import 'book.dart';
 import 'gadget.dart';
 import '../hw.dart';
-import '../g.dart';
 import 'chapter_list.dart';
 import '../tts/dualtts.dart';
 import '../settings/setting.dart';
@@ -97,12 +96,11 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   Future applyVoice(BuildContext context) {
     final m = ProviderScope.containerOf(context).read(settingProvider);
 
-    // debugPrint('in apply got setting: $m');
-    // print(m.has('tts.en'));
+    debugPrint('in apply got setting: $m');
 
     final vs = [
-      if (m.has('tts.en')) EngineSetting.from('en', m.objectOf('tts.en')),
-      if (m.has('tts.zh')) EngineSetting.from('zh', m.objectOf('tts.zh')),
+      if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
+      if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
     ];
     return dt.apply(vs).then((x) => debugPrint('dualtts inited ${vs.length}'));
   }
@@ -112,15 +110,19 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       settingProvider.select((m) => m.stringOf('tts.mode')),
     );
     final chi = ref.read(isp(widget.id)).read.ci;
+    final start = ref.read(linep) ?? 0;
     final lines = book.chapters[chi].chunks
         .where((c) => lang == '' || c.lang == Lang.from(lang))
+        .skip(start)
         .toList();
+    print('lines for $lang len:${lines.length} skip:$start');
+    print(book.chapters[chi].chunks.sublist(0, 2));
 
     if (!dt.inited) {
       await applyVoice(context);
     }
-    final start = ref.read(linep) ?? 0;
-    dt.load(lines.sublist(start));
+
+    dt.load(lines);
     dt.play();
   }
 

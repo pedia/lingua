@@ -8,8 +8,8 @@ Lang detectLang(String sample) {
   if (sample.isEmpty) {
     return Lang.en;
   }
-  // print('$cjk/${sample.length}=${cjk / sample.length > 0.5} $sample');
-  if (cjk / sample.length > 0.5) {
+  // print('$cjk/${sample.length}=${(cjk / sample.length) > 0.5} $sample');
+  if ((cjk / sample.length) > 0.5) {
     return Lang.zh;
   }
   return Lang.en;

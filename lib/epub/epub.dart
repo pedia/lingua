@@ -157,30 +157,34 @@ class ChapterStub implements Chapter {
       if (text.isEmpty) continue;
 
       final lang = _effectiveLang(p);
+      print('add $lang ${Chunk(text, lang: lang)}');
       chunks.add(Chunk(text, lang: lang));
     }
 
     return chunks;
   }
 
-  /// Returns the effective language for [element] by walking up the
-  /// ancestor chain. Looks for both the HTML `lang` attribute and the
-  /// XHTML `xml:lang` attribute. Returns an empty string when none is found.
-  Lang _effectiveLang(dom.Element element) {
-    dom.Element? current = element;
-    while (current != null) {
-      // Prefer the explicit HTML lang attribute.
-      final lang = current.attributes['lang']?.trim();
-      if (lang != null) return Lang.from(lang);
+  Lang _effectiveLang(dom.Element e) {
+    final lang = _elementLang(e);
+    if (lang != Lang.unknown) return lang;
+    return detectLang(e.text);
+  }
 
-      // Fall back to the XML namespace form commonly used in EPUB/XHTML.
-      final xmlLang = current.attributes['xml:lang']?.trim();
-      if (xmlLang != null) return Lang.from(xmlLang);
+  Lang _elementLang(dom.Element e) {
+    // Prefer the explicit HTML lang attribute.
+    final lang = e.attributes['lang']?.trim();
+    if (lang != null) return Lang.from(lang);
 
-      current = current.parent;
-    }
+    // Fall back to the XML namespace form commonly used in EPUB/XHTML.
+    final xmlLang = e.attributes['xml:lang']?.trim();
+    if (xmlLang != null) return Lang.from(xmlLang);
 
-    return detectLang(element.text);
+    // only trust tag p's lang
+    // dom.Element? p = e;
+    // while (p != null && p.localName != 'p') {
+    //   p = p.parent;
+    // }
+    return Lang.unknown;
   }
 }
 
