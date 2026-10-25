@@ -241,7 +241,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
         IconButton(icon: const Icon(Icons.stop), onPressed: dt.stop),
       if (pb != Playback.stop)
         IconButton(
-          icon: const Icon(Icons.forward_10),
+          icon: const Icon(Icons.forward),
           onPressed: () => dt.skip(10),
         ),
     ];

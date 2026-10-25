@@ -463,7 +463,7 @@ final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
   ref,
   id,
 ) async {
-  final m = gbox.get('item2:$id');
+  final m = box.get('item2:$id');
   if (m == null) throw Exception('item:$id not exist');
 
   final item = m as Item;
@@ -529,14 +529,14 @@ class ItemState {
 class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
   @override
   ItemState build(int id) {
-    final m = gbox.get('item-state:$id');
+    final m = box.get('item-state:$id');
     return m == null ? ItemState(id: id) : m as ItemState;
   }
 
   void updateRead({int? chapterIndex, int? lineIndex}) async {
     final nr = state.read.copyWith(ci: chapterIndex, li: lineIndex);
     state = state.copyWith(read: nr);
-    gbox.put('item-state:${state.id}', state);
+    box.put('item-state:${state.id}', state);
   }
 }
 
@@ -548,8 +548,8 @@ final isp = NotifierProvider.family<ItemStateNotifier, ItemState, int>(
 
 extension ItemExt on Item {
   Item apply(epub.Book book) {
-    if (gbox.get('icon:$id') == null && book.coverBytes != null) {
-      gbox.put('icon:$id', iconify(book.coverBytes!));
+    if (box.get('icon:$id') == null && book.coverBytes != null) {
+      box.put('icon:$id', iconify(book.coverBytes!));
     }
 
     if ((book.author.isNotEmpty && author == null) ||
@@ -604,10 +604,10 @@ extension ItemExt on Item {
       await File(fp).delete();
     }
 
-    gbox.delete('item:$id');
-    gbox.delete('item-state:$id');
-    gbox.delete('icon:$id');
-    gbox.delete('note:$id');
+    box.delete('item:$id');
+    box.delete('item-state:$id');
+    box.delete('icon:$id');
+    box.delete('note:$id');
   }
 }
 

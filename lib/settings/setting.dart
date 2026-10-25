@@ -107,13 +107,13 @@ class Setting extends Notifier<TypedMap> {
   }
 
   void save(String key) {
-    gbox
+    box
         .put('settings', state.map)
         .then((_) => debugPrint('saved by $key ${state.map}'));
   }
 
   TypedMap load() {
-    final m = gbox.get('settings');
+    final m = box.get('settings');
 
     debugPrint('setting load: $m');
 

@@ -86,7 +86,7 @@ class ErrorScreen extends ConsumerWidget {
                       // Reset Riverpod error state to restore normal UI
                       ref.read(globalErrorProvider.notifier).clearError();
                     },
-                    child: const Text('Dismiss & Restart'),
+                    child: const Text('Dismiss'),
                   ),
                 ),
               ],

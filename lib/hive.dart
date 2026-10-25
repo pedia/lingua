@@ -70,12 +70,12 @@ class _HiveFrameState extends State<HiveFrame> {
                     title: 'Input delete key prefix',
                   );
                   if (prefix != null) {
-                    final ks = gbox.keys
+                    final ks = box.keys
                         .whereType<String>()
                         .where((k) => k.startsWith(prefix))
                         .toList();
                     if (ks.isNotEmpty && mounted) {
-                      await gbox.deleteAll(ks);
+                      await box.deleteAll(ks);
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('${ks.length} deleted')),
@@ -94,8 +94,8 @@ class _HiveFrameState extends State<HiveFrame> {
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (BuildContext context, int i) {
-                final k = gbox.keys.skip(i).first;
-                final v = gbox.getAt(i);
+                final k = box.keys.skip(i).first;
+                final v = box.getAt(i);
                 return CupertinoListTile(
                   title: Text(k),
                   subtitle: Text('${v.runtimeType}'),
@@ -116,7 +116,7 @@ class _HiveFrameState extends State<HiveFrame> {
                   },
                 );
               },
-              childCount: gbox.length, // Number of items in your list
+              childCount: box.length, // Number of items in your list
             ),
           ),
         ],
@@ -148,7 +148,7 @@ class ValueDetail extends StatelessWidget {
               CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: () {
-                  gbox.deleteAt(i);
+                  box.deleteAt(i);
                   Navigator.of(context).pop(true);
                 }, // Add your action here
                 child: Icon(CupertinoIcons.delete, size: 28),

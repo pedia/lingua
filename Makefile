@@ -8,9 +8,9 @@ build/app/outputs/flutter-apk/app-release.apk: lib/*.dart lib/ui/*.dart
 # Otherwise, it falls back to treating it as a standard make target.
 %:
 	@if [ "$@" -eq "$@" ] 2>/dev/null; then \
-		echo connect to 192.168.31.105:$@; \
-		adb connect 192.168.31.105:"$@"; \
-		adb -s 192.168.31.105:"$@" install build/app/outputs/flutter-apk/app-release.apk; \
+		echo connect to 192.168.1.190:$@; \
+		adb connect 192.168.1.190:"$@"; \
+		adb -s 192.168.1.190:"$@" install build/app/outputs/flutter-apk/app-release.apk; \
 	else \
 		$(MAKE) -f $(MAKEFILE_LIST) build-$@; \
 	fi

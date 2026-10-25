@@ -3,6 +3,23 @@
 Bilingual, epub reader and translator
 
 
+ssh -D 8080 -N -f root@s46.ali
+
+curl --socks5-hostname 127.0.0.1:8080 https://ifconfig.me
+
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    --user-data-dir="$HOME/proxy-profile" \
+    --proxy-server="socks5://127.0.0.1:8080"
+
+bash <(curl -fsSL https://raw.githubusercontent.com/makessr/sing-box-installer/main/reality.sh)
+
+
+sudo ufw allow 33990/tcp
+sudo ufw allow 33991/udp
+sudo ufw allow 33992/udp
+
+  /usr/local/opt/sing-box/bin/sing-box run --config /usr/local/etc/sing-box/config.json --directory /usr/local/var/lib/sing-box
+
 # UI
 
 ## Home

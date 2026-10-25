@@ -107,7 +107,7 @@ class Note {
       Note(ci: m['ci'], note: m['note']);
 
   static List<Note> fromBox(int id) {
-    final m = gbox.get('note:$id');
+    final m = box.get('note:$id');
     if (m != null && m is List) {
       return m
           .map((i) => Note.fromJson((i as Map).cast<String, dynamic>()))
@@ -142,13 +142,13 @@ class NoteList extends ConsumerWidget {
 void newNote(int id, Note note) {
   final ns = Note.fromBox(id);
   ns.insert(0, note);
-  gbox.put('note:$id', ns);
+  box.put('note:$id', ns);
 }
 
 class NoteScreen extends ConsumerWidget {
   const NoteScreen({super.key});
 
-  Iterable<int> get ids => gbox.keys
+  Iterable<int> get ids => box.keys
       .cast<String>()
       .where((k) => k.startsWith('note:'))
       .map((k) => k.substring(5))

@@ -4,6 +4,10 @@ final recjk = RegExp(
 
 // TODO: c, j, k
 Lang detectLang(String sample) {
+  /// \p{P} 是 Unicode 标点符号属性（Punctuation），它不仅能精准匹配英文标点
+  /// （如 ,, !, ., :, -, [] 等），还能完美匹配各种中文全角/半角标点
+  /// （如 ，, ！, ：, ——, 《》, （） 等）。
+  sample = sample.replaceAll(RegExp(r'[\p{P}]', unicode: true), '');
   final cjk = recjk.allMatches(sample).length;
   if (sample.isEmpty) {
     return Lang.en;

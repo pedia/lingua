@@ -136,7 +136,6 @@ class MainApp extends ConsumerWidget {
             path: '/shelf-mgmt',
             builder: (_, _) => ShelfManagementScreen(),
           ),
-          GoRoute(path: '/error', builder: (_, _) => ErrScreen("Hello")),
           GoRoute(path: '/font', builder: (_, _) => FontFrame()),
           GoRoute(
             path: '/master-detail',
@@ -155,7 +154,7 @@ class MainApp extends ConsumerWidget {
             path: '/error',
             builder: (context, state) {
               final errorDetails = ref.watch(globalErrorProvider);
-              if (errorDetails == null) return const ShelfFrame();
+              if (errorDetails == null) return ErrScreen('none captured');
               return ErrorScreen(errorDetails: errorDetails);
             },
           ),

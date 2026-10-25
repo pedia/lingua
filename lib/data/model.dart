@@ -15,6 +15,7 @@ class Item {
     this.name,
     this.author,
     this.description,
+    this.review,
     this.percent = 0,
   });
 
@@ -25,17 +26,19 @@ class Item {
   final String? name;
   final String? author;
   final String? description;
+  final String? review;
   final double percent;
 
   String get subtitle => [
     if (author != null) author,
     if (percent > 0) '${(percent * 100).toInt()}%',
+    if (review != null) review,
   ].join(' ');
 
   factory Item.stub(int id) =>
       Item(id: id, type: ItemType.debug, path: '', ctime: DateTime(2026));
 
-  factory Item.fromBox(int id) => gbox.get('item2:$id') as Item;
+  factory Item.fromBox(int id) => box.get('item2:$id') as Item;
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
     id: json['id'],
@@ -56,6 +59,7 @@ class Item {
     name: json['name'] as String?,
     author: json['author'] as String?,
     description: json['description'] as String?,
+    review: json['review'] as String?,
     percent: (json['percent'] as num?)?.toDouble() ?? 0,
   );
 
@@ -67,6 +71,7 @@ class Item {
     'name': name,
     'author': author,
     'description': description,
+    'review': review,
     'percent': percent,
   };
 
@@ -78,6 +83,7 @@ class Item {
     String? name,
     String? author,
     String? description,
+    String? review,
     double? percent,
   }) => Item(
     id: id ?? this.id,
@@ -87,6 +93,7 @@ class Item {
     name: name ?? this.name,
     author: author ?? this.author,
     description: description ?? this.description,
+    review: review ?? this.review,
     percent: percent ?? this.percent,
   );
 
@@ -122,6 +129,11 @@ class Item {
 
     if (description != null) {
       if (description!.toLowerCase().contains(q)) {
+        return true;
+      }
+    }
+    if (review != null) {
+      if (review!.toLowerCase().contains(q)) {
         return true;
       }
     }
@@ -165,7 +177,7 @@ class ItemListNotifier extends Notifier<List<Item>> {
   }
 
   Future load() async {
-    final jl = gbox.get('items2');
+    final jl = box.get('items2');
     state = (jl is List && jl.isNotEmpty)
         ? [
             for (final i in jl)
@@ -180,7 +192,7 @@ class ItemListNotifier extends Notifier<List<Item>> {
 
   void save() {
     final js = state.map((i) => i.toJson()).toList();
-    gbox.put('items2', js);
+    box.put('items2', js);
     // print('saved ${js[0]}');
   }
 }
@@ -196,13 +208,13 @@ class Shelf {
   final String name;
   final List<int> iids;
   List<Item> get items =>
-      iids.map((i) => gbox.get('item2:$i') as Item).toList();
+      iids.map((i) => box.get('item2:$i') as Item).toList();
 
   static List<Item> loadItems(List<int> iids) =>
-      iids.map((i) => gbox.get('item2:$i') as Item).toList();
+      iids.map((i) => box.get('item2:$i') as Item).toList();
 
   Item item(int i) {
-    final o = gbox.get('item2:${iids[i]}');
+    final o = box.get('item2:${iids[i]}');
     return o == null ? Item.stub(iids[i]) : o as Item;
   }
 
@@ -223,7 +235,7 @@ class Shelf {
   List<Item> search(String q) {
     final rs = <Item>[];
     for (final id in iids) {
-      final item = gbox.get('item2:$id');
+      final item = box.get('item2:$id');
       if (item != null && item.match(q)) rs.add(item);
     }
     return rs;
@@ -232,7 +244,7 @@ class Shelf {
   List<Item> findByPath(String path) {
     final rs = <Item>[];
     for (final i in iids) {
-      final item = gbox.get('item2:$i');
+      final item = box.get('item2:$i');
       if (item.path == path) rs.add(item);
     }
     return rs;
@@ -287,7 +299,7 @@ class Shop {
 class ShopNotifier extends Notifier<Shop> {
   @override
   Shop build() {
-    final m = gbox.get('2shop');
+    final m = box.get('2shop');
     if (m == null) {
       return init();
     }
@@ -380,16 +392,16 @@ class ShopNotifier extends Notifier<Shop> {
   }
 
   void save(Shop shop) {
-    gbox.put('2shop', shop);
+    box.put('2shop', shop);
   }
 
   void saveItem(Item target) {
-    gbox.put('item2:${target.id}', target);
+    box.put('item2:${target.id}', target);
   }
 
   Shop init() {
     for (final bi in builtin) {
-      gbox.put('item2:${bi.id}', bi);
+      box.put('item2:${bi.id}', bi);
     }
     return Shop(
       shelves: [

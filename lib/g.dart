@@ -4,13 +4,20 @@ import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 
 /// stupid global instance
-late final Box gbox;
+late final Box box;
+late final LazyBox sbox;
 
 late int gid;
 int nextId() {
   gid++;
-  gbox.put('gid', gid);
+  box.put('gid', gid);
   return gid;
+}
+
+void openBoxes(String path) async {
+  box = await Hive.openBox('all', path: path);
+  gid = box.get('gid', defaultValue: 10);
+  sbox = await Hive.openLazyBox('slow', path: path);
 }
 
 /// Returns PNG bytes of a thumbnail with width = 64 (height maintains aspect ratio).
@@ -42,7 +49,7 @@ Future<Uint8List?> iconify2(Uint8List imageBytes, {int width = 64}) async {
 }
 
 Widget? boxImage(String key) {
-  final cb = gbox.get(key);
+  final cb = box.get(key);
   if (cb != null) {
     return SizedBox(
       height: 64, // not worked in ListTile
@@ -50,4 +57,18 @@ Widget? boxImage(String key) {
     );
   }
   return null;
+}
+
+Widget? lazyBoxImage(String key) {
+  return FutureBuilder(
+    future: sbox.get(key),
+    builder: (context, data) {
+      return SizedBox(
+        height: 64, // not worked in ListTile
+        child: data.hasData
+            ? Image.memory(data.data, width: 48, fit: BoxFit.fitWidth)
+            : null,
+      );
+    },
+  );
 }

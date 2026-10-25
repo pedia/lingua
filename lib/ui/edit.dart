@@ -209,6 +209,20 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                     _item = _item.copyWith(description: value!.trim()),
               ),
               const SizedBox(height: 16),
+              // Review Field
+              TextFormField(
+                key: UniqueKey(),
+                initialValue: _item.review,
+                decoration: const InputDecoration(
+                  labelText: 'Review',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: 5,
+                onSaved: (value) =>
+                    _item = _item.copyWith(review: value!.trim()),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 key: UniqueKey(),
                 readOnly: true,

@@ -200,10 +200,10 @@ class _LibraryFrameState extends ConsumerState<LibraryFrame> {
                 }
 
                 // book cover image thumbnail
-                if (book != null && gbox.get('icon:${e.id}') == null) {
+                if (book != null && box.get('icon:${e.id}') == null) {
                   final cb = book.coverBytes;
                   if (cb != null) {
-                    gbox.put('icon:${e.id}', iconify(cb));
+                    box.put('icon:${e.id}', iconify(cb));
                   }
                 }
 

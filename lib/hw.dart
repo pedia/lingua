@@ -345,6 +345,7 @@ class BlockWidget extends ConsumerWidget {
       // print('${b.lang} font-size: $bfs');
       return TextStyle(
         fontFamily: 'sans-serif',
+        fontFamilyFallback: ['.osdefault'],
         fontSize: switch (b.e.localName) {
           'h1' => bfs + 6,
           'h2' => bfs + 4,

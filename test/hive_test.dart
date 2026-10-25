@@ -41,7 +41,7 @@ void main() {
   });
   test('model', () async {
     gid = 0;
-    gbox = await Hive.openBox('app', path: '.');
+    box = await Hive.openBox('app', path: '.');
 
     final a = Item(
       id: 100,
@@ -50,14 +50,14 @@ void main() {
       path: 'assets/the-little-prince-dual.epub',
       type: ItemType.assets,
     );
-    gbox.put('item:100', a);
+    box.put('item:100', a);
 
     final shop = ShopNotifier().init();
-    gbox.put('shop', shop);
+    box.put('shop', shop);
 
-    final x = gbox.get('shop');
+    final x = box.get('shop');
     expect(x, isNotNull);
 
-    print(gbox.toMap());
+    print(box.toMap());
   });
 }
