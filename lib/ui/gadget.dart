@@ -33,8 +33,8 @@ class _FullScreenState extends State<FullScreen> {
   Widget build(BuildContext context) => widget.child;
 }
 
-class ErrScreen extends StatelessWidget {
-  const ErrScreen(this.text, {super.key});
+class InfoScreen extends StatelessWidget {
+  const InfoScreen(this.text, {super.key});
   final String text;
 
   @override

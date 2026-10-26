@@ -17,14 +17,14 @@ class TabletReadFrame extends ConsumerWidget {
     return AsyncValueX(ab).when(
       data: (book) {
         if (book == null) {
-          return ErrScreen('Unable to open item:$id');
+          return InfoScreen('Unable to open item:$id');
         }
         return builds(context, book);
       },
       loading: () => const Center(), // TODO: better solution
       error: (err, stackTrace) {
         debugPrint(stackTrace.toString().substring(0, 1000));
-        return ErrScreen('Unable to open it\n$err');
+        return InfoScreen('Unable to open it\n$err');
       },
     );
   }
@@ -58,13 +58,13 @@ class ReadView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen(isp(id).select((s) => s.read.ci), (p, n) {
+    ref.listen(isp(id).select((s) => s.readChapterIndex), (p, n) {
       if (n != p && roller.hasClients) {
         roller.jumpTo(0);
       }
     });
 
-    final ci = ref.watch(isp(id).select((o) => o.read.ci));
+    final ci = ref.watch(isp(id).select((o) => o.readChapterIndex));
     final ch = book.chapters[ci];
 
     return SelectableRegion(

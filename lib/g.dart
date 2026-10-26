@@ -14,7 +14,7 @@ int nextId() {
   return gid;
 }
 
-void openBoxes(String path) async {
+Future openBoxes(String path) async {
   box = await Hive.openBox('all', path: path);
   gid = box.get('gid', defaultValue: 10);
   sbox = await Hive.openLazyBox('slow', path: path);
@@ -59,16 +59,14 @@ Widget? boxImage(String key) {
   return null;
 }
 
-Widget? lazyBoxImage(String key) {
-  return FutureBuilder(
-    future: sbox.get(key),
-    builder: (context, data) {
-      return SizedBox(
-        height: 64, // not worked in ListTile
-        child: data.hasData
-            ? Image.memory(data.data, width: 48, fit: BoxFit.fitWidth)
-            : null,
-      );
-    },
-  );
-}
+Widget? lazyBoxImage(String key) => FutureBuilder(
+  future: sbox.get(key),
+  builder: (context, ad) {
+    return SizedBox(
+      height: 64, // not worked in ListTile
+      child: ad.hasData
+          ? Image.memory(ad.data, width: 48, fit: BoxFit.fitWidth)
+          : null,
+    );
+  },
+);

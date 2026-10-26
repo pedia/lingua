@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lingua/demo/demo.dart';
+import 'package:lingua/demo/offset.dart';
 import 'package:lingua/hive.dart';
 import 'package:lingua/demo/provider.dart';
 import 'package:lingua/demo/sliver.dart';
@@ -150,11 +151,12 @@ class MainApp extends ConsumerWidget {
             builder: (_, state) => BookEditScreen(id: state.pint('id', 4)),
           ),
           GoRoute(path: '/note', builder: (_, state) => NoteScreen()),
+          GoRoute(path: '/offset', builder: (_, state) => OffsetDemoScreen()),
           GoRoute(
             path: '/error',
             builder: (context, state) {
               final errorDetails = ref.watch(globalErrorProvider);
-              if (errorDetails == null) return ErrScreen('none captured');
+              if (errorDetails == null) return InfoScreen('none captured');
               return ErrorScreen(errorDetails: errorDetails);
             },
           ),
@@ -204,3 +206,23 @@ extension _StateEx on GoRouterState {
     return n ?? defaults;
   }
 }
+
+final demoPaths = [
+  '/',
+  '/note',
+  '/offset',
+  '/error',
+  '/shelf-mgmt',
+  '/read/4',
+  '/hive',
+  '/setting',
+  '/engine',
+  '/library',
+  '/provider',
+  '/demo',
+  '/font',
+  '/sliver',
+  '/sliver2',
+  '/search',
+  '/master-detail',
+];

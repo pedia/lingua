@@ -21,6 +21,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     with TickerProviderStateMixin {
   TabController? _tabController;
   final _searchController = TextEditingController();
+  String _searchTerm = '';
   final _searchFocus = FocusNode();
   StreamSubscription? subOpenFile;
   List<Item>? searchResult;
@@ -68,12 +69,17 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
   /// search book's title|author|description
   void _search() {
     String q = _searchController.text.trim().toLowerCase();
+    if (q == _searchTerm) {
+      return;
+    }
+
     setState(() {
       if (q.isEmpty) {
         searchResult = null;
       } else {
         searchResult = ref.read(shopProvider).search(q);
       }
+      _searchTerm = q;
     });
   }
 
@@ -127,9 +133,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
                   CupertinoButton(
                     padding: EdgeInsets.zero,
                     // minSize: 36,
-                    onPressed: () async {
-                      pickFiles();
-                    },
+                    onPressed: pickFiles,
                     child: const Icon(
                       CupertinoIcons.add_circled_solid,
                       size: 28,
@@ -222,7 +226,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
             e.subtitle,
             style: TextStyle(fontFamily: '.osdefault', fontSize: 12),
           ),
-    leading: boxImage('icon:${e.id}'),
+    leading: lazyBoxImage('icon:${e.id}'),
     // trailing: const CupertinoListTileChevron(),
     onTap: () {
       // TODO: ugly

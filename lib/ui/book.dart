@@ -77,11 +77,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     }
   }
 
-  /// CASE: save/restore scroll offset, include
-  /// - addPostFrameCallback
-  /// - ScrollController.addListener
-  /// - dispose Future
-
   late StreamSubscription sub;
   late epub.Book book;
 
@@ -177,7 +172,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
 
     ref.listen(linep, (prev, next) {
       if (next != null && next != prev) {
-        ref.read(isp(widget.id).notifier).updateRead(lineIndex: next);
+        // ref.read(isp(widget.id).notifier).updateRead(lineIndex: next);
       }
     });
 
@@ -185,7 +180,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     return AsyncValueX(ab).when(
       data: (book) {
         if (book == null) {
-          return ErrScreen('Unable to open item:${widget.id}');
+          return InfoScreen('Unable to open item:${widget.id}');
         }
         this.book = book;
         return builds(context, book);
@@ -193,7 +188,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       loading: () => const Center(), // TODO: better solution
       error: (err, stackTrace) {
         print(stackTrace.toString().substring(0, 1000));
-        return ErrScreen('Unable to open it\n$err');
+        return InfoScreen('Unable to open it\n$err');
       },
     );
   }
@@ -501,27 +496,53 @@ class ItemState {
     required this.id,
     this.read = const Progress(),
     this.speak = const Progress(),
+    this.readChapterIndex = 0,
+    this.offset = 0,
+    this.speakChapterIndex = 0,
+    this.speakLine = 0,
   });
   final int id;
   final Progress read;
   final Progress speak;
+  final int readChapterIndex;
+  final double offset;
+  final int speakChapterIndex;
+  final int speakLine;
 
-  ItemState copyWith({int? id, Progress? read, Progress? speak}) => ItemState(
+  ItemState copyWith({
+    int? id,
+    Progress? read,
+    Progress? speak,
+    int? readChapterIndex,
+    double? offset,
+    int? speakChapterIndex,
+    int? speakLine,
+  }) => ItemState(
     id: id ?? this.id,
     read: read ?? this.read,
     speak: speak ?? this.speak,
+    readChapterIndex: readChapterIndex ?? this.readChapterIndex,
+    offset: offset ?? this.offset,
+    speakChapterIndex: speakChapterIndex ?? this.speakChapterIndex,
+    speakLine: speakLine ?? this.speakLine,
   );
 
   factory ItemState.fromJson(Map<String, dynamic> json) => ItemState(
     id: json['id'],
     read: Progress.fromJson(json['read'].cast<String, dynamic>()),
     speak: Progress.fromJson(json['speak'].cast<String, dynamic>()),
+    readChapterIndex: json['readChapterIndex'] ?? 0,
+    offset: json['offset'] ?? 0.0,
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'read': read.toJson(),
     'speak': speak.toJson(),
+    'readChapterIndex': readChapterIndex,
+    'offset': offset,
+    'speakChapterIndex': speakChapterIndex,
+    'speakLine': speakLine,
   };
 }
 
@@ -529,14 +550,29 @@ class ItemState {
 class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
   @override
   ItemState build(int id) {
-    final m = box.get('item-state:$id');
-    return m == null ? ItemState(id: id) : m as ItemState;
+    final ItemState? m = box.get('is:$id');
+    return m ?? ItemState(id: id);
   }
 
   void updateRead({int? chapterIndex, int? lineIndex}) async {
     final nr = state.read.copyWith(ci: chapterIndex, li: lineIndex);
     state = state.copyWith(read: nr);
-    box.put('item-state:${state.id}', state);
+    box.put('is:${state.id}', state);
+  }
+
+  void update({
+    int? readChapterIndex,
+    double? offset,
+    int? speakChapterIndex,
+    int? speakLine,
+  }) {
+    state = state.copyWith(
+      readChapterIndex: readChapterIndex,
+      offset: offset,
+      speakChapterIndex: speakChapterIndex,
+      speakLine: speakLine,
+    );
+    box.put('is:${state.id}', state);
   }
 }
 
@@ -548,8 +584,12 @@ final isp = NotifierProvider.family<ItemStateNotifier, ItemState, int>(
 
 extension ItemExt on Item {
   Item apply(epub.Book book) {
-    if (box.get('icon:$id') == null && book.coverBytes != null) {
-      box.put('icon:$id', iconify(book.coverBytes!));
+    if (book.coverBytes != null) {
+      sbox.get('icon:$id').then((ib) {
+        if (ib == null) {
+          sbox.put('icon:$id', iconify(book.coverBytes!));
+        }
+      });
     }
 
     if ((book.author.isNotEmpty && author == null) ||
@@ -606,9 +646,13 @@ extension ItemExt on Item {
 
     box.delete('item:$id');
     box.delete('item-state:$id');
+    box.delete('is:$id');
     box.delete('icon:$id');
     box.delete('note:$id');
   }
+
+  ItemState get state => box.get('is:$id') ?? ItemState(id: id);
+  void saveState(ItemState state) => box.put('is:$id', state);
 }
 
 Future<bool> requestStoragePermission() async {

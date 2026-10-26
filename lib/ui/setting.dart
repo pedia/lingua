@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:go_router/go_router.dart';
+import '../app.dart';
 import '../settings/setting.dart';
 import 'open.dart';
 
@@ -195,39 +196,18 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
       builder: (context, ref, child) => Wrap(
         spacing: 8.0, // Horizontal gap between buttons
         runSpacing: 8.0, // Vertical gap between lines
-        children:
-            [
-              '/',
-              '/note',
-              '/error',
-              '/shelf-mgmt',
-              '/book/4',
-              '/read/4',
-              '/hive',
-              '/setting',
-              '/engine',
-              '/library',
-              '/provider',
-              '/demo',
-              '/font',
-              '/sliver',
-              '/sliver2',
-              '/search',
-              '/master-detail',
-            ].map((action) {
-              return CupertinoButton(
-                onPressed: () => context.push(action),
-                child: Text(action),
-              );
-            }).toList(),
+        children: demoPaths.map((action) {
+          return CupertinoButton(
+            onPressed: () => context.push(action),
+            child: Text(action),
+          );
+        }).toList(),
       ),
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final m = ref.watch(settingProvider);
-    debugPrint('all setting: $m');
     return Scaffold(
       appBar: AppBar(title: Text('Settings')),
       body: ListView(children: [...items.map((e) => Tile(e))]),
@@ -242,7 +222,7 @@ class Tile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint('Tile.build for ${item.key}');
+    // debugPrint('Tile.build for ${item.key}');
     dynamic v;
     if (item.key != null) {
       v = ref.watch(settingProvider.select((m) => m.of(item.key!)));

@@ -19,7 +19,7 @@ class ChapterList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final chs = book.chapters;
-    final ci = ref.watch(isp(id).select((s) => s.read.ci));
+    final ci = ref.watch(isp(id).select((s) => s.readChapterIndex));
     return ScrollablePositionedList.builder(
       itemScrollController: ItemScrollController(),
       key: PageStorageKey<String>('cl:$id'),
@@ -32,9 +32,7 @@ class ChapterList extends ConsumerWidget {
           selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
           onTap: () {
             if (!isTablet) Navigator.pop(context);
-            ref
-                .read(isp(id).notifier)
-                .updateRead(chapterIndex: i, lineIndex: 0);
+            ref.read(isp(id).notifier).update(readChapterIndex: i);
             ref.read(linep.notifier).update(0);
           },
         );
@@ -67,7 +65,7 @@ class _TheDrawerState extends ConsumerState<TheDrawer>
         DrawerHeader(
           decoration: BoxDecoration(color: Theme.of(context).primaryColor),
           child: ListTile(
-            leading: boxImage('icon:${widget.id}'),
+            leading: lazyBoxImage('icon:${widget.id}'),
             title: Text(widget.book.title),
             subtitle: Text(widget.book.author),
           ),
@@ -130,7 +128,7 @@ class NoteList extends ConsumerWidget {
         title: Text(ns[i].note),
         subtitle: Text('${i + 1}', style: TextStyle(fontSize: 10)),
         onTap: () {
-          ref.read(isp(id).notifier).updateRead(chapterIndex: i, lineIndex: 0);
+          ref.read(isp(id).notifier).update(readChapterIndex: i);
           ref.read(linep.notifier).update(0);
           context.push('/read/$id');
         },
@@ -176,8 +174,7 @@ class NoteScreen extends ConsumerWidget {
                     onTap: () {
                       ref
                           .read(isp(bids[i]).notifier)
-                          .updateRead(chapterIndex: n.ci, lineIndex: 0);
-                      ref.read(linep.notifier).update(0);
+                          .update(readChapterIndex: n.ci);
                       context.push('/read/${bids[i]}');
                     },
                   ),

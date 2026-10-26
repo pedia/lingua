@@ -490,21 +490,10 @@ class HtmlWidget extends ConsumerStatefulWidget {
 
 class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
   int? firstVisibleIdx;
-  double? offset;
 
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // if (widget.initialIndex != 0) {
-      //   final key = doc?.topks['${widget.initialIndex}'];
-      //   if (key != null && key.currentContext != null) {
-      // Scrollable.ensureVisible(key.currentContext!);
-      //   }
-      // }
-      // Scrollable.ensureVisible(key.currentContext!);
-    });
 
     widget.roller?.addListener(_onScroll);
   }
@@ -544,8 +533,6 @@ class _HtmlWidgetState extends ConsumerState<HtmlWidget> {
       firstVisibleIdx = idx;
       ref.read(linep.notifier).update(firstVisibleIdx!);
     }
-
-    offset = widget.roller?.offset;
   }
 
   @override

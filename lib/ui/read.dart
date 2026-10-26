@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../epub/epub.dart' as epub;
 import 'book.dart';
 import 'gadget.dart';
+import '../g.dart';
 import '../hw.dart';
 import 'chapter_list.dart';
 import '../tts/dualtts.dart';
@@ -22,7 +23,7 @@ class ReadFrame extends ConsumerStatefulWidget {
 }
 
 class _ReadFrameState extends ConsumerState<ReadFrame> {
-  final roller = ScrollController();
+  late final ScrollController roller;
 
   late StreamSubscription sub;
   late epub.Book book;
@@ -39,57 +40,51 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
         // });
       }
     });
+
+    final state = ref.read(isp(widget.id));
+    roller = ScrollController(
+      initialScrollOffset: state.read.offset ?? 0.0,
+      onDetach: (position) {
+        // box.put('is${widget.id}', state.copyWith(offset: roller.offset));
+        ref.read(isp(widget.id).notifier).update(offset: roller.offset);
+      },
+    );
   }
 
   @override
   void dispose() {
+    roller.dispose();
     dt.dispose();
     sub.cancel();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    // ci change, scroll to top
-    ref.listen(isp(widget.id).select((s) => s.read.ci), (p, n) {
-      if (n != p && roller.hasClients) {
-        roller.jumpTo(0);
-      }
-    });
-
-    // save current progress
-    ref.listen(linep, (prev, next) {
-      if (next != null && next != prev) {
-        ref.read(isp(widget.id).notifier).updateRead(lineIndex: next);
-      }
-    });
-
-    final ab = ref.watch(bookProvider(widget.id));
-    return AsyncValueX(ab).when(
-      data: (book) {
-        if (book == null) {
-          return ErrScreen('Unable to open item:${widget.id}');
-        }
-        this.book = book;
-        return builds(context, book);
-      },
-      loading: () => const Center(), // TODO: better solution
-      error: (err, stackTrace) {
-        print(stackTrace);
-        return ErrScreen('Unable to open it\n$err');
-      },
-    );
-  }
+  Widget build(BuildContext context) =>
+      AsyncValueX(ref.watch(bookProvider(widget.id))).when(
+        data: (book) {
+          if (book == null) {
+            return InfoScreen('Unable to open item:${widget.id}');
+          }
+          this.book = book;
+          return builds(context, book);
+        },
+        loading: () => const Center(), // TODO: better solution
+        error: (err, stackTrace) {
+          print(stackTrace);
+          return InfoScreen('Unable to open it\n$err');
+        },
+      );
 
   final dt = DualTts();
 
   List<epub.Chunk> get lines {
-    final lang = ref.read(
-      settingProvider.select((m) => m.stringOf('tts.mode')),
+    final lang = Lang.from(
+      ref.read(settingProvider.select((m) => m.stringOf('tts.mode'))),
     );
-    final chi = ref.read(isp(widget.id)).read.ci;
+    final chi = ref.read(isp(widget.id)).readChapterIndex;
     return book.chapters[chi].chunks
-        .where((line) => lang == '' || line.lang == lang)
+        .where((line) => lang == Lang.all || line.lang == lang)
         .toList();
   }
 
@@ -109,7 +104,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     final lang = ref.read(
       settingProvider.select((m) => m.stringOf('tts.mode')),
     );
-    final chi = ref.read(isp(widget.id)).read.ci;
+    final chi = ref.read(isp(widget.id)).readChapterIndex;
     final start = ref.read(linep) ?? 0;
     final lines = book.chapters[chi].chunks
         .where((c) => lang == '' || c.lang == Lang.from(lang))
@@ -131,13 +126,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Widget builds(BuildContext context, epub.Book book) {
     if (book.chapters.isEmpty) {
-      return ErrScreen('Book is empty');
+      return InfoScreen('Book is empty');
     }
-    int ci = ref.watch(isp(widget.id).select((o) => o.read.ci));
-    if (ci > book.chapters.length - 1) {
-      print('Warning: ci:$ci is wrong ${book.chapters.length}');
-      ci = 0;
-    }
+    final ci = ref.watch(isp(widget.id).select((o) => o.readChapterIndex));
     final ch = book.chapters[ci];
     return FullScreen(
       on: false,
@@ -165,7 +156,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 // Set to false so it completely hides when scrolling down
                 pinned: false,
                 elevation: 2.0,
-                systemOverlayStyle: SystemUiOverlayStyle(),
+                systemOverlayStyle: SystemUiOverlayStyle(), // not work
               ),
               HtmlWidget(
                 html: ch.content,
@@ -267,7 +258,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
             Clipboard.getData(Clipboard.kTextPlain).then((data) {
               final String? selectedText = data?.text;
 
-              int ci = ref.watch(isp(widget.id).select((o) => o.read.ci));
+              int ci = ref.watch(
+                isp(widget.id).select((o) => o.readChapterIndex),
+              );
               if (selectedText != null) {
                 newNote(widget.id, Note(ci: ci, note: selectedText));
               }
