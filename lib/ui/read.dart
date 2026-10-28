@@ -41,13 +41,8 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       }
     });
 
-    final state = ref.read(isp(widget.id));
     roller = ScrollController(
-      initialScrollOffset: state.read.offset ?? 0.0,
-      onDetach: (position) {
-        // box.put('is${widget.id}', state.copyWith(offset: roller.offset));
-        ref.read(isp(widget.id).notifier).update(offset: roller.offset);
-      },
+      initialScrollOffset: ref.read(isp(widget.id)).offset,
     );
   }
 
@@ -142,37 +137,45 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
           focusNode: FocusNode(),
           selectionControls: materialTextSelectionHandleControls,
           contextMenuBuilder: selectToolbar,
-          child: CustomScrollView(
-            restorationId: 'read-${widget.id}-$ci',
-            controller: roller,
-            slivers: [
-              SliverAppBar(
-                /// CASE:
-                title: SelectionContainer.disabled(child: Text(ch.title)),
-                // Disappears on scroll down, reveals immediately on scroll up
-                floating: true,
-                // Snaps fully open with a slight upward swipe (highly recommended)
-                snap: true,
-                // Set to false so it completely hides when scrolling down
-                pinned: false,
-                elevation: 2.0,
-                systemOverlayStyle: SystemUiOverlayStyle(), // not work
-              ),
-              HtmlWidget(
-                html: ch.content,
-                mode: Mode.sliver,
-                roller: roller,
-                provider: ArchiveProvider(ch.href, book.files),
-                lang: ref.watch(
-                  settingProvider.select(
-                    (m) => Lang.from(m.stringOf('ui.mode')),
+          child: NotificationListener<ScrollEndNotification>(
+            onNotification: (notification) {
+              if (roller.hasClients) {
+                ref.read(isp(widget.id).notifier).update(offset: roller.offset);
+              }
+              return true;
+            },
+            child: CustomScrollView(
+              restorationId: 'read-${widget.id}-$ci',
+              controller: roller,
+              slivers: [
+                SliverAppBar(
+                  /// CASE:
+                  title: SelectionContainer.disabled(child: Text(ch.title)),
+                  // Disappears on scroll down, reveals immediately on scroll up
+                  floating: true,
+                  // Snaps fully open with a slight upward swipe (highly recommended)
+                  snap: true,
+                  // Set to false so it completely hides when scrolling down
+                  pinned: false,
+                  elevation: 2.0,
+                  systemOverlayStyle: SystemUiOverlayStyle(), // not work
+                ),
+                HtmlWidget(
+                  html: ch.content,
+                  mode: Mode.sliver,
+                  roller: roller,
+                  provider: ArchiveProvider(ch.href, book.files),
+                  lang: ref.watch(
+                    settingProvider.select(
+                      (m) => Lang.from(m.stringOf('ui.mode')),
+                    ),
+                  ),
+                  detect: ref.watch(
+                    settingProvider.select((m) => m.flag('detect')),
                   ),
                 ),
-                detect: ref.watch(
-                  settingProvider.select((m) => m.flag('detect')),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         bottomNavigationBar: Container(
@@ -232,7 +235,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
         IconButton(icon: const Icon(Icons.stop), onPressed: dt.stop),
       if (pb != Playback.stop)
         IconButton(
-          icon: const Icon(Icons.forward),
+          icon: const Icon(Icons.fast_forward),
           onPressed: () => dt.skip(10),
         ),
     ];

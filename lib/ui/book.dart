@@ -544,6 +544,8 @@ class ItemState {
     'speakChapterIndex': speakChapterIndex,
     'speakLine': speakLine,
   };
+
+  // static ItemState fromBox(int id) => box.get('is:$id') ?? ItemState(id: id);
 }
 
 // AsyncNotifier family tracking just progress for a book ID
@@ -552,12 +554,6 @@ class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
   ItemState build(int id) {
     final ItemState? m = box.get('is:$id');
     return m ?? ItemState(id: id);
-  }
-
-  void updateRead({int? chapterIndex, int? lineIndex}) async {
-    final nr = state.read.copyWith(ci: chapterIndex, li: lineIndex);
-    state = state.copyWith(read: nr);
-    box.put('is:${state.id}', state);
   }
 
   void update({
