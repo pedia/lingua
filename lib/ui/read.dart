@@ -6,9 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../epub/epub.dart' as epub;
 import 'book.dart';
 import 'gadget.dart';
-import '../g.dart';
 import '../hw.dart';
 import 'chapter_list.dart';
+import '../tts/engine.dart';
 import '../tts/dualtts.dart';
 import '../settings/setting.dart';
 import '../epub/lang.dart';
@@ -47,8 +47,8 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   @override
   void dispose() {
     roller.dispose();
-    sub?.cancel();
-    DualTts.instance().dispose();
+    // sub?.cancel();
+    // TODO: ref.read(engineProvider.notifier).dispose();
     super.dispose();
   }
 
@@ -69,7 +69,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
         },
       );
 
-  Future applyVoice(BuildContext context) {
+  void applyVoice(BuildContext context) {
     final m = ProviderScope.containerOf(context).read(settingProvider);
 
     debugPrint('in apply got setting: $m');
@@ -78,9 +78,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
       if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
     ];
-    return DualTts.instance()
-        .apply(vs)
-        .then((x) => debugPrint('dualtts inited ${vs.length}'));
+    ref
+        .read(engineProvider.notifier)
+        .apply(vs); // .then((x) => debugPrint('dualtts inited ${vs.length}'));
   }
 
   void play() async {
@@ -95,12 +95,14 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     print('lines for $lang $state');
     print(lines.sublist(0, 2));
 
-    if (!DualTts.instance().inited) {
-      await applyVoice(context);
-    }
+    final es = ref.read(engineProvider.notifier);
 
-    DualTts.instance().load(lines);
-    DualTts.instance().play();
+    // TODO:
+    // if (!DualTts.instance().inited) {
+    //   await applyVoice(context);
+    // }
+
+    es.play(lines);
   }
 
   int initialDrawerIndex = 0;
@@ -228,27 +230,22 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   }
 
   List<Widget> speakButtons() {
-    final pb = ref.watch(spsp.select((p) => p.$1));
+    final es = ref.watch(engineProvider);
     return [
-      if (pb == Playback.stop)
+      if (!es.isPlaying)
         IconButton(icon: const Icon(Icons.hearing), onPressed: play),
-      if (pb != Playback.stop)
+      if (es.isPlaying)
         IconButton(
           icon: const Icon(Icons.stop),
           onPressed: () async {
-            await DualTts.instance().stop();
+            ref.read(engineProvider.notifier).stop();
           },
         ),
-      IconButton(
-        icon: const Icon(Icons.stop),
-        onPressed: () async {
-          await DualTts.instance().stop();
-        },
-      ),
-      if (pb != Playback.stop)
+
+      if (es.isPlaying)
         IconButton(
           icon: const Icon(Icons.fast_forward),
-          onPressed: () => DualTts.instance().skip(10),
+          onPressed: () => ref.read(engineProvider.notifier).skip(10),
         ),
     ];
   }

@@ -122,6 +122,8 @@ class Engine {
     _eventController.add(const Event(playback: Playback.stop));
   }
 
+  void apply(List<EngineSetting> vs) {}
+
   void dispose() {
     stop();
     _eventController.close();
@@ -229,6 +231,10 @@ class EngineNotifier extends Notifier<EngineState> {
 
   void skip(int count) {
     _engine.skip(count);
+  }
+
+  void apply(List<EngineSetting> vs) {
+    _engine.apply(vs);
   }
 }
 
