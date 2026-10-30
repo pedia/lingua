@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lingua/demo/demo.dart';
 import 'package:lingua/demo/offset.dart';
+import 'package:lingua/demo/stuck.dart';
 import 'package:lingua/hive.dart';
 import 'package:lingua/demo/provider.dart';
 import 'package:lingua/demo/sliver.dart';
@@ -152,6 +153,7 @@ class MainApp extends ConsumerWidget {
           ),
           GoRoute(path: '/note', builder: (_, state) => NoteScreen()),
           GoRoute(path: '/offset', builder: (_, state) => OffsetDemoScreen()),
+          GoRoute(path: '/stuck', builder: (_, state) => StuckScreen()),
           GoRoute(
             path: '/error',
             builder: (context, state) {
@@ -211,6 +213,7 @@ final demoPaths = [
   '/',
   '/note',
   '/offset',
+  '/stuck',
   '/error',
   '/shelf-mgmt',
   '/read/4',

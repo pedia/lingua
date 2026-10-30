@@ -55,7 +55,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   Playback playbackState = Playback.stop;
   bool get isPlaying =>
       playbackState == Playback.pause || playbackState.isPlaying;
-  final dt = DualTts();
+  final dt = DualTts.instance();
   final roller = ScrollController();
 
   // @override
@@ -549,7 +549,7 @@ class ItemState {
 }
 
 // AsyncNotifier family tracking just progress for a book ID
-class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
+class ItemStateNotifier extends AutoDisposeFamilyNotifier<ItemState, int> {
   @override
   ItemState build(int id) {
     final ItemState? m = box.get('is:$id');
@@ -570,13 +570,19 @@ class ItemStateNotifier extends FamilyNotifier<ItemState, int> {
     );
     box.put('is:${state.id}', state);
   }
+
+  void updateDelta(int speakLineDelta) {
+    state = state.copyWith(speakLine: state.speakLine + speakLineDelta);
+    box.put('is:${state.id}', state);
+  }
 }
 
 /// short for ItemStateProvider
-final isp = NotifierProvider.family<ItemStateNotifier, ItemState, int>(
-  ItemStateNotifier.new,
-  name: 'ItemState',
-);
+final isp =
+    AutoDisposeNotifierProvider.family<ItemStateNotifier, ItemState, int>(
+      ItemStateNotifier.new,
+      name: 'ItemState',
+    );
 
 extension ItemExt on Item {
   Item apply(epub.Book book) {
@@ -590,7 +596,7 @@ extension ItemExt on Item {
 
     if ((book.author.isNotEmpty && author == null) ||
         (book.description.isNotEmpty && description == null)) {
-      print('$this.apply $book');
+      print('$this apply $book');
       return copyWith(
         // make sure apply once
         name: book.title.isEmpty ? null : book.title,

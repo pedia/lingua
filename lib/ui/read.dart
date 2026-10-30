@@ -25,21 +25,19 @@ class ReadFrame extends ConsumerStatefulWidget {
 class _ReadFrameState extends ConsumerState<ReadFrame> {
   late final ScrollController roller;
 
-  late StreamSubscription sub;
+  StreamSubscription? sub;
   late epub.Book book;
 
   @override
   void initState() {
     super.initState();
 
-    sub = dt.stream.listen((pp) {
-      debugPrint('$pp');
-      if (mounted) {
-        // setState(() {
-        //   playback = pp.$1;
-        // });
-      }
-    });
+    // sub = DualTts.instance().stream.listen((pp) {
+    //   debugPrint('$pp');
+    //   if (pp.$1 == Playback.startLine) {
+    //     ref.read(isp(widget.id).notifier).update(speakLine: pp.$2);
+    //   }
+    // });
 
     roller = ScrollController(
       initialScrollOffset: ref.read(isp(widget.id)).offset,
@@ -49,8 +47,8 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   @override
   void dispose() {
     roller.dispose();
-    dt.dispose();
-    sub.cancel();
+    sub?.cancel();
+    DualTts.instance().dispose();
     super.dispose();
   }
 
@@ -71,18 +69,6 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
         },
       );
 
-  final dt = DualTts();
-
-  List<epub.Chunk> get lines {
-    final lang = Lang.from(
-      ref.read(settingProvider.select((m) => m.stringOf('tts.mode'))),
-    );
-    final chi = ref.read(isp(widget.id)).readChapterIndex;
-    return book.chapters[chi].chunks
-        .where((line) => lang == Lang.all || line.lang == lang)
-        .toList();
-  }
-
   Future applyVoice(BuildContext context) {
     final m = ProviderScope.containerOf(context).read(settingProvider);
 
@@ -92,28 +78,29 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
       if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
     ];
-    return dt.apply(vs).then((x) => debugPrint('dualtts inited ${vs.length}'));
+    return DualTts.instance()
+        .apply(vs)
+        .then((x) => debugPrint('dualtts inited ${vs.length}'));
   }
 
   void play() async {
     final lang = ref.read(
       settingProvider.select((m) => m.stringOf('tts.mode')),
     );
-    final chi = ref.read(isp(widget.id)).readChapterIndex;
-    final start = ref.read(linep) ?? 0;
-    final lines = book.chapters[chi].chunks
+    final state = ref.read(isp(widget.id));
+    final lines = book.chapters[state.readChapterIndex].chunks
         .where((c) => lang == '' || c.lang == Lang.from(lang))
-        .skip(start)
+        .skip(state.speakLine)
         .toList();
-    print('lines for $lang len:${lines.length} skip:$start');
-    print(book.chapters[chi].chunks.sublist(0, 2));
+    print('lines for $lang $state');
+    print(lines.sublist(0, 2));
 
-    if (!dt.inited) {
+    if (!DualTts.instance().inited) {
       await applyVoice(context);
     }
 
-    dt.load(lines);
-    dt.play();
+    DualTts.instance().load(lines);
+    DualTts.instance().play();
   }
 
   int initialDrawerIndex = 0;
@@ -123,6 +110,15 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     if (book.chapters.isEmpty) {
       return InfoScreen('Book is empty');
     }
+
+    /// keep new chapter offset is 0
+    ref.listen(isp(widget.id), (prev, next) {
+      if (roller.hasClients &&
+          next.readChapterIndex != prev?.readChapterIndex) {
+        roller.jumpTo(0.0);
+      }
+    });
+
     final ci = ref.watch(isp(widget.id).select((o) => o.readChapterIndex));
     final ch = book.chapters[ci];
     return FullScreen(
@@ -179,7 +175,12 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
           ),
         ),
         bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            top: 4.0,
+            bottom: 8.0,
+          ),
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
@@ -211,7 +212,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                   icon: const Icon(Icons.edit),
                   onPressed: () => context.push('/edit/${widget.id}'),
                 ),
-                ...speak(),
+                ...speakButtons(),
                 IconButton(
                   icon: const Icon(Icons.settings),
                   onPressed: () => context.push('/setting'),
@@ -226,17 +227,28 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     );
   }
 
-  List<Widget> speak() {
+  List<Widget> speakButtons() {
     final pb = ref.watch(spsp.select((p) => p.$1));
     return [
       if (pb == Playback.stop)
         IconButton(icon: const Icon(Icons.hearing), onPressed: play),
       if (pb != Playback.stop)
-        IconButton(icon: const Icon(Icons.stop), onPressed: dt.stop),
+        IconButton(
+          icon: const Icon(Icons.stop),
+          onPressed: () async {
+            await DualTts.instance().stop();
+          },
+        ),
+      IconButton(
+        icon: const Icon(Icons.stop),
+        onPressed: () async {
+          await DualTts.instance().stop();
+        },
+      ),
       if (pb != Playback.stop)
         IconButton(
           icon: const Icon(Icons.fast_forward),
-          onPressed: () => dt.skip(10),
+          onPressed: () => DualTts.instance().skip(10),
         ),
     ];
   }

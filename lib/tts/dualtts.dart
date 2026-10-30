@@ -162,19 +162,24 @@ enum Playback {
 typedef SpeakProgress = (Playback, int);
 
 class DualTts {
-  DualTts();
+  static final DualTts _instance = DualTts._internal();
+  DualTts._internal();
+
+  factory DualTts.instance() => _instance;
 
   final tts = FlutterTts();
   final Map<Lang, EngineSetting> ss = {};
   List<Chunk> chunks = const [];
   int index = 0;
   Playback state = Playback.stop;
-  static final streamController = StreamController<SpeakProgress>.broadcast();
+  final streamController = StreamController<SpeakProgress>.broadcast();
 
   Stream<SpeakProgress> get stream => streamController.stream;
 
   void notify() {
-    streamController.add((state, index));
+    Future.microtask(
+      () => streamController.add((state, chunks[index].idx ?? index)),
+    );
   }
 
   /// TODO: remove this, someone said google tts is better
@@ -182,7 +187,15 @@ class DualTts {
     if (Platform.isAndroid) {
       final info = await DeviceInfoPlugin().deviceInfo;
 
-      //  {physicalRamSize: 7462, type: user, manufacturer: samsung, freeDiskSize: 193618276352, bootloader: A1760ZHS7CZH2, fingerprint: samsung/a17xzh/a17x:16/BP4A.251205.006/A1760ZHS7CZH2_OZS7CZH2:user/release-keys, host: SWDK3912, isLowRamDevice: false, model: SM-A1760, id: BP4A.251205.006, brand: samsung, hardware: s5e8535, product: a17xzh, totalDiskSize: 239475884032, supportedAbis: [arm64-v8a, armeabi-v7a, armeabi], supported32BitAbis: [armeabi-v7a, armeabi], display: BP4A.251205.006.A1760ZHS7CZH2, isPhysicalDevice: true, version: {baseOS: samsung/a17xzh/a17x:16/BP4A.251205.006/A1760ZHU5CZE9_OZS5CZE9:user/release-keys, securityPatch: 2026-08-05, sdkInt: 36, release: 16, codename: REL, previewSdkInt: 0, incremental: A1760ZHS7CZH2}, systemFeatures: [android.hardware.sensor.proximity, com.google.android.feature.CONTEXTUAL_SEARCH, com.samsung.android.sdk.camera.processor, com.google.android.feature.GEMINI_EXPERIENCE, com.sec.feature.motionrecognition_service, android.hardware.telephony.ims.s
+      // {physicalRamSize: 7462, type: user, manufacturer: samsung,
+      // freeDiskSize: 193618276352, bootloader: A1760ZHS7CZH2,
+      // fingerprint: samsung/a17xzh/a17x:16/BP4A.251205.006/A1760ZHS7CZH2_OZS7CZH2:user/release-keys,
+      // host: SWDK3912, isLowRamDevice: false, model: SM-A1760, id: BP4A.251205.006,
+      // brand: samsung, hardware: s5e8535, product: a17xzh, totalDiskSize: 239475884032,
+      // supportedAbis: [arm64-v8a, armeabi-v7a, armeabi],
+      // supported32BitAbis: [armeabi-v7a, armeabi],
+      // display: BP4A.251205.006.A1760ZHS7CZH2, isPhysicalDevice: true,
+      // version: {baseOS: samsung/a17xzh/a17x:16/BP4A.251205.006/A1760ZHU5CZE9_OZS5CZE9:user/release-keys, securityPatch: 2026-08-05, sdkInt: 36, release: 16, codename: REL, previewSdkInt: 0, incremental: A1760ZHS7CZH2}, systemFeatures: [android.hardware.sensor.proximity, com.google.android.feature.CONTEXTUAL_SEARCH, com.samsung.android.sdk.camera.processor, com.google.android.feature.GEMINI_EXPERIENCE, com.sec.feature.motionrecognition_service, android.hardware.telephony.ims.s
       if (info.data['brand'] == 'samsung') {
         await tts.setEngine("com.samsung.SMT");
       } else {
@@ -272,10 +285,15 @@ class DualTts {
   }
 
   Future<void> stop() async {
+    debugPrint('stop enter $state');
     state == Playback.stop;
     await tts.stop();
+    debugPrint('stop after tts.stop');
     chunks.clear();
+    debugPrint('stop 1 $streamController');
     notify();
+    debugPrint('stop 2');
+    debugPrint('stop leave $state');
   }
 
   Future<void> toggle() async {
@@ -307,10 +325,10 @@ class DualTts {
 }
 
 // Map the stream directly into Riverpod
-final spap = StreamProvider<SpeakProgress>((ref) {
+final spap = StreamProvider.autoDispose<SpeakProgress>((ref) {
   // is right?
-  ref.onDispose(DualTts.streamController.close);
-  return DualTts.streamController.stream;
+  // ref.onDispose(DualTts.instance().streamController.close);
+  return DualTts.instance().streamController.stream;
 });
 
 /// Transform async StreamProvider to fully synchronous provider
@@ -318,12 +336,12 @@ class SpeakNotifier extends Notifier<SpeakProgress> {
   @override
   SpeakProgress build() {
     // Listen to the async StreamProvider
-    ref.listen<AsyncValue<SpeakProgress>>(spap, (previous, next) {
-      // Update state whenever new data arrives
-      next.whenData((v) {
-        state = v;
-      });
-    });
+    // ref.listen<AsyncValue<SpeakProgress>>(spap, (previous, next) {
+    //   // Update state whenever new data arrives
+    //   next.whenData((v) {
+    //     state = v;
+    //   });
+    // });
 
     // Initial default value before stream emits anything
     return (Playback.stop, 0);

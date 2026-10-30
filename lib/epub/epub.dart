@@ -7,13 +7,14 @@ import 'package:lingua/epub/lang.dart';
 
 /// text only for paragraph
 class Chunk {
-  Chunk(this.text, {this.lang = Lang.unknown});
+  const Chunk(this.text, {this.lang = Lang.unknown, this.idx});
   final String text;
+  final int? idx;
 
   /// hardcode: en, zh, es, jp, kr
   final Lang lang;
   @override
-  String toString() => '$lang: $text';
+  String toString() => '$idx,$lang: $text';
 }
 
 abstract class Chapter {
@@ -158,7 +159,7 @@ class ChapterStub implements Chapter {
 
       final lang = _effectiveLang(p);
       print('add $lang ${Chunk(text, lang: lang)}');
-      chunks.add(Chunk(text, lang: lang));
+      chunks.add(Chunk(text, lang: lang, idx: chunks.length));
     }
 
     return chunks;
