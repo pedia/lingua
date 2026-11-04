@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lingua/settings/setting.dart';
-import 'package:lingua/tts/dualtts.dart';
+import 'package:lingua/tts/voice.dart';
 
 void main() {
   test('voice', () {

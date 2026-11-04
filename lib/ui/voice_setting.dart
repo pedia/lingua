@@ -4,7 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../settings/setting.dart';
 import '../epub/lang.dart';
-import '../tts/dualtts.dart';
+import '../tts/voice.dart';
 import '../imap.dart';
 
 class EngineSettingPage extends ConsumerStatefulWidget {

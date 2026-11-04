@@ -14,7 +14,7 @@ class Chunk {
   /// hardcode: en, zh, es, jp, kr
   final Lang lang;
   @override
-  String toString() => '$idx,$lang: $text';
+  String toString() => '#$idx:$lang: $text';
 }
 
 abstract class Chapter {
@@ -158,7 +158,6 @@ class ChapterStub implements Chapter {
       if (text.isEmpty) continue;
 
       final lang = _effectiveLang(p);
-      print('add $lang ${Chunk(text, lang: lang)}');
       chunks.add(Chunk(text, lang: lang, idx: chunks.length));
     }
 

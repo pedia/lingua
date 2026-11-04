@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +8,7 @@ import 'gadget.dart';
 import '../hw.dart';
 import 'chapter_list.dart';
 import '../tts/engine.dart';
-import '../tts/dualtts.dart';
+import '../tts/voice.dart';
 import '../settings/setting.dart';
 import '../epub/lang.dart';
 
@@ -24,20 +23,11 @@ class ReadFrame extends ConsumerStatefulWidget {
 
 class _ReadFrameState extends ConsumerState<ReadFrame> {
   late final ScrollController roller;
-
-  StreamSubscription? sub;
   late epub.Book book;
 
   @override
   void initState() {
     super.initState();
-
-    // sub = DualTts.instance().stream.listen((pp) {
-    //   debugPrint('$pp');
-    //   if (pp.$1 == Playback.startLine) {
-    //     ref.read(isp(widget.id).notifier).update(speakLine: pp.$2);
-    //   }
-    // });
 
     roller = ScrollController(
       initialScrollOffset: ref.read(isp(widget.id)).offset,
@@ -47,8 +37,6 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   @override
   void dispose() {
     roller.dispose();
-    // sub?.cancel();
-    // TODO: ref.read(engineProvider.notifier).dispose();
     super.dispose();
   }
 
@@ -70,7 +58,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       );
 
   void applyVoice(BuildContext context) {
-    final m = ProviderScope.containerOf(context).read(settingProvider);
+    final m = ref.read(settingProvider);
 
     debugPrint('in apply got setting: $m');
 
@@ -78,9 +66,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
       if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
     ];
-    ref
-        .read(engineProvider.notifier)
-        .apply(vs); // .then((x) => debugPrint('dualtts inited ${vs.length}'));
+    ref.read(engineProvider.notifier).apply(vs);
   }
 
   void play() async {
@@ -97,11 +83,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
 
     final es = ref.read(engineProvider.notifier);
 
-    // TODO:
-    // if (!DualTts.instance().inited) {
-    //   await applyVoice(context);
-    // }
-
+    applyVoice(context);
     es.play(lines);
   }
 
@@ -230,6 +212,14 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   }
 
   List<Widget> speakButtons() {
+    ref.listen(engineProvider, (prev, next) {
+      if (next.isPlaying && next.currentIndex != null) {
+        final idx = next.chunks[next.currentIndex!].idx;
+        print('playback chunk $idx');
+        ref.read(isp(widget.id).notifier).update(speakLine: idx);
+      }
+    });
+
     final es = ref.watch(engineProvider);
     return [
       if (!es.isPlaying)
@@ -237,6 +227,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
       if (es.isPlaying)
         IconButton(
           icon: const Icon(Icons.stop),
+          tooltip: '${es.currentIndex}',
           onPressed: () async {
             ref.read(engineProvider.notifier).stop();
           },

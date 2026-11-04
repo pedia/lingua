@@ -4,7 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../epub/epub.dart';
 import '../epub/lang.dart';
-import 'dualtts.dart';
+import 'voice.dart';
 
 enum Playback { startLine, endLine, pause, stop }
 
@@ -22,9 +22,40 @@ class Engine {
   int _currentIndex = 0;
   bool _isPlaying = false;
   bool _isPaused = false;
-  Completer<void>? _delayCompleter;
-  final tts = FlutterTts();
-  final Map<Lang, EngineSetting> ss = {};
+  final _tts = FlutterTts();
+  final Map<Lang, EngineSetting> _voices = {};
+
+  // Tracks character progress for pause/resume slicing
+  int _currentTextOffset = 0;
+  Completer<void>? _utteranceCompleter;
+
+  Engine() {
+    _init();
+  }
+  void _init() {
+    _tts.awaitSpeakCompletion(true).then((v) {
+      print('Engine init, awaitSpeakCompletion $v');
+    });
+
+    // Track where speech currently is within the active line
+    _tts.setProgressHandler((text, start, end, word) {
+      _currentTextOffset = end;
+    });
+
+    // Handle when flutter_tts finishes speaking an utterance naturally
+    _tts.setCompletionHandler(() {
+      print('engine set complete handler ${_utteranceCompleter != null}');
+      if (_utteranceCompleter != null && !_utteranceCompleter!.isCompleted) {
+        _utteranceCompleter!.complete();
+      }
+    });
+
+    _tts.setCancelHandler(() {
+      if (_utteranceCompleter != null && !_utteranceCompleter!.isCompleted) {
+        _utteranceCompleter!.complete();
+      }
+    });
+  }
 
   // 1. Non-blocking: returns void, runs the loop asynchronously in the background
   void playLines(List<Chunk> lines) {
@@ -36,6 +67,7 @@ class Engine {
     _currentIndex = 0;
     _isPlaying = true;
     _isPaused = false;
+    _currentTextOffset = 0;
 
     // Fire and forget background loop (no await needed by the caller)
     _startPlaybackLoop();
@@ -43,89 +75,133 @@ class Engine {
 
   Future<void> _startPlaybackLoop() async {
     while (_isPlaying && _currentIndex < _lines.length) {
-      // Handle pause state blocking
-      while (_isPaused && _isPlaying) {
-        _delayCompleter = Completer<void>();
-        await _delayCompleter?.future;
+      print('loop $_currentIndex');
+      if (_isPaused) {
+        // Wait until unpaused
+        _utteranceCompleter = Completer<void>();
+        await _utteranceCompleter?.future;
       }
 
       if (!_isPlaying) break;
 
       final line = _lines[_currentIndex];
-
-      // Emit StartLine
+      print('speak $line voice length: ${_voices.length}');
       _eventController.add(Event(playback: Playback.startLine, chunk: line));
 
-      // Simulate TTS duration for the current line
-      int durationMs = line.text.length * 50;
-      _delayCompleter = Completer<void>();
+      // Determine text to speak (supports resuming from offset if paused mid-line)
+      String textToSpeak = line.text;
+      if (_currentTextOffset > 0 && _currentTextOffset < line.text.length) {
+        textToSpeak = line.text.substring(_currentTextOffset);
+      }
 
-      try {
-        await Future.any([
-          Future.delayed(Duration(milliseconds: durationMs)),
-          _delayCompleter!
-              .future, // Allows breaking out early when skipped, paused, or stopped
-        ]);
-      } catch (_) {}
+      _utteranceCompleter = Completer<void>();
+
+      final v = _voices[line.lang];
+      if (v != null) {
+        print('set voice rate: ${v.rate}');
+        await _tts.setSpeechRate(v.rate);
+        await _tts.setPitch(v.pitch);
+        if (v.volume != null) await _tts.setVolume(v.volume!);
+
+        try {
+          await _tts.setLanguage(v.language);
+        } catch (e) {
+          print('voice setLanguage failed: $e, %v');
+        }
+        if (v.voice != null) await _tts.setVoice(v.voice!);
+      }
+
+      // Tell flutter_tts to speak
+      await _tts.speak(textToSpeak);
+
+      // Wait for the utterance to finish, or get interrupted by pause/skip/stop
+      await _utteranceCompleter?.future;
 
       if (!_isPlaying) break;
 
-      // Emit EndLine (only if we didn't skip past it or stop)
-      _eventController.add(Event(playback: Playback.endLine, chunk: line));
-
-      // Advance to the next line (unless skip() modified _currentIndex)
-      _currentIndex++;
+      // If we finished the line naturally (not paused/skipped), reset offset and emit endLine
+      if (!_isPaused) {
+        _eventController.add(Event(playback: Playback.endLine, chunk: line));
+        _currentTextOffset = 0;
+        _currentIndex++;
+      }
     }
 
     _isPlaying = false;
     _eventController.add(const Event(playback: Playback.stop));
   }
 
-  // 2. Skip function: supports forward (+10) and backward (-10) jumps
-  void skip(int count) {
+  Future<void> pause() async {
+    if (!_isPlaying || _isPaused) return;
+    _isPaused = true;
+
+    // Stop audio immediately since flutter_tts has no resume()
+    await _tts.stop();
+
+    // Interrupt current waiting future so the loop catches the pause state
+    if (_utteranceCompleter != null && !_utteranceCompleter!.isCompleted) {
+      _utteranceCompleter!.complete();
+    }
+
+    _eventController.add(const Event(playback: Playback.pause));
+  }
+
+  void resume() {
+    if (!_isPlaying || !_isPaused) return;
+    _isPaused = false;
+
+    // Unblock the loop; it will pick up from _currentTextOffset
+    if (_utteranceCompleter != null && !_utteranceCompleter!.isCompleted) {
+      _utteranceCompleter!.complete();
+    }
+  }
+
+  Future<void> stop() async {
+    _isPlaying = false;
+    _isPaused = false;
+    _currentTextOffset = 0;
+
+    await _tts.stop();
+
+    if (_utteranceCompleter != null && !_utteranceCompleter!.isCompleted) {
+      _utteranceCompleter!.complete();
+    }
+
+    _eventController.add(const Event(playback: Playback.stop));
+  }
+
+  Future<void> skip(int count) async {
     if (!_isPlaying) return;
 
-    // Optional: Emit EndLine for the line we are abruptly leaving
+    // Stop current speech instantly
+    await _tts.stop();
+
+    // Emit EndLine for current line if moving away
     if (_currentIndex < _lines.length) {
       _eventController.add(
         Event(playback: Playback.endLine, chunk: _lines[_currentIndex]),
       );
     }
 
-    // Update index safely within bounds
+    // Reset offset and shift index
+    _currentTextOffset = 0;
     _currentIndex = (_currentIndex + count).clamp(0, _lines.length - 1);
 
-    // Interrupt the active line timer so the loop immediately jumps to the new index
-    if (_delayCompleter != null && !_delayCompleter!.isCompleted) {
-      _delayCompleter!.complete();
+    // Unblock loop to jump to the new index
+    if (_utteranceCompleter != null && !_utteranceCompleter!.isCompleted) {
+      _utteranceCompleter!.complete();
     }
   }
 
-  void pause() {
-    _isPaused = true;
-    _eventController.add(const Event(playback: Playback.pause));
-  }
-
-  void resume() {
-    _isPaused = false;
-    if (_delayCompleter != null && !_delayCompleter!.isCompleted) {
-      _delayCompleter!.complete();
+  void apply(List<EngineSetting> es) {
+    for (var v in es) {
+      _voices[v.lang] = v;
     }
   }
-
-  void stop() {
-    _isPlaying = false;
-    _isPaused = false;
-    if (_delayCompleter != null && !_delayCompleter!.isCompleted) {
-      _delayCompleter!.complete();
-    }
-    _eventController.add(const Event(playback: Playback.stop));
-  }
-
-  void apply(List<EngineSetting> vs) {}
 
   void dispose() {
     stop();
+    _tts.stop();
     _eventController.close();
   }
 }
@@ -156,17 +232,20 @@ class EngineState {
       isPaused: isPaused ?? this.isPaused,
     );
   }
+
+  @override
+  String toString() {
+    return '${chunks.length} Chunks, $currentIndex, playing: $isPlaying, paused: $isPaused';
+  }
 }
 
 // --- Riverpod Notifier ---
 class EngineNotifier extends Notifier<EngineState> {
-  late final Engine _engine;
+  final Engine _engine = Engine();
   StreamSubscription? _subscription;
 
   @override
   EngineState build() {
-    _engine = Engine();
-
     // Listen to the background stream from TtsEngine
     _subscription = _engine.events.listen((event) {
       switch (event.playback) {
@@ -198,6 +277,7 @@ class EngineNotifier extends Notifier<EngineState> {
 
     // Clean up subscription and engine when provider is disposed
     ref.onDispose(() {
+      print('engine notify enter dispose');
       _subscription?.cancel();
       _engine.dispose();
     });
@@ -233,11 +313,12 @@ class EngineNotifier extends Notifier<EngineState> {
     _engine.skip(count);
   }
 
-  void apply(List<EngineSetting> vs) {
-    _engine.apply(vs);
+  void apply(List<EngineSetting> es) {
+    _engine.apply(es);
   }
 }
 
 final engineProvider = NotifierProvider<EngineNotifier, EngineState>(
   EngineNotifier.new,
+  name: 'Engine',
 );

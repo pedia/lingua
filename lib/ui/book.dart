@@ -17,10 +17,8 @@ import '../hw.dart';
 import '../g.dart';
 import 'chapter_list.dart';
 import '../data/model.dart';
-import '../epub/lang.dart';
 import '../epub/epub.dart' as epub;
 import '../epub/parser.dart' as epub;
-import '../tts/dualtts.dart';
 import '../demo/freya.dart';
 import '../data/sample.dart';
 import 'gadget.dart';
@@ -52,10 +50,6 @@ class BookFrame extends ConsumerStatefulWidget {
 }
 
 class _BookFrameState extends ConsumerState<BookFrame> {
-  Playback playbackState = Playback.stop;
-  bool get isPlaying =>
-      playbackState == Playback.pause || playbackState.isPlaying;
-  final dt = DualTts.instance();
   final roller = ScrollController();
 
   // @override
@@ -88,8 +82,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     // Not work here(in initState). Move into didChangeDependencies
     // lang = ref.watch(settingProvider.select((m) => m.stringOf('ui.lang')));
 
-    sub = dt.stream.listen(_onTts);
-
     // Set drawer opened at first time frame appear
     WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
@@ -114,51 +106,12 @@ class _BookFrameState extends ConsumerState<BookFrame> {
     super.dispose();
   }
 
-  void _onTts((Playback, int) m) {
-    if (!mounted) {
-      return;
-    }
-
-    debugPrint('got dts notify $m');
-
-    // next chapter
-    if (playbackState.isPlaying &&
-        m.$1 == Playback.stop &&
-        m.$2 + 1 == lines.length) {
-      print('speak, try next chapter ${lines.length}');
-      // if (_progress.chapterIndex + 1 < widget.book.chapters.length) {
-      //   setState(
-      //     () => _progress = Progress(chapterIndex: _progress.chapterIndex + 1),
-      //   );
-
-      /// not set `playbackState`
-      return;
-    }
-
-    if (m.$1 != playbackState) {
-      setState(() => playbackState = m.$1);
-    }
-  }
-
   List<epub.Chunk> get lines {
     final lang = ref.read(settingProvider.select((m) => m.stringOf('ui.lang')));
     final chi = ref.read(isp(widget.id)).read.ci;
     return book.chapters[chi].chunks
         .where((line) => lang == '' || line.lang == lang)
         .toList();
-  }
-
-  Future applyVoice(BuildContext context) {
-    final m = ProviderScope.containerOf(context).read(settingProvider);
-
-    // debugPrint('in apply got setting: $m');
-    // print(m.has('tts.en'));
-
-    final vs = [
-      if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
-      if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
-    ];
-    return dt.apply(vs).then((x) => debugPrint('dualtts inited ${vs.length}'));
   }
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -204,29 +157,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
       appBar: AppBar(
         title: Text(ch.title),
         actions: [
-          IconButton(
-            tooltip: switch (playbackState) {
-              Playback.playing => 'Stop',
-              _ => 'Play',
-            },
-            icon: Icon(switch (playbackState) {
-              Playback.playing => Icons.stop_rounded,
-              _ => Icons.play_arrow_rounded,
-            }),
-            onPressed: () async {
-              if (playbackState.isPlaying) {
-                dt.stop();
-              } else {
-                if (!dt.inited) {
-                  await applyVoice(context);
-                }
-                final start = ref.read(linep) ?? 0;
-                dt.load(lines.sublist(start));
-                dt.play();
-              }
-            },
-          ),
-
           PopupMenuButton<String>(
             tooltip: 'More',
             onSelected: (String v) async {
@@ -246,9 +176,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
                 //     context,
                 //   ).read(settingProvider);
                 //   debugPrint(m.toString());
-                if (mounted) {
-                  applyVoice(context);
-                }
+                if (mounted) {}
               });
             },
             itemBuilder: (BuildContext context) => const [
@@ -320,61 +248,6 @@ class _BookFrameState extends ConsumerState<BookFrame> {
   //   }
   // }
 
-  Widget playbackPanel(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: 'Previous sentence',
-              onPressed: () => dt.skip(-1),
-              icon: const Icon(Icons.skip_previous),
-            ),
-            IconButton.filled(
-              tooltip: switch (playbackState) {
-                Playback.playing => 'Pause',
-                Playback.pause => 'Play',
-                _ => '_',
-              },
-              onPressed: dt.toggle,
-              icon: Icon(switch (playbackState) {
-                Playback.pause => Icons.play_arrow,
-                Playback.stop => Icons.stop,
-                _ => Icons.pause,
-              }),
-            ),
-            IconButton(
-              tooltip: 'Next sentence',
-              onPressed: () => dt.skip(1),
-              icon: const Icon(Icons.skip_next),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                ref.read(
-                          settingProvider.select((m) => m.stringOf('ui.lang')),
-                        ) ==
-                        'zh'
-                    ? 'TTS 中文'
-                    : 'TTS EN',
-                textAlign: TextAlign.end,
-              ),
-            ),
-            IconButton(
-              tooltip: 'Translate chapter',
-              onPressed: () {
-                // _translated.remove(_chapter);
-                // _translateChapter(_chapter);
-              },
-              icon: const Icon(Icons.translate),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget readerPanel(BuildContext context) {
     return SafeArea(
       child: Padding(
@@ -386,24 +259,7 @@ class _BookFrameState extends ConsumerState<BookFrame> {
               icon: const Icon(Icons.menu),
               onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             ),
-            IconButton.filled(
-              tooltip: switch (playbackState) {
-                Playback.playing => 'Pause',
-                Playback.pause => 'Play',
-                _ => '_',
-              },
-              onPressed: dt.toggle,
-              icon: Icon(switch (playbackState) {
-                Playback.pause => Icons.play_arrow,
-                Playback.stop => Icons.stop,
-                _ => Icons.pause,
-              }),
-            ),
-            IconButton(
-              tooltip: 'Next sentence',
-              onPressed: () => dt.skip(1),
-              icon: const Icon(Icons.skip_next),
-            ),
+
             const SizedBox(width: 8),
             Expanded(
               child: Text(

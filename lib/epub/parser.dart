@@ -177,7 +177,7 @@ class EpubParser {
   }
 
   static String html2text(String src) {
-    if (src.contains('<div>')) {
+    if (src.contains('</')) {
       final doc = parse(src);
       return doc.body?.text ?? '';
     }
