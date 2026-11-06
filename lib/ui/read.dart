@@ -73,11 +73,18 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     final lang = ref.read(
       settingProvider.select((m) => m.stringOf('tts.mode')),
     );
+
     final state = ref.read(isp(widget.id));
-    final lines = book.chapters[state.readChapterIndex].chunks
-        .where((c) => lang == '' || c.lang == Lang.from(lang))
-        .skip(state.speakLine)
-        .toList();
+    var it = book.chapters[state.readChapterIndex].chunks.where(
+      (c) => lang == '' || c.lang == Lang.from(lang),
+    );
+
+    if (state.speakChapterIndex == state.readChapterIndex) {
+      it = it.skip(state.speakLine);
+    }
+
+    final lines = it.toList();
+
     print('lines for $lang $state');
     print(lines.sublist(0, 2));
 
@@ -85,6 +92,10 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
 
     applyVoice(context);
     es.play(lines);
+
+    ref
+        .read(isp(widget.id).notifier)
+        .update(speakChapterIndex: state.readChapterIndex);
   }
 
   int initialDrawerIndex = 0;
@@ -175,34 +186,40 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
             ],
           ),
           child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () {
-                    setState(() => initialDrawerIndex = 0);
-                    _scaffoldKey.currentState?.openDrawer();
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    setState(() => initialDrawerIndex = 1);
-                    _scaffoldKey.currentState?.openDrawer();
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => context.push('/edit/${widget.id}'),
-                ),
-                ...speakButtons(),
-                IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: () => context.push('/setting'),
-                ),
+                progress(context),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () {
+                        setState(() => initialDrawerIndex = 0);
+                        _scaffoldKey.currentState?.openDrawer();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      onPressed: () {
+                        setState(() => initialDrawerIndex = 1);
+                        _scaffoldKey.currentState?.openDrawer();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => context.push('/edit/${widget.id}'),
+                    ),
+                    ...speakButtons(),
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: () => context.push('/setting'),
+                    ),
 
-                // ElevatedButton(onPressed: () {}, child: Text('$playback')),
+                    // ElevatedButton(onPressed: () {}, child: Text('$playback')),
+                  ],
+                ),
               ],
             ),
           ),
@@ -239,6 +256,12 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
           onPressed: () => ref.read(engineProvider.notifier).skip(10),
         ),
     ];
+  }
+
+  Widget progress(BuildContext context) {
+    final s = ref.watch(isp(widget.id));
+    final l = ref.watch(linep);
+    return Text('${s.speakLine} - $l');
   }
 
   AdaptiveTextSelectionToolbar selectToolbar(
