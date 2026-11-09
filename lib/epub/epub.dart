@@ -23,8 +23,8 @@ abstract class Chapter {
   String get href;
   String get content;
 
-  factory Chapter.from(String href, ArchiveFile file) {
-    return ChapterStub._(href: href, file: file);
+  factory Chapter.from(String href, ArchiveFile file, String bookTitle) {
+    return ChapterStub._(href: href, file: file, bookTitle: bookTitle);
   }
 
   factory Chapter.cache({
@@ -37,7 +37,7 @@ abstract class Chapter {
 }
 
 class ChapterStub implements Chapter {
-  ChapterStub._({required this.href, required this.file});
+  ChapterStub._({required this.href, required this.file, String? bookTitle});
 
   ChapterStub.cache({
     required this.href,
@@ -71,6 +71,7 @@ class ChapterStub implements Chapter {
       ? toHtml()
       : utf8.decode(file.content);
 
+  String? bookTitle;
   String? _title;
   List<Chunk>? _chunks;
 
@@ -100,12 +101,19 @@ class ChapterStub implements Chapter {
       for (final selector in ['title', 'h1', 'h2', 'h3']) {
         final text = dom.querySelector(selector)?.text.trim();
         if (text != null && text.isNotEmpty) {
-          if ({'未知', 'Unknown'}.contains(text)) {
+          if ({'未知', '无标题', 'Unknown'}.contains(text)) {
             continue;
           }
+
+          // ignore svg link
           if (text.contains('<link')) {
             continue;
           }
+
+          if (bookTitle != null && bookTitle == text) {
+            continue;
+          }
+
           _title = text;
           break;
         }

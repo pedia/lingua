@@ -20,9 +20,9 @@ import 'ui/font.dart';
 import 'ui/gadget.dart';
 import 'ui/read.dart';
 import 'ui/lib.dart';
-import 'ui/shelf_mgmt.dart';
+import 'ui/shelf_edit.dart';
 import 'ui/md.dart';
-import 'ui/edit.dart';
+import 'ui/item_edit.dart';
 import 'err.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
@@ -136,7 +136,7 @@ class MainApp extends ConsumerWidget {
           GoRoute(path: '/sliver2', builder: (_, _) => DynamicTabScreen()),
           GoRoute(
             path: '/shelf-mgmt',
-            builder: (_, _) => ShelfManagementScreen(),
+            builder: (_, _) => ShelfEditScreen(),
           ),
           GoRoute(path: '/font', builder: (_, _) => FontFrame()),
           GoRoute(
@@ -149,7 +149,7 @@ class MainApp extends ConsumerWidget {
           ),
           GoRoute(
             path: '/edit/:id',
-            builder: (_, state) => BookEditScreen(id: state.pint('id', 4)),
+            builder: (_, state) => ItemEditScreen(id: state.pint('id', 4)),
           ),
           GoRoute(path: '/note', builder: (_, state) => NoteScreen()),
           GoRoute(path: '/offset', builder: (_, state) => OffsetDemoScreen()),

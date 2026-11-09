@@ -5,15 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/model.dart';
 import '../g.dart';
 
-class ShelfManagementScreen extends ConsumerStatefulWidget {
-  const ShelfManagementScreen({super.key});
+class ShelfEditScreen extends ConsumerStatefulWidget {
+  const ShelfEditScreen({super.key});
 
   @override
-  ConsumerState<ShelfManagementScreen> createState() =>
+  ConsumerState<ShelfEditScreen> createState() =>
       _EditableListScreenState();
 }
 
-class _EditableListScreenState extends ConsumerState<ShelfManagementScreen> {
+class _EditableListScreenState extends ConsumerState<ShelfEditScreen> {
   // 1. Data Source
   final List<Shelf> _items = [];
   final TextEditingController _textController = TextEditingController();

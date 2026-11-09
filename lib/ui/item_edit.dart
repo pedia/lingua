@@ -6,16 +6,16 @@ import '../epub/epub.dart' as epub;
 import 'book.dart';
 import '../imap.dart';
 
-class BookEditScreen extends ConsumerStatefulWidget {
+class ItemEditScreen extends ConsumerStatefulWidget {
   final int id;
 
-  const BookEditScreen({super.key, required this.id});
+  const ItemEditScreen({super.key, required this.id});
 
   @override
-  ConsumerState<BookEditScreen> createState() => _BookEditScreenState();
+  ConsumerState<ItemEditScreen> createState() => _BookEditScreenState();
 }
 
-class _BookEditScreenState extends ConsumerState<BookEditScreen> {
+class _BookEditScreenState extends ConsumerState<ItemEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late Item _item;
@@ -187,9 +187,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                     .toList(),
                 onChanged: (int? newValue) {
                   if (newValue != null) {
-                    setState(() {
-                      _selectedShelf = newValue;
-                    });
+                    _selectedShelf = newValue;
                   }
                 },
               ),

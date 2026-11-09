@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingua/imap.dart';
 import 'package:pinyin_pro_flutter/pinyin_pro_flutter.dart';
 
 import '../g.dart';
@@ -32,7 +31,7 @@ class Item {
   String get subtitle => [
     if (author != null) author,
     if (percent > 0) '${(percent * 100).toInt()}%',
-    if (review != null) review,
+    if (review != null && review!.isNotEmpty) ' ↬ $review',
   ].join(' ');
 
   factory Item.stub(int id) =>
@@ -207,8 +206,7 @@ class Shelf {
   final int id;
   final String name;
   final List<int> iids;
-  List<Item> get items =>
-      iids.map((i) => box.get('item2:$i') as Item).toList();
+  List<Item> get items => iids.map((i) => box.get('item2:$i') as Item).toList();
 
   static List<Item> loadItems(List<int> iids) =>
       iids.map((i) => box.get('item2:$i') as Item).toList();

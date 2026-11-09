@@ -117,7 +117,7 @@ class EpubParser {
         continue;
       }
 
-      chapters.add(Chapter.from(href, file));
+      chapters.add(Chapter.from(href, file, title));
     }
 
     if (chapters.isEmpty) {

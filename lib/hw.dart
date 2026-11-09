@@ -192,9 +192,9 @@ class BlockWidget extends ConsumerWidget {
         child: Image.memory(
           provider?.bytes(b.e.attributes['src'] ?? '') ?? note,
           fit: BoxFit.fitWidth,
-          width: forceInlineHeight != null
-              ? null
-              : double.tryParse(b.e.attributes['width'] ?? ''),
+          width:
+              forceInlineHeight ??
+              double.tryParse(b.e.attributes['width'] ?? ''),
           height:
               forceInlineHeight ??
               double.tryParse(b.e.attributes['height'] ?? ''),

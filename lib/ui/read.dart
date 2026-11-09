@@ -131,7 +131,11 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
           child: NotificationListener<ScrollEndNotification>(
             onNotification: (notification) {
               if (roller.hasClients) {
-                ref.read(isp(widget.id).notifier).update(offset: roller.offset);
+                Future(
+                  () => ref
+                      .read(isp(widget.id).notifier)
+                      .update(offset: roller.offset),
+                );
               }
               return true;
             },
@@ -154,7 +158,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
                 HtmlWidget(
                   html: ch.content,
                   mode: Mode.sliver,
-                  roller: roller,
+                  // roller: roller,
                   provider: ArchiveProvider(ch.href, book.files),
                   lang: ref.watch(
                     settingProvider.select(
