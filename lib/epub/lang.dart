@@ -6,7 +6,10 @@ Lang detectLang(String sample) {
   /// \p{P} 是 Unicode 标点符号属性（Punctuation），它不仅能精准匹配英文标点
   /// （如 ,, !, ., :, -, [] 等），还能完美匹配各种中文全角/半角标点
   /// （如 ，, ！, ：, ——, 《》, （） 等）。
-  final clean = sample.replaceAll(RegExp(r'[\p{P}0-9]', unicode: true), '');
+  final clean = sample.trim().replaceAll(
+    RegExp(r'[\p{P}0-9 ]', unicode: true),
+    '',
+  );
   final m = recjk.allMatches(clean).length;
   if (clean.isEmpty) {
     return Lang.en;

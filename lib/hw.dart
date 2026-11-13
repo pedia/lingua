@@ -123,6 +123,7 @@ class BlockWidget extends ConsumerWidget {
         final t = _removeUnnecessaryWhitespace(c.text ?? '');
         if (children.isEmpty && c.text != null) {
           text = t;
+          // print('assign: $text');
           // TODO: space deal right?
           if (t != ' ') forceInlineHeight ??= estyle(b, ref).fontSize;
         } else {

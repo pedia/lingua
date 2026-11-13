@@ -48,6 +48,9 @@ dependencies:
   saf: ^2.1.2
   permission_handler: ^11.3.1
   file_selector: ^1.1.0
+  flutter_open_chinese_convert: ^1.0.0
+  opencc: ^1.0.1
+  collection: ^1.19.1
 
 
 dev_dependencies:

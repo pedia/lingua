@@ -37,7 +37,7 @@ abstract class Chapter {
 }
 
 class ChapterStub implements Chapter {
-  ChapterStub._({required this.href, required this.file, String? bookTitle});
+  ChapterStub._({required this.href, required this.file, this.bookTitle});
 
   ChapterStub.cache({
     required this.href,
@@ -110,6 +110,7 @@ class ChapterStub implements Chapter {
             continue;
           }
 
+          // print('>> $bookTitle $text');
           if (bookTitle != null && bookTitle == text) {
             continue;
           }
@@ -175,7 +176,7 @@ class ChapterStub implements Chapter {
   Lang _effectiveLang(dom.Element e) {
     final lang = _elementLang(e);
     if (lang != Lang.unknown) return lang;
-    return detectLang(e.text);
+    return detectLang(e.text.trim()); // trim
   }
 
   Lang _elementLang(dom.Element e) {
