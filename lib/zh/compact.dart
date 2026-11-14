@@ -14592,17 +14592,17 @@ class CompactDict {
     0x2A687, // 𪚇
   ];
 
-  static String convert(String input) {
+  static String convert(String sc) {
     final buffer = StringBuffer();
-    for (int i = 0; i < input.length; i++) {
-      int code = input.codeUnitAt(i);
+    for (int i = 0; i < sc.length; i++) {
+      int code = sc.codeUnitAt(i);
 
       // Fast binary search on primitive integers
       int index = binarySearch(_keys, code);
       if (index != -1) {
         buffer.writeCharCode(_values[index]);
       } else {
-        buffer.write(input[i]);
+        buffer.write(sc[i]);
       }
     }
     return buffer.toString();

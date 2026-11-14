@@ -62,11 +62,11 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
 
     debugPrint('in apply got setting: $m');
 
-    final vs = [
-      if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
-      if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
-    ];
-    ref.read(engineProvider.notifier).apply(vs);
+    // final vs = [
+    // if (m.has('tts.en')) EngineSetting.from(Lang.en, m.objectOf('tts.en')),
+    // if (m.has('tts.zh')) EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
+    // ];
+    // ref.read(engineProvider.notifier).apply(vs);
   }
 
   void play() async {
@@ -91,7 +91,7 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
     final es = ref.read(engineProvider.notifier);
 
     applyVoice(context);
-    es.play(lines);
+    // es.play(lines);
 
     ref
         .read(isp(widget.id).notifier)
@@ -122,7 +122,9 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
         key: _scaffoldKey,
         drawer: Drawer(
           width: 280,
-          child: TheDrawer(widget.id, book, initialIndex: initialDrawerIndex),
+          child: DrawerHeader(
+            child: Center(),
+          ), // TheDrawer(widget.id, book, initialIndex: initialDrawerIndex),
         ),
         body: SelectableRegion(
           focusNode: FocusNode(),

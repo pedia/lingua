@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-import '../epub/lang.dart';
+import '../chunk/chunk.dart';
 
 extension StringMidExtension on String {
   String mid(String startDelimiter, [String? endDelimiter]) {

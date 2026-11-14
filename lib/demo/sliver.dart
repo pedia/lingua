@@ -1,63 +1,83 @@
 import 'package:flutter/material.dart';
-import '../ui/gadget.dart';
 
-class SliverFrame extends StatelessWidget {
-  SliverFrame({super.key});
+class LongTextScreen extends StatelessWidget {
+  const LongTextScreen({super.key});
 
-  final roller = ScrollController();
   @override
   Widget build(BuildContext context) {
-    return FullScreen(
-      child: Scaffold(
-        body: Scrollbar(
-          controller: roller,
-          child: CustomScrollView(
-            controller: roller,
-            slivers: [
-              const SliverAppBar(
-                title: Text('Material Silver, Scroll Up'),
-                // Disappears on scroll down, reveals immediately on scroll up
-                floating: true,
-                // Snaps fully open with a slight upward swipe (highly recommended)
-                snap: true,
-                // Set to false so it completely hides when scrolling down
-                pinned: false,
-                elevation: 2.0,
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => RichText(
-                    text: TextSpan(children: [TextSpan(text: 'Item #$index')]),
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          // 1. Hiding/Showing AppBar on scroll
+          SliverAppBar(
+            title: const Text('RichText Reader'),
+            floating: true,
+            snap: true,
+            pinned: false,
+            elevation: 2,
+          ),
+
+          // 2. Very long RichText body inside a sliver
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 16.0,
+                    color: Colors.black87,
+                    height: 1.5,
                   ),
-                  childCount: 140,
+                  children: List.generate(
+                    50,
+                    (index) => TextSpan(
+                      text:
+                          'Paragraph ${index + 1}: This is a very long block of rich text designed to demonstrate scrolling behavior in Flutter. When you scroll down, the AppBar disappears. The moment you scroll up even slightly, it reappears instantly.\n\n',
+                      style: TextStyle(
+                        fontWeight: index % 5 == 0
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: index % 3 == 0 ? Colors.indigo : Colors.black87,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          decoration: BoxDecoration(
-            // color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(25),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Total: \$150.00',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                ElevatedButton(onPressed: () {}, child: const Text('Checkout')),
-              ],
             ),
+          ),
+        ],
+      ),
+
+      // 3. Always-showing bottom buttons panel
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {},
+                  child: const Text('Back'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {},
+                  child: const Text('Continue'),
+                ),
+              ),
+            ],
           ),
         ),
       ),

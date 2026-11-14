@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lingua/chunk/book.dart';
 import 'package:lingua/demo/demo.dart';
 import 'package:lingua/demo/offset.dart';
+import 'package:lingua/demo/stack.dart';
 import 'package:lingua/demo/stuck.dart';
 import 'package:lingua/hive.dart';
 import 'package:lingua/demo/provider.dart';
 import 'package:lingua/demo/sliver.dart';
 import 'package:lingua/demo/sliver2.dart';
-import 'package:lingua/ui/book.dart';
 import 'package:lingua/ui/chapter_list.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
@@ -18,8 +19,6 @@ import 'package:lingua/ui/voice_setting.dart';
 import 'settings/setting.dart';
 import 'ui/font.dart';
 import 'ui/gadget.dart';
-import 'ui/read.dart';
-import 'ui/lib.dart';
 import 'ui/shelf_edit.dart';
 import 'ui/md.dart';
 import 'ui/item_edit.dart';
@@ -120,8 +119,8 @@ class MainApp extends ConsumerWidget {
         routes: [
           GoRoute(path: '/', builder: (_, _) => ShelfFrame()),
           GoRoute(
-            path: '/book/:id',
-            builder: (_, state) => BookFrame(id: state.pint('id', 4)),
+            path: '/read2/:id',
+            builder: (_, state) => BookScreen(state.pint('id', 4)),
           ),
           GoRoute(path: '/hive', builder: (_, _) => HiveFrame()),
           GoRoute(path: '/setting', builder: (_, _) => SettingFrame()),
@@ -129,23 +128,20 @@ class MainApp extends ConsumerWidget {
             path: '/engine',
             builder: (ctx, _) => EngineSettingPage.from(ctx),
           ),
-          GoRoute(path: '/library', builder: (_, _) => LibraryFrame()),
           GoRoute(path: '/demo', builder: (_, _) => DemoFrame()),
           GoRoute(path: '/provider', builder: (_, _) => ProviderScreen(id: 3)),
-          GoRoute(path: '/sliver', builder: (_, _) => SliverFrame()),
-          GoRoute(path: '/sliver2', builder: (_, _) => DynamicTabScreen()),
-          GoRoute(
-            path: '/shelf-mgmt',
-            builder: (_, _) => ShelfEditScreen(),
-          ),
+          GoRoute(path: '/sliver', builder: (_, _) => LongTextScreen()),
+          GoRoute(path: '/stack', builder: (_, _) => NonSliverTextScreen()),
+          GoRoute(path: '/tabs', builder: (_, _) => DynamicTabScreen()),
+          GoRoute(path: '/shelf-mgmt', builder: (_, _) => ShelfEditScreen()),
           GoRoute(path: '/font', builder: (_, _) => FontFrame()),
           GoRoute(
             path: '/master-detail',
             builder: (_, _) => TabletReadFrame(2),
           ),
           GoRoute(
-            path: '/read/:id',
-            builder: (_, state) => ReadFrame(id: state.pint('id', 4)),
+            path: '/book/:id',
+            builder: (_, state) => BookScreen(state.pint('id', 4)),
           ),
           GoRoute(
             path: '/edit/:id',
@@ -211,21 +207,21 @@ extension _StateEx on GoRouterState {
 
 final demoPaths = [
   '/',
+  '/book/91',
   '/note',
   '/offset',
   '/stuck',
   '/error',
   '/shelf-mgmt',
-  '/read/4',
   '/hive',
   '/setting',
   '/engine',
-  '/library',
   '/provider',
   '/demo',
   '/font',
   '/sliver',
-  '/sliver2',
+  '/stack',
+  '/tabs',
   '/search',
   '/master-detail',
 ];

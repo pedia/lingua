@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/ui/search.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:go_router/go_router.dart';
-import '../epub/epub.dart' as epub;
-import 'book.dart';
+import '../chunk/chunk.dart';
 import '../data/model.dart';
+import '../ui/book.dart' as legacy;
 import '../../g.dart';
 import '../../hw.dart';
 
@@ -13,13 +13,13 @@ import '../../hw.dart';
 class ChapterList extends ConsumerWidget {
   const ChapterList(this.id, this.book, {this.isTablet = false, super.key});
   final int id;
-  final epub.Book book;
+  final Book book;
   final bool isTablet;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final chs = book.chapters;
-    final ci = ref.watch(isp(id).select((s) => s.readChapterIndex));
+    final ci = ref.watch(legacy.isp(id).select((s) => s.readChapterIndex));
     return ScrollablePositionedList.builder(
       itemScrollController: ItemScrollController(),
       key: PageStorageKey<String>('cl:$id'),
@@ -32,7 +32,7 @@ class ChapterList extends ConsumerWidget {
           selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
           onTap: () {
             if (!isTablet) Navigator.pop(context);
-            ref.read(isp(id).notifier).update(readChapterIndex: i);
+            ref.read(legacy.isp(id).notifier).update(readChapterIndex: i);
             ref.read(linep.notifier).update(0);
           },
         );
@@ -44,7 +44,7 @@ class ChapterList extends ConsumerWidget {
 class TheDrawer extends ConsumerStatefulWidget {
   const TheDrawer(this.id, this.book, {this.initialIndex = 0, super.key});
   final int id;
-  final epub.Book book;
+  final Book book;
   final int initialIndex;
 
   @override
@@ -67,7 +67,7 @@ class _TheDrawerState extends ConsumerState<TheDrawer>
           child: ListTile(
             leading: lazyBoxImage('icon:${widget.id}'),
             title: Text(widget.book.title),
-            subtitle: Text(widget.book.author),
+            subtitle: Text(widget.book.author ?? ''),
           ),
         ),
         TabBar(
@@ -128,9 +128,9 @@ class NoteList extends ConsumerWidget {
         title: Text(ns[i].note),
         subtitle: Text('${i + 1}', style: TextStyle(fontSize: 10)),
         onTap: () {
-          ref.read(isp(id).notifier).update(readChapterIndex: i);
+          ref.read(legacy.isp(id).notifier).update(readChapterIndex: i);
           ref.read(linep.notifier).update(0);
-          context.push('/read/$id');
+          context.push('/book/$id');
         },
       ),
     );
@@ -173,9 +173,9 @@ class NoteScreen extends ConsumerWidget {
                     ),
                     onTap: () {
                       ref
-                          .read(isp(bids[i]).notifier)
+                          .read(legacy.isp(bids[i]).notifier)
                           .update(readChapterIndex: n.ci);
-                      context.push('/read/${bids[i]}');
+                      context.push('/book/${bids[i]}');
                     },
                   ),
                 )

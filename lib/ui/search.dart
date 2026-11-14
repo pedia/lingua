@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../epub/epub.dart' as epub;
+import '../chunk/chunk.dart';
 
 class SearchView extends ConsumerStatefulWidget {
   const SearchView(this.book, {super.key});
-  final epub.Book book;
+  final Book book;
 
   @override
   ConsumerState<SearchView> createState() => _SearchScreenState();

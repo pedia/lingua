@@ -39,13 +39,13 @@ class TabletReadFrame extends ConsumerWidget {
               children: [
                 SizedBox(
                   width: 280,
-                  child: ChapterList(id, book, isTablet: true),
+                  child: Center(), // ChapterList(id, book, isTablet: true),
                 ),
                 VerticalDivider(width: 1, thickness: 1),
                 Expanded(child: ReadView(id, book)),
               ],
             )
-          : ChapterList(id, book, isTablet: false),
+          : Center(), // ChapterList(id, book, isTablet: false),
     );
   }
 }

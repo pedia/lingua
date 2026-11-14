@@ -2,8 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-import '../epub/epub.dart';
-import '../epub/lang.dart';
+import '../chunk/chunk.dart';
 import 'voice.dart';
 
 enum Playback { startLine, endLine, pause, stop }
@@ -89,9 +88,9 @@ class Engine {
       _eventController.add(Event(playback: Playback.startLine, chunk: line));
 
       // Determine text to speak (supports resuming from offset if paused mid-line)
-      String textToSpeak = line.text;
-      if (_currentTextOffset > 0 && _currentTextOffset < line.text.length) {
-        textToSpeak = line.text.substring(_currentTextOffset);
+      String textToSpeak = line.text ?? '';
+      if (_currentTextOffset > 0 && _currentTextOffset < textToSpeak.length) {
+        textToSpeak = textToSpeak.substring(_currentTextOffset);
       }
 
       _utteranceCompleter = Completer<void>();

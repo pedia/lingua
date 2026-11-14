@@ -1,3 +1,4 @@
+// Generate compact dict source code
 import 'sc2tc.dart';
 
 String codepoint(String c) {

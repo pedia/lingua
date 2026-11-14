@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../settings/setting.dart';
-import '../epub/lang.dart';
+import '../chunk/chunk.dart';
 import '../tts/voice.dart';
 import '../imap.dart';
 

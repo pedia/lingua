@@ -1,16 +1,16 @@
-import 'dart:convert';
-import 'dart:typed_data';
-import 'dart:io';
+import 'package:lingua/chunk/chunk.dart';
 
-import 'package:lingua/epub/epub.dart';
-import 'package:lingua/epub/lang.dart';
-import 'package:lingua/epub/parser.dart';
+void main(List<String> args) async {
+  for (String a in args) {
+    await dump(a);
+  }
+}
 
-void main(List<String> args) {
-  final book = EpubParser().parseBytes(File(args[0]).readAsBytesSync());
+Future<void> dump(String fn) async {
+  final book = await ChunkParser.parseFile(fn);
   print(book.title);
   print(book.author);
-  print(book.description);
+  // print(book.description);
   for (int i = 0; i < book.chapters.length; i++) {
     final ch = book.chapters[i];
     print('# ${ch.title}');

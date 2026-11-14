@@ -13,7 +13,7 @@ import 'hive/hive_registrar.g.dart';
 
 import 'app.dart';
 import 'g.dart';
-import 'ui/lib.dart';
+import 'ui/open.dart';
 import 'ui/font.dart';
 import 'err.dart';
 
@@ -35,7 +35,7 @@ Future<void> main2() async {
       (files) async {
         for (final file in files) {
           debugPrint('Got[MacosPackage]: ${file.path}');
-          OpenFile.send(file.path);
+          OpenPump.send(file.path);
         }
       },
       onError: (error, stackTrace) {
@@ -49,13 +49,13 @@ Future<void> main2() async {
     // Check if app was opened with a file
     String? initialFile = await openWithAppPlugin.getInitialFile();
     if (initialFile != null) {
-      OpenFile.send(initialFile);
+      OpenPump.send(initialFile);
     }
 
     // Listen for new files opened while app is running
     openWithAppPlugin.getFileStream().listen((filePath) {
       debugPrint("New file: $filePath");
-      OpenFile.send(filePath);
+      OpenPump.send(filePath);
     });
   }
 

@@ -231,7 +231,7 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     onTap: () {
       // TODO: ugly
       ref.read(ciip.notifier).update(e.id);
-      context.push('/read/${e.id}');
+      context.push('/book/${e.id}');
       ref.read(shopProvider.notifier).touch(e.id);
     },
     onLongPress: () => context.push('/edit/${e.id}'),

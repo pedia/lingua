@@ -1,4 +1,4 @@
-String sc2tc(String s) {
+String convert(String s) {
   final buffer = StringBuffer();
   for (int i = 0; i < s.length; i++) {
     String c = s[i];
