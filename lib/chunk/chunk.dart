@@ -3,7 +3,7 @@ library chunk;
 
 import 'dart:io';
 import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart' as html_parser;
+import 'package:html/parser.dart' as dom;
 import 'epub.dart';
 import 'mobi.dart';
 
@@ -70,16 +70,32 @@ class Chunk {
   @override
   String toString() =>
       'Chunk(${lang.name}${strong ? ", strong" : ""}${id != null ? ", #$id" : ""}: ${text ?? spans})';
+
+  Chunk copyWith({
+    String? id,
+    int? idx,
+    Lang? lang,
+    List<Span>? spans,
+    String? text,
+    bool? strong,
+  }) => Chunk(
+    id: id ?? this.id,
+    idx: idx ?? this.idx,
+    lang: lang ?? this.lang,
+    spans: spans ?? this.spans,
+    text: text ?? this.text,
+    strong: strong ?? this.strong,
+  );
 }
 
-class Image extends Chunk {
-  Image(this.src, {this.alt, this.w, this.h, super.id});
+class Picture extends Chunk {
+  Picture(this.src, {this.alt, this.w, this.h, super.id});
   final String src;
   final String? alt;
-  final double? w, h;
+  double? w, h;
 
   @override
-  String toString() => 'Image($src${alt != null ? ", alt: $alt" : ""})';
+  String toString() => 'Picture($src${alt != null ? ", alt: $alt" : ""})';
 }
 
 abstract class Chapter {
@@ -99,9 +115,15 @@ class LazyChapter extends Chapter {
 }
 
 class Book {
-  Book({required this.title, this.author, this.chapters = const []});
+  Book({
+    required this.title,
+    this.author,
+    this.description,
+    this.chapters = const [],
+  });
   final String title;
   final String? author;
+  final String? description;
   final List<Chapter> chapters;
 }
 
@@ -128,12 +150,12 @@ class HtmlChunkParser {
 
   /// Extract footnote definitions (`<aside epub:type="footnote">` / `.duokan-footnote-item`).
   static Map<String, String> extractFootnotes(String html) {
-    return _extractFootnotesFromDoc(html_parser.parseFragment(html));
+    return _extractFootnotesFromDoc(dom.parseFragment(html));
   }
 
   /// Extract first heading or `<title>` for a chapter, falling back to [fallback].
   static String extractChapterTitle(String html, String fallback) {
-    final doc = html_parser.parseFragment(html);
+    final doc = dom.parseFragment(html);
     for (final selector in ['h1', 'h2', 'h3', 'title']) {
       final text = doc
           .querySelector(selector)
@@ -145,14 +167,14 @@ class HtmlChunkParser {
     return fallback;
   }
 
-  /// Parse an HTML / XHTML fragment into [Chunk]s ([Chunk], [Image]).
+  /// Parse an HTML / XHTML fragment into [Chunk]s ([Chunk], [Picture]).
   static List<Chunk> parseHtml(
     String html, {
     Lang defaultLang = Lang.unknown,
     Map<String, String> footnotes = const {},
     String Function(String recindex)? resolveRecindex,
   }) {
-    final doc = html_parser.parseFragment(html);
+    final doc = dom.parseFragment(html);
     final fnMap = <String, String>{
       ...footnotes,
       ..._extractFootnotesFromDoc(doc),
@@ -548,7 +570,7 @@ class HtmlChunkParser {
     return null;
   }
 
-  static Image? _buildImage(
+  static Picture? _buildImage(
     dom.Element img,
     String Function(String recindex)? resolveRecindex,
   ) {
@@ -590,7 +612,7 @@ class HtmlChunkParser {
             ? _getId(img.parent!)
             : null);
 
-    return Image(src, alt: alt, w: w, h: h, id: id);
+    return Picture(src, alt: alt, w: w, h: h, id: id);
   }
 
   static double? _parseSize(String? raw) {

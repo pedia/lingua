@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../ui/chapter_list.dart' as legacy;
 import '../ui/book.dart' as legacy;
-import '../imap.dart';
 import '../tts/engine.dart' as tts;
 import '../tts/voice.dart' as tts;
 import '../settings/setting.dart';
+import '../zh/fix.dart';
 
 import 'chunk.dart';
 
@@ -90,7 +90,7 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
               16.0,
               16.0,
             ),
-            child: ChapterView(widget.book.chapters[ci]),
+            child: ContentView(widget.book.chapters[ci]),
           ),
 
           // 2. Sliding Top AppBar / Header
@@ -110,6 +110,7 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     ch.title,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -184,22 +185,22 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
   }
 
   void play() async {
-    final lang = ref.read(
+    final setlang = ref.read(
       settingProvider.select((m) => m.stringOf('tts.mode')),
     );
 
     final state = ref.read(legacy.isp(widget.id));
     var it = widget.book.chapters[state.readChapterIndex].chunks.where(
-      (c) => lang == '' || c.lang == Lang.from(lang),
+      (c) => (setlang == '' || c.lang == Lang.from(setlang)) && c is! Picture,
     );
 
     if (state.speakChapterIndex == state.readChapterIndex) {
       it = it.skip(state.speakLine);
     }
 
-    final lines = it.toList();
+    final lines = it.map((c) => c.fix(speakFixit)).toList();
 
-    print('lines for $lang $state');
+    print('lines for $setlang $state');
     print(lines.sublist(0, 2));
 
     final es = ref.read(tts.engineProvider.notifier);
@@ -286,8 +287,8 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
   }
 }
 
-class ChapterView extends StatelessWidget {
-  const ChapterView(this.chapter, {super.key});
+class ContentView extends StatelessWidget {
+  const ContentView(this.chapter, {super.key});
   final Chapter chapter;
 
   @override
@@ -297,21 +298,58 @@ class ChapterView extends StatelessWidget {
         style: const TextStyle(
           fontFamily: '.osdefault',
           fontSize: 16.0,
-          color: Colors.black87,
           height: 1.5,
         ),
-        children: chapter.chunks
-            .imap(
-              (i, c) => TextSpan(
-                text: c.text != null ? '${c.text}\n' : 'TODO $c',
-                style: TextStyle(
-                  fontWeight: i % 5 == 0 ? FontWeight.bold : FontWeight.normal,
-                  color: i % 3 == 0 ? Colors.indigo : Colors.black87,
-                ),
-              ),
-            )
-            .toList(),
+        children: chapter.chunks.map(block).toList(),
       ),
     );
   }
+
+  InlineSpan block(Chunk c) {
+    if (c is Picture) {
+      return WidgetSpan(child: Image.memory(note));
+    }
+
+    if (c.text != null) {
+      return TextSpan(
+        text: '${c.text}\n',
+        style: c.strong
+            ? const TextStyle(
+                fontFamily: '.osdefault',
+                fontSize: 20.0,
+                height: 1.6,
+              )
+            : null,
+      );
+    }
+
+    final cs = c.spans.map(span).toList()
+      ..add(TextSpan(text: '\n', style: TextStyle(fontSize: 0)));
+    return TextSpan(children: cs);
+  }
+
+  InlineSpan span(Span p) {
+    if (p is Anchor) {
+      return TextSpan(
+        text: p.text,
+        style: const TextStyle(color: Colors.blue),
+      );
+    }
+    return TextSpan(text: p.text);
+  }
 }
+
+final note = Uint8List.fromList([
+  137, 80, 78, 71, 13, 10, 26, 10, // PNG Signature
+  0, 0, 0, 13, 73, 72, 68, 82, // IHDR Header
+  0, 0, 0, 8, 0, 0, 0, 8, // Width (8px), Height (8px)
+  8, 2, 0, 0, 0, // 8-bit, TrueColor RGB, No Filter
+  75, 109, 41, 220, // Validated IHDR CRC
+  0, 0, 0, 20, 73, 68, 65, 84, // IDAT Header (20 bytes of data)
+  120, 156, 99, 100, 96, 248, 207, 128, // Compressed image pixel payload
+  13, 48, 97, 21, 29, 180, 18, 0,
+  203, 67, 1, 15,
+  86, 36, 140, 186, // Validated IDAT CRC
+  0, 0, 0, 0, 73, 69, 78, 68, // IEND End of Image
+  174, 66, 96, 130, // Validated IEND CRC
+]);

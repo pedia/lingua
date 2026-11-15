@@ -133,7 +133,7 @@ void main() {
 
       final chunks = ChunkParser.parseHtml(html);
       expect(chunks.length, equals(2));
-      expect(chunks.whereType<Image>(), isEmpty);
+      expect(chunks.whereType<Picture>(), isEmpty);
 
       final fn0 = chunks[0].spans[0] as Anchor;
       expect(fn0.note, contains('Littera de le maravigliose battaglie'));
@@ -155,8 +155,8 @@ void main() {
 
         final chunks = ChunkParser.parseHtml(html);
         expect(chunks.length, equals(2));
-        expect(chunks[1], isA<Image>());
-        final img = chunks[1] as Image;
+        expect(chunks[1], isA<Picture>());
+        final img = chunks[1] as Picture;
         expect(img.src, equals('../images/cover.png'));
         expect(img.alt, equals('Cover Image'));
         expect(img.w, equals(600.0));
@@ -175,8 +175,8 @@ void main() {
 
       final chunks = ChunkParser.parseHtml(html);
       expect(chunks.length, equals(1));
-      expect(chunks[0], isA<Image>());
-      final img = chunks[0] as Image;
+      expect(chunks[0], isA<Picture>());
+      final img = chunks[0] as Picture;
       expect(img.src, equals('cover.jpeg'));
       expect(img.w, equals(547.0));
       expect(img.h, equals(800.0));
@@ -441,7 +441,7 @@ void main() {
         final ch2 = book.chapters[1];
         expect(ch2.title, equals('Chapter 2'));
         expect((ch2.chunks[1].spans[1] as Anchor).note, equals('Mobi note.'));
-        final img = ch2.chunks[2] as Image;
+        final img = ch2.chunks[2] as Picture;
         expect(img.src, equals('mobi_image_00001.png'));
         expect(img.alt, equals('Map'));
       },

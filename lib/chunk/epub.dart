@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 import 'package:xml/xml.dart';
+import 'package:html/parser.dart' as dom;
 
 import 'chunk.dart';
 
@@ -44,6 +45,11 @@ class EpubParser {
         'EPUB';
     final author = opfXml
         .findAllElements('dc:creator')
+        .firstOrNull
+        ?.innerText
+        .trim();
+    final description = opfXml
+        .findAllElements('dc:description')
         .firstOrNull
         ?.innerText
         .trim();
@@ -89,7 +95,20 @@ class EpubParser {
       );
     }).toList();
 
-    return Book(title: title, author: author, chapters: chapters);
+    return Book(
+      title: title,
+      author: author,
+      description: description != null ? html2text(description) : null,
+      chapters: chapters,
+    );
+  }
+
+  static String html2text(String src) {
+    if (src.contains('</')) {
+      final doc = dom.parseFragment(src);
+      return doc.text ?? '';
+    }
+    return src;
   }
 
   /// Parse an EPUB file at [filePath] into a [Book].
