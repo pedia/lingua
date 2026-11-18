@@ -41,21 +41,21 @@ class _ReadFrameState extends ConsumerState<ReadFrame> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      AsyncValueX(ref.watch(bookProvider(widget.id))).when(
-        data: (book) {
-          if (book == null) {
-            return InfoScreen('Unable to open item:${widget.id}');
-          }
-          this.book = book;
-          return builds(context, book);
-        },
-        loading: () => const Center(), // TODO: better solution
-        error: (err, stackTrace) {
-          print(stackTrace);
-          return InfoScreen('Unable to open it\n$err');
-        },
-      );
+  Widget build(BuildContext context) => Center();
+  // AsyncValueX(ref.watch(bookProvider(widget.id))).when(
+  //   data: (book) {
+  //     if (book == null) {
+  //       return InfoScreen('Unable to open item:${widget.id}');
+  //     }
+  //     this.book = book;
+  //     return builds(context, book);
+  //   },
+  //   loading: () => const Center(), // TODO: better solution
+  //   error: (err, stackTrace) {
+  //     print(stackTrace);
+  //     return InfoScreen('Unable to open it\n$err');
+  //   },
+  // );
 
   void applyVoice(BuildContext context) {
     final m = ref.read(settingProvider);

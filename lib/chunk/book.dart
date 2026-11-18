@@ -1,17 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:saf/saf.dart';
 import 'package:path/path.dart' as p;
 
-import '../g.dart';
 import '../ui/gadget.dart';
 import '../ui/book.dart';
+import '../data/model.dart';
 import 'chunk.dart';
 import 'read.dart';
-import '../data/model.dart';
 
 class BookScreen extends StatelessWidget {
   const BookScreen(this.id, {super.key});

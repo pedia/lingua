@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/model.dart';
-import '../epub/epub.dart' as epub;
+import '../chunk/chunk.dart';
 import 'book.dart';
 import '../imap.dart';
 
@@ -21,7 +21,7 @@ class _BookEditScreenState extends ConsumerState<ItemEditScreen> {
   late Item _item;
   late int _selectedShelf;
   late int _origin;
-  epub.Book? _book;
+  Book? _book;
 
   @override
   void initState() {
@@ -122,10 +122,10 @@ class _BookEditScreenState extends ConsumerState<ItemEditScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              if (_book?.coverBytes != null) ...[
+              if (_book?.cover() != null) ...[
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Image.memory(_book!.coverBytes!, fit: BoxFit.fitWidth),
+                  child: Image.memory(_book!.cover()!, fit: BoxFit.fitWidth),
                 ),
                 const SizedBox(height: 16),
               ],

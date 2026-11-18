@@ -7,24 +7,34 @@ import 'package:lingua/hive/hive_adapters.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(AnchorAdapter());
+    registerAdapter(ChunkAdapter());
+    registerAdapter(FixitAdapter());
     registerAdapter(ItemAdapter());
     registerAdapter(ItemStateAdapter());
     registerAdapter(ItemTypeAdapter());
+    registerAdapter(LangAdapter());
     registerAdapter(NoteAdapter());
     registerAdapter(ProgressAdapter());
     registerAdapter(ShelfAdapter());
     registerAdapter(ShopAdapter());
+    registerAdapter(SpanAdapter());
   }
 }
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(AnchorAdapter());
+    registerAdapter(ChunkAdapter());
+    registerAdapter(FixitAdapter());
     registerAdapter(ItemAdapter());
     registerAdapter(ItemStateAdapter());
     registerAdapter(ItemTypeAdapter());
+    registerAdapter(LangAdapter());
     registerAdapter(NoteAdapter());
     registerAdapter(ProgressAdapter());
     registerAdapter(ShelfAdapter());
     registerAdapter(ShopAdapter());
+    registerAdapter(SpanAdapter());
   }
 }

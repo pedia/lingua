@@ -10,18 +10,17 @@ import 'package:saf/saf.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../settings/setting.dart';
+import '../hw.dart';
+import '../g.dart';
+import '../data/model.dart';
+import '../chunk/chunk.dart';
+import '../demo/freya.dart';
+import '../data/sample.dart';
 import 'setting.dart';
 import 'voice_setting.dart';
 import 'font.dart';
-import '../hw.dart';
-import '../g.dart';
-import 'chapter_list.dart';
-import '../data/model.dart';
-import '../epub/epub.dart' as epub;
-import '../epub/parser.dart' as epub;
-import '../demo/freya.dart';
-import '../data/sample.dart';
 import 'gadget.dart';
+import 'chapter_list.dart';
 
 class ArchiveProvider extends FileProvider {
   ArchiveProvider(String base, this.files) : base = Uri(path: base);
@@ -40,21 +39,6 @@ class ArchiveProvider extends FileProvider {
     return files[fp]?.content ?? Uint8List.fromList([]);
   }
 }
-
-final bookProvider = FutureProvider.autoDispose.family<epub.Book?, int>((
-  ref,
-  id,
-) async {
-  final m = box.get('item2:$id');
-  if (m == null) throw Exception('item:$id not exist');
-
-  final item = m as Item;
-  final book = await item.open();
-  if (book != null) {
-    item.apply(book);
-  }
-  return book;
-});
 
 class Progress {
   const Progress({this.ci = 0, this.li = 0, this.offset});
@@ -172,17 +156,17 @@ final isp =
     );
 
 extension ItemExt on Item {
-  Item apply(epub.Book book) {
-    if (book.coverBytes != null) {
+  Item apply(Book book) {
+    if (book.cover() != null) {
       sbox.get('icon:$id').then((ib) {
         if (ib == null) {
-          sbox.put('icon:$id', iconify(book.coverBytes!));
+          sbox.put('icon:$id', iconify(book.cover()!));
         }
       });
     }
 
-    if ((book.author.isNotEmpty && author == null) ||
-        (book.description.isNotEmpty && description == null)) {
+    if ((book.author != null && author == null) ||
+        (book.description != null && description == null)) {
       print('$this apply $book');
       return copyWith(
         // make sure apply once
@@ -194,20 +178,18 @@ extension ItemExt on Item {
     return this;
   }
 
-  Future<epub.Book?> open() async {
-    epub.Book? book;
+  Future<Book?> open() async {
+    Book? book;
     if (id == 5) {
-      book = freya;
+      // book = freya;
     } else if (id == 6) {
-      book = sample();
+      // book = sample();
     } else if (type == ItemType.file) {
       String fp = path;
       if (path.startsWith('content://')) {
         await requestStoragePermission();
 
-        book = const epub.EpubParser().parseBytes(
-          await Saf().readFileBytes(fp),
-        );
+        book = ChunkParser.parseBytes(await Saf().readFileBytes(fp));
       } else {
         final appDir = await getApplicationDocumentsDirectory();
         fp = p.join(appDir.path, 'books', path);
@@ -216,11 +198,11 @@ extension ItemExt on Item {
         if (!file.existsSync()) {
           throw Exception('book:$type/$path not exist');
         }
-        book = const epub.EpubParser().parseBytes(await file.readAsBytes());
+        book = ChunkParser.parseBytes(await file.readAsBytes());
       }
     } else if (type == ItemType.assets) {
       final d = await rootBundle.load(path);
-      book = epub.EpubParser().parseBytes(d.buffer.asInt8List());
+      book = ChunkParser.parseBytes(d.buffer.asInt8List());
     }
 
     return book;

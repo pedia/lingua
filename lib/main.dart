@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:universal_io/universal_io.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -15,15 +14,13 @@ import 'app.dart';
 import 'g.dart';
 import 'ui/open.dart';
 import 'ui/font.dart';
-import 'err.dart';
 
-Future<void> main2() async {
-  try {
-    final json = await rootBundle.loadString('lib/riverpod_dependencies.json');
-    RiverpodDevToolsRegistry.instance.loadFromJson(json);
-  } catch (_) {
-    // DevTools shows setup instructions
-  }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // FlutterError.onError = (FlutterErrorDetails details) {
+  //   FlutterError.dumpErrorToConsole(details);
+  // };
 
   Hive.registerAdapters();
 
@@ -42,9 +39,7 @@ Future<void> main2() async {
         debugPrint('Could not open file[MacosPackage]: $error');
       },
     );
-  }
-
-  if (Platform.isAndroid) {
+  } else if (Platform.isAndroid) {
     final openWithAppPlugin = OpenWithApp();
     // Check if app was opened with a file
     String? initialFile = await openWithAppPlugin.getInitialFile();
@@ -67,30 +62,5 @@ Future<void> main2() async {
       observers: [RiverpodDevToolsObserver()],
       child: MainApp(family: ff),
     ),
-  );
-}
-
-void main() {
-  final container = ProviderContainer();
-
-  runZonedGuarded(
-    () async {
-      WidgetsFlutterBinding.ensureInitialized();
-
-      FlutterError.onError = (FlutterErrorDetails details) {
-        FlutterError.dumpErrorToConsole(details);
-        container.read(globalErrorProvider.notifier).reportError(details);
-      };
-
-      await main2();
-    },
-    (error, stackTrace) {
-      final details = FlutterErrorDetails(
-        exception: error,
-        stack: stackTrace,
-        library: 'Async / Zone',
-      );
-      container.read(globalErrorProvider.notifier).reportError(details);
-    },
   );
 }

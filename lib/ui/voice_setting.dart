@@ -76,40 +76,6 @@ class _EngineSettingPageState extends ConsumerState<EngineSettingPage> {
     super.dispose();
   }
 
-  Widget chooseVoice(BuildContext context, int i) {
-    return PopupMenuButton<Voice>(
-      tooltip: 'Choose voice',
-      // TODO: initialValue: vs[i].voice,
-      onSelected: (v) {
-        setState(() => ess[i] = ess[i].copyWith(voice: v));
-      },
-      itemBuilder: (BuildContext context) {
-        return allvoices
-            .where((e) {
-              if (e['locale'] != ess[i].language) {
-                return false;
-              }
-              // exclude gender: unspecified
-              if (e['gender'] == 'unspecified') {
-                return false;
-              }
-
-              // com.apple.speech.synthesis.voice.Fred
-              return true;
-            })
-            .map((e) => PopupMenuItem<Voice>(value: e, child: Text(e.title)))
-            .toList();
-      },
-      child: TextButton(
-        onPressed: null, // disabled because PopupMenuButton handles the tap
-        child: Text(
-          ess[i].title,
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
-      ),
-    );
-  }
-
   Widget chooseVoiceDropdown(BuildContext context, int i) {
     return DropdownButton<Voice>(
       key: Key(ess[i].lang.toString()),

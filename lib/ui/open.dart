@@ -96,7 +96,7 @@ Future<int> scan({String? folder}) async {
         (e) {
           debugPrint('scan loop $e');
 
-          if (e.path.endsWith('.epub')) {
+          if (isBookFile(e.path)) {
             final fp = folder == null
                 ? e.path.substring(dir.path.length + 1) // +1 for last /
                 : e.path; // absolute full path with start /
@@ -114,10 +114,21 @@ Future<int> scan({String? folder}) async {
   return c.future;
 }
 
+bool isBookFile(String fn) {
+  return fn.endsWith('.epub') ||
+      fn.endsWith('.mobi') ||
+      fn.endsWith('.azw') ||
+      fn.endsWith('.azw3');
+}
+
 void pickFiles() async {
   if (Platform.isAndroid) {
     final docs = await saf.SafUtil().pickFiles(
-      mimeTypes: ['application/epub+zip'],
+      mimeTypes: [
+        'application/epub+zip',
+        'application/x-mobipocket-ebook',
+        'application/vnd.amazon.ebook',
+      ],
     );
     if (docs != null) {
       for (final f in docs) {
@@ -127,7 +138,7 @@ void pickFiles() async {
   } else {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const ['epub'],
+      allowedExtensions: const ['epub', 'mobi', 'azw', 'azw3'],
       allowMultiple: true,
     );
     // /data/user/0/com.lingua.reader.lingua/cache/file_picker/1792052890257/最后...
@@ -153,7 +164,7 @@ Future<int> pickDirAndScan() async {
 
       Isolate.run(() {
         for (final f in fs) {
-          if (!f.isDir && f.name.endsWith('.epub')) {
+          if (!f.isDir && isBookFile(f.name)) {
             OpenPump.send(f.uri);
           }
         }

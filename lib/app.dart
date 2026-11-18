@@ -15,6 +15,7 @@ import 'package:lingua/ui/chapter_list.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
 import 'package:lingua/ui/voice_setting.dart';
+import 'package:lingua/zh/fixedit.dart';
 
 import 'settings/setting.dart';
 import 'ui/font.dart';
@@ -23,6 +24,7 @@ import 'ui/shelf_edit.dart';
 import 'ui/md.dart';
 import 'ui/item_edit.dart';
 import 'err.dart';
+import 'g.dart';
 
 extension CupertinoTextThemeDataApply on CupertinoTextThemeData {
   CupertinoTextThemeData withFontFamily(String family) {
@@ -58,6 +60,9 @@ class MainApp extends ConsumerWidget {
       iconTheme: IconThemeData(
         color: ColorScheme.fromSeed(seedColor: Colors.blue).primary,
       ),
+      scaffoldBackgroundColor: brightness == Brightness.dark
+          ? Colors.black
+          : null,
     );
 
     final textTheme = base.textTheme
@@ -119,11 +124,21 @@ class MainApp extends ConsumerWidget {
         routes: [
           GoRoute(path: '/', builder: (_, _) => ShelfFrame()),
           GoRoute(
-            path: '/read2/:id',
-            builder: (_, state) => BookScreen(state.pint('id', 4)),
+            path: '/book/:id',
+            builder: (_, state) {
+              final id = state.pint('id', 4);
+              box.put('last', id);
+              return BookScreen(id);
+            },
+            onExit: (context, state) {
+              box.delete('last');
+              return true;
+            },
           ),
-          GoRoute(path: '/hive', builder: (_, _) => HiveFrame()),
+
           GoRoute(path: '/setting', builder: (_, _) => SettingFrame()),
+          GoRoute(path: '/fixit/edit', builder: (_, _) => FixitEdit()),
+          GoRoute(path: '/hive', builder: (_, _) => HiveFrame()),
           GoRoute(
             path: '/engine',
             builder: (ctx, _) => EngineSettingPage.from(ctx),
@@ -139,10 +154,7 @@ class MainApp extends ConsumerWidget {
             path: '/master-detail',
             builder: (_, _) => TabletReadFrame(2),
           ),
-          GoRoute(
-            path: '/book/:id',
-            builder: (_, state) => BookScreen(state.pint('id', 4)),
-          ),
+
           GoRoute(
             path: '/edit/:id',
             builder: (_, state) => ItemEditScreen(id: state.pint('id', 4)),
@@ -208,6 +220,7 @@ extension _StateEx on GoRouterState {
 final demoPaths = [
   '/',
   '/book/91',
+  '/fixit/edit',
   '/note',
   '/offset',
   '/stuck',

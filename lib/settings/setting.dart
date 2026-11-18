@@ -133,7 +133,11 @@ class Setting extends Notifier<TypedMap> {
                 'rate': 0.62,
                 'pitch': 1.0,
                 'language': 'zh-TW',
-                'voice': {'locale': 'zh-TW', 'name': 'Meijia'},
+                'voice': {
+                  'locale': 'zh-TW',
+                  'name': 'Meijia',
+                  'quality': 'premium',
+                },
               },
             },
             'ui': {
@@ -164,6 +168,7 @@ class SettingItem {
   const SettingItem({
     required this.type,
     this.key,
+    this.toType,
     required this.title,
     this.defaults,
     this.description,
@@ -175,6 +180,7 @@ class SettingItem {
     this.children = const [],
   });
   final String? key;
+  final Object? Function(Object?)? toType;
   final dynamic defaults;
   final SettingType type;
   final String title;

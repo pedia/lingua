@@ -88,7 +88,7 @@ class Engine {
       _eventController.add(Event(playback: Playback.startLine, chunk: line));
 
       // Determine text to speak (supports resuming from offset if paused mid-line)
-      String textToSpeak = line.text ?? '';
+      String textToSpeak = line.speak;
       if (_currentTextOffset > 0 && _currentTextOffset < textToSpeak.length) {
         textToSpeak = textToSpeak.substring(_currentTextOffset);
       }

@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:go_router/go_router.dart';
 import '../app.dart';
 import '../settings/setting.dart';
+import '../tts/voice.dart';
+import '../chunk/chunk.dart';
 import 'open.dart';
 
 class SettingFrame extends ConsumerStatefulWidget {
@@ -19,15 +22,101 @@ class SettingFrame extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingFrame> {
   @override
   void initState() {
+    loadVoices();
     super.initState();
   }
 
   @override
   void dispose() {
+    tts.stop();
     super.dispose();
   }
 
-  final items = <SettingItem>[
+  final tts = FlutterTts();
+  final envs = <(String, Voice)>[];
+  final zhvs = <(String, Voice)>[];
+
+  void loadVoices() {
+    tts.getVoices.then((x) {
+      final list = (x as List)
+          .cast<Map>()
+          .map((e) => Voice(Map<String, String>.from(e)))
+          .where((e) => e.valid)
+          .toList();
+
+      for (final v in list) {
+        if (v.match(Lang.en)) {
+          envs.add((v.title, v));
+        } else if (v.match(Lang.zh)) {
+          zhvs.add((v.title, v));
+        }
+      }
+
+      {
+        final m = ref.read(settingProvider.select((s) => s.of('tts.en.voice')));
+        final v = Voice((m as Map).cast<String, String>());
+        for (final i in envs) {
+          debugPrint('${i.$1}, == ${v == i.$2} ${v == i.$2 ? i.$2 : ''}');
+        }
+        if (envs.where((i) => i.$2 == v).length != 1) {
+          debugPrint('Set tts.en.voice to null');
+          ref.read(settingProvider.notifier).put('tts.en.voice', null);
+        }
+      }
+      {
+        final m = ref.read(settingProvider.select((s) => s.of('tts.zh.voice')));
+        if (m != null) {
+          final v = Voice((m as Map).cast<String, String>());
+          for (final i in zhvs) {
+            debugPrint('${i.$1}, == ${v == i.$2} ${v == i.$2 ? i.$2 : ''}');
+          }
+          if (zhvs.where((i) => i.$2 == v).length != 1) {
+            debugPrint('Set tts.zh.voice to null');
+            ref.read(settingProvider.notifier).put('tts.zh.voice', null);
+          }
+        }
+      }
+
+      // for zhvs/envs
+      setState(() {});
+    });
+  }
+
+  void _playSample(Lang lang, WidgetRef ref) async {
+    // lang.name = en, setting key: tts.en
+    final sm = ref.read(
+      settingProvider.select((m) => m.of('tts.${lang.name}')),
+    );
+    final es = EngineSetting.from(lang, sm);
+    await tts.stop();
+    await tts.awaitSpeakCompletion(true);
+    await tts.setSpeechRate(es.rate);
+    await tts.setPitch(es.pitch);
+    if (es.volume != null) {
+      await tts.setVolume(es.volume!);
+    }
+
+    // setLanguage must before setVoice
+    try {
+      await tts.setLanguage(es.language);
+    } catch (e) {
+      debugPrint('setLanguage failed: $e');
+    }
+
+    if (es.voice != null) {
+      await tts.setVoice(es.voice!);
+    }
+
+    final s =
+        {
+          Lang.zh: '你好,选择体验更好的语音合成引擎 say something in English',
+          Lang.en: 'Hello, I am focus on english speaking',
+        }[lang] ??
+        '';
+    tts.speak(s);
+  }
+
+  List<SettingItem> get items => <SettingItem>[
     SettingItem(
       type: SettingType.group,
       title: '',
@@ -57,9 +146,8 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
         SettingItem(
           type: SettingType.choice,
           key: 'ui.mode',
-          title: 'Mode',
+          title: 'Display',
           defaults: '',
-          description: 'List en|zh|all in read view',
           choices: [
             ('Only English', 'en'),
             ('Only Chinese', 'zh'),
@@ -103,7 +191,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
         SettingItem(
           type: SettingType.choice,
           key: 'tts.mode',
-          title: 'Mode',
+          title: 'Speak',
           defaults: '',
           choices: [
             ('Only English', 'en'),
@@ -115,6 +203,85 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
           type: SettingType.readonly,
           key: 'ui.foo',
           title: 'Readonly None',
+        ),
+      ],
+    ),
+
+    SettingItem(
+      type: SettingType.group,
+      title: 'English Voice',
+      children: [
+        SettingItem(
+          type: SettingType.choice,
+          toType: (v) =>
+              v != null ? Voice((v as Map).cast<String, String>()) : null,
+          title: 'Voice',
+          key: 'tts.en.voice',
+          choices: envs,
+        ),
+        SettingItem(
+          type: SettingType.builder,
+          title: '',
+          tailBuilder: (context, ref, child) => Text('Play Sample'),
+          onTap: (_, ref) => _playSample(Lang.en, ref),
+        ),
+        SettingItem(
+          type: SettingType.slider,
+          title: 'Rate',
+          key: 'tts.en.rate',
+          range: Range<double>(0.4, 0.7),
+        ),
+        SettingItem(
+          type: SettingType.slider,
+          title: 'Pitch',
+          key: 'tts.en.pitch',
+          range: Range<double>(0.0, 1.0),
+        ),
+        SettingItem(
+          type: SettingType.slider,
+          title: 'Volume',
+          key: 'tts.en.volume',
+          defaults: 1.0,
+          range: Range<double>(0.0, 1.0),
+        ),
+      ],
+    ),
+    SettingItem(
+      type: SettingType.group,
+      title: 'Chinese Voice',
+      children: [
+        SettingItem(
+          type: SettingType.choice,
+          toType: (v) =>
+              v != null ? Voice((v as Map).cast<String, String>()) : null,
+          title: 'Voice',
+          key: 'tts.zh.voice',
+          choices: zhvs,
+        ),
+        SettingItem(
+          type: SettingType.builder,
+          title: '',
+          tailBuilder: (context, ref, child) => Text('Play Sample'),
+          onTap: (_, ref) => _playSample(Lang.zh, ref),
+        ),
+        SettingItem(
+          type: SettingType.slider,
+          title: 'Rate',
+          key: 'tts.zh.rate',
+          range: Range<double>(0.4, 0.7),
+        ),
+        SettingItem(
+          type: SettingType.slider,
+          title: 'Pitch',
+          key: 'tts.zh.pitch',
+          range: Range<double>(0.0, 1.0),
+        ),
+        SettingItem(
+          type: SettingType.slider,
+          title: 'Volume',
+          key: 'tts.zh.volume',
+          defaults: 1.0,
+          range: Range<double>(0.0, 1.0),
         ),
       ],
     ),
@@ -227,6 +394,9 @@ class Tile extends ConsumerWidget {
     if (item.key != null) {
       v = ref.watch(settingProvider.select((m) => m.of(item.key!)));
     }
+    if (item.toType != null) {
+      v = item.toType?.call(v);
+    }
     final tile = switch (item.type) {
       SettingType.builder =>
         item.builder != null
@@ -247,17 +417,18 @@ class Tile extends ConsumerWidget {
       SettingType.choice => ListTile(
         title: Text(item.title),
         subtitle: item.description == null ? null : Text(item.description!),
-        trailing: DropdownButton<Object>(
+        trailing: DropdownButton<Object?>(
           key: item.key == null ? null : Key(item.key!),
           value: v ?? item.defaults,
           underline: null,
           onChanged: (v) {
-            debugPrint('v: ${v.runtimeType}');
+            // debugPrint('v: ${v.runtimeType}');
             ref.read(settingProvider.notifier).put(item.key!, v);
           },
           items: item.choices!
               .map(
-                (e) => DropdownMenuItem<Object>(value: e.$2, child: Text(e.$1)),
+                (e) =>
+                    DropdownMenuItem<Object?>(value: e.$2, child: Text(e.$1)),
               )
               .toList(),
         ),
@@ -265,7 +436,8 @@ class Tile extends ConsumerWidget {
       SettingType.slider => ListTile(
         title: Text(item.title),
         trailing: Text(
-          '${v ?? item.defaults}',
+          //
+          '${v is double ? v.toStringAsFixed(2) : v ?? item.defaults}',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         subtitle: item.description == null ? null : Text(item.description!),
@@ -277,12 +449,18 @@ class Tile extends ConsumerWidget {
       ),
 
       SettingType.group => Card(
-        margin: EdgeInsets.symmetric(vertical: 6),
+        margin: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(' ${item.title}'),
+            if (item.title.isNotEmpty)
+              ListTile(
+                title: Text(
+                  item.title,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
             ...item.children.map((i) => Tile(i)),
           ],
         ),

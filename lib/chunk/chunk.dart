@@ -2,6 +2,7 @@
 library chunk;
 
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as dom;
 import 'epub.dart';
@@ -52,7 +53,7 @@ enum Lang {
 
 /// Contains text or Span(s)
 class Chunk {
-  Chunk({
+  const Chunk({
     this.id,
     this.idx = 0,
     this.spans = const <Span>[],
@@ -66,6 +67,8 @@ class Chunk {
   final List<Span> spans;
   final String? text;
   final bool strong;
+
+  String get speak => text ?? spans.map((span) => span.text).join('');
 
   @override
   String toString() =>
@@ -89,13 +92,19 @@ class Chunk {
 }
 
 class Picture extends Chunk {
-  Picture(this.src, {this.alt, this.w, this.h, super.id});
+  Picture({required this.src, this.alt, this.w, this.h, super.id});
   final String src;
   final String? alt;
   double? w, h;
 
   @override
+  String get speak => alt ?? '';
+
+  @override
   String toString() => 'Picture($src${alt != null ? ", alt: $alt" : ""})';
+
+  // Picture copyWith({String? src, String? alt, double? w, double? h}) =>
+  //     Picture(src: src ?? this.src, alt: alt ?? this.alt);
 }
 
 abstract class Chapter {
@@ -125,6 +134,8 @@ class Book {
   final String? author;
   final String? description;
   final List<Chapter> chapters;
+
+  Uint8List? cover() => blue;
 }
 
 /// Shared HTML/XHTML chunk parser used by EPUB and MOBI/AZW/AZW3 readers.
@@ -530,7 +541,8 @@ class HtmlChunkParser {
     if (_hangul.hasMatch(text)) return Lang.kr;
     if (_kana.hasMatch(text)) return Lang.jp;
     if (_cjk.hasMatch(text)) {
-      if (_latin.hasMatch(text) && text.length > 25) return Lang.all;
+      // tw tts speak english fine, but en tts cannot speak zh 
+      // if (_latin.hasMatch(text) && text.length > 25) return Lang.all;
       return Lang.zh;
     }
     if (_spanish.hasMatch(text)) return Lang.es;
@@ -612,7 +624,7 @@ class HtmlChunkParser {
             ? _getId(img.parent!)
             : null);
 
-    return Picture(src, alt: alt, w: w, h: h, id: id);
+    return Picture(src: src, alt: alt, w: w, h: h, id: id);
   }
 
   static double? _parseSize(String? raw) {
@@ -653,3 +665,18 @@ class ChunkParser {
     return parseBytes(bytes);
   }
 }
+
+final blue = Uint8List.fromList([
+  137, 80, 78, 71, 13, 10, 26, 10, // PNG Signature
+  0, 0, 0, 13, 73, 72, 68, 82, // IHDR Header
+  0, 0, 0, 8, 0, 0, 0, 8, // Width (8px), Height (8px)
+  8, 2, 0, 0, 0, // 8-bit, TrueColor RGB, No Filter
+  75, 109, 41, 220, // Validated IHDR CRC
+  0, 0, 0, 20, 73, 68, 65, 84, // IDAT Header (20 bytes of data)
+  120, 156, 99, 100, 96, 248, 207, 128, // Compressed image pixel payload
+  13, 48, 97, 21, 29, 180, 18, 0,
+  203, 67, 1, 15,
+  86, 36, 140, 186, // Validated IDAT CRC
+  0, 0, 0, 0, 73, 69, 78, 68, // IEND End of Image
+  174, 66, 96, 130, // Validated IEND CRC
+]);

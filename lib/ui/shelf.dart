@@ -35,10 +35,10 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     subOpenFile = OpenPump.stream.listen((fn) {
       debugPrint('lib got relative path:$fn');
 
-      String name = p.basename(fn).replaceAll('.epub', '');
+      String name = p.basenameWithoutExtension(fn);
       if (name.contains('%3A') && fn.startsWith('content://')) {
         name = Uri.decodeComponent(name);
-        name = p.basename(name).replaceAll('.epub', '');
+        name = p.posix.basenameWithoutExtension(name);
       }
 
       ref
@@ -56,6 +56,11 @@ class _ShelfFrameState extends ConsumerState<ShelfFrame>
     });
 
     _initTabController();
+
+    final id = box.get('last', defaultValue: null);
+    if (id != null) {
+      Future.microtask(() => context.push('/book/$id'));
+    }
   }
 
   @override

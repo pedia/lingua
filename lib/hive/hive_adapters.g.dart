@@ -197,13 +197,15 @@ class ItemStateAdapter extends TypeAdapter<ItemState> {
       speak: fields[2] == null ? const Progress() : fields[2] as Progress,
       readChapterIndex: fields[3] == null ? 0 : (fields[3] as num).toInt(),
       offset: fields[4] == null ? 0 : (fields[4] as num).toDouble(),
+      speakChapterIndex: fields[5] == null ? 0 : (fields[5] as num).toInt(),
+      speakLine: fields[6] == null ? 0 : (fields[6] as num).toInt(),
     );
   }
 
   @override
   void write(BinaryWriter writer, ItemState obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -213,7 +215,11 @@ class ItemStateAdapter extends TypeAdapter<ItemState> {
       ..writeByte(3)
       ..write(obj.readChapterIndex)
       ..writeByte(4)
-      ..write(obj.offset);
+      ..write(obj.offset)
+      ..writeByte(5)
+      ..write(obj.speakChapterIndex)
+      ..writeByte(6)
+      ..write(obj.speakLine);
   }
 
   @override
@@ -306,6 +312,220 @@ class NoteAdapter extends TypeAdapter<Note> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is NoteAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class SpanAdapter extends TypeAdapter<Span> {
+  @override
+  final typeId = 8;
+
+  @override
+  Span read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Span(fields[0] as String);
+  }
+
+  @override
+  void write(BinaryWriter writer, Span obj) {
+    writer
+      ..writeByte(1)
+      ..writeByte(0)
+      ..write(obj.text);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SpanAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class AnchorAdapter extends TypeAdapter<Anchor> {
+  @override
+  final typeId = 9;
+
+  @override
+  Anchor read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Anchor(
+      fields[2] as String,
+      note: fields[0] as String?,
+      link: fields[1] as String?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Anchor obj) {
+    writer
+      ..writeByte(3)
+      ..writeByte(0)
+      ..write(obj.note)
+      ..writeByte(1)
+      ..write(obj.link)
+      ..writeByte(2)
+      ..write(obj.text);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnchorAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ChunkAdapter extends TypeAdapter<Chunk> {
+  @override
+  final typeId = 10;
+
+  @override
+  Chunk read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Chunk(
+      id: fields[0] as String?,
+      idx: fields[1] == null ? 0 : (fields[1] as num).toInt(),
+      spans: fields[3] == null
+          ? const <Span>[]
+          : (fields[3] as List).cast<Span>(),
+      text: fields[4] as String?,
+      lang: fields[2] == null ? Lang.unknown : fields[2] as Lang,
+      strong: fields[5] == null ? false : fields[5] as bool,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Chunk obj) {
+    writer
+      ..writeByte(6)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.idx)
+      ..writeByte(2)
+      ..write(obj.lang)
+      ..writeByte(3)
+      ..write(obj.spans)
+      ..writeByte(4)
+      ..write(obj.text)
+      ..writeByte(5)
+      ..write(obj.strong);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChunkAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class LangAdapter extends TypeAdapter<Lang> {
+  @override
+  final typeId = 11;
+
+  @override
+  Lang read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return Lang.unknown;
+      case 1:
+        return Lang.all;
+      case 2:
+        return Lang.en;
+      case 3:
+        return Lang.es;
+      case 4:
+        return Lang.jp;
+      case 5:
+        return Lang.kr;
+      case 6:
+        return Lang.zh;
+      default:
+        return Lang.unknown;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, Lang obj) {
+    switch (obj) {
+      case Lang.unknown:
+        writer.writeByte(0);
+      case Lang.all:
+        writer.writeByte(1);
+      case Lang.en:
+        writer.writeByte(2);
+      case Lang.es:
+        writer.writeByte(3);
+      case Lang.jp:
+        writer.writeByte(4);
+      case Lang.kr:
+        writer.writeByte(5);
+      case Lang.zh:
+        writer.writeByte(6);
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LangAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class FixitAdapter extends TypeAdapter<Fixit> {
+  @override
+  final typeId = 12;
+
+  @override
+  Fixit read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Fixit(fields[0] as String, fields[1] as String);
+  }
+
+  @override
+  void write(BinaryWriter writer, Fixit obj) {
+    writer
+      ..writeByte(2)
+      ..writeByte(0)
+      ..write(obj.src)
+      ..writeByte(1)
+      ..write(obj.dest);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FixitAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

@@ -13,20 +13,21 @@ class TabletReadFrame extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ab = ref.watch(bookProvider(id));
-    return AsyncValueX(ab).when(
-      data: (book) {
-        if (book == null) {
-          return InfoScreen('Unable to open item:$id');
-        }
-        return builds(context, book);
-      },
-      loading: () => const Center(), // TODO: better solution
-      error: (err, stackTrace) {
-        debugPrint(stackTrace.toString().substring(0, 1000));
-        return InfoScreen('Unable to open it\n$err');
-      },
-    );
+    // final ab = ref.watch(bookProvider(id));
+    // return AsyncValueX(ab).when(
+    //   data: (book) {
+    //     if (book == null) {
+    //       return InfoScreen('Unable to open item:$id');
+    //     }
+    //     return builds(context, book);
+    //   },
+    //   loading: () => const Center(), // TODO: better solution
+    //   error: (err, stackTrace) {
+    //     debugPrint(stackTrace.toString().substring(0, 1000));
+    //     return InfoScreen('Unable to open it\n$err');
+    //   },
+    // );
+    return Center();
   }
 
   Widget builds(BuildContext context, epub.Book book) {
