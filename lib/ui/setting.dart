@@ -54,23 +54,27 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
 
       {
         final m = ref.read(settingProvider.select((s) => s.of('tts.en.voice')));
-        final v = Voice((m as Map).cast<String, String>());
-        for (final i in envs) {
-          debugPrint('${i.$1}, == ${v == i.$2} ${v == i.$2 ? i.$2 : ''}');
-        }
-        if (envs.where((i) => i.$2 == v).length != 1) {
-          debugPrint('Set tts.en.voice to null');
-          ref.read(settingProvider.notifier).put('tts.en.voice', null);
+        if (m != null) {
+          final v = Voice((m as Map).cast<String, String>());
+          if (envs.where((i) => i.$2 == v).length != 1) {
+            for (final i in envs) {
+              debugPrint('${i.$1}, == ${v == i.$2} ${v == i.$2 ? i.$2 : ''}');
+            }
+
+            debugPrint('Set tts.en.voice to null');
+            ref.read(settingProvider.notifier).put('tts.en.voice', null);
+          }
         }
       }
       {
         final m = ref.read(settingProvider.select((s) => s.of('tts.zh.voice')));
         if (m != null) {
           final v = Voice((m as Map).cast<String, String>());
-          for (final i in zhvs) {
-            debugPrint('${i.$1}, == ${v == i.$2} ${v == i.$2 ? i.$2 : ''}');
-          }
           if (zhvs.where((i) => i.$2 == v).length != 1) {
+            for (final i in zhvs) {
+              debugPrint('${i.$1}, == ${v == i.$2} ${v == i.$2 ? i.$2 : ''}');
+            }
+
             debugPrint('Set tts.zh.voice to null');
             ref.read(settingProvider.notifier).put('tts.zh.voice', null);
           }
