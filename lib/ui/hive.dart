@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
-import 'g.dart';
+import '../g.dart';
 
 class HiveFrame extends StatefulWidget {
   const HiveFrame({super.key});

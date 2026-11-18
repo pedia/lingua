@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingua/tts/engine.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:go_router/go_router.dart';
@@ -94,22 +95,7 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
     final es = EngineSetting.from(lang, sm);
     await tts.stop();
     await tts.awaitSpeakCompletion(true);
-    await tts.setSpeechRate(es.rate);
-    await tts.setPitch(es.pitch);
-    if (es.volume != null) {
-      await tts.setVolume(es.volume!);
-    }
-
-    // setLanguage must before setVoice
-    try {
-      await tts.setLanguage(es.language);
-    } catch (e) {
-      debugPrint('setLanguage failed: $e');
-    }
-
-    if (es.voice != null) {
-      await tts.setVoice(es.voice!);
-    }
+    await applyEngineSetting(tts, es);
 
     final s =
         {

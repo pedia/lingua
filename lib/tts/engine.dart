@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../chunk/chunk.dart';
 import 'voice.dart';
+import '../log.dart';
 
 enum Playback { startLine, endLine, pause, stop }
 
@@ -33,7 +34,7 @@ class Engine {
   }
   void _init() {
     _tts.awaitSpeakCompletion(true).then((v) {
-      print('Engine init, awaitSpeakCompletion $v');
+      logger.log('Engine init, awaitSpeakCompletion $v');
     });
 
     // Track where speech currently is within the active line
@@ -43,7 +44,7 @@ class Engine {
 
     // Handle when flutter_tts finishes speaking an utterance naturally
     _tts.setCompletionHandler(() {
-      print('engine set complete handler ${_utteranceCompleter != null}');
+      logger.log('engine set complete handler ${_utteranceCompleter != null}');
       if (_utteranceCompleter != null && !_utteranceCompleter!.isCompleted) {
         _utteranceCompleter!.complete();
       }
@@ -59,6 +60,7 @@ class Engine {
   // 1. Non-blocking: returns void, runs the loop asynchronously in the background
   void playLines(List<Chunk> lines) {
     if (_isPlaying) {
+      logger.log('playing true, stop now');
       stop(); // Stop any existing playback session first
     }
 
@@ -73,8 +75,9 @@ class Engine {
   }
 
   Future<void> _startPlaybackLoop() async {
+    EngineSetting? preves;
     while (_isPlaying && _currentIndex < _lines.length) {
-      print('loop $_currentIndex');
+      logger.log('loop $_currentIndex');
       if (_isPaused) {
         // Wait until unpaused
         _utteranceCompleter = Completer<void>();
@@ -84,7 +87,7 @@ class Engine {
       if (!_isPlaying) break;
 
       final line = _lines[_currentIndex];
-      print('speak $line voice length: ${_voices.length}');
+      logger.log('speak $line voice length: ${_voices.length}');
       _eventController.add(Event(playback: Playback.startLine, chunk: line));
 
       // Determine text to speak (supports resuming from offset if paused mid-line)
@@ -95,19 +98,12 @@ class Engine {
 
       _utteranceCompleter = Completer<void>();
 
-      final v = _voices[line.lang];
-      if (v != null) {
-        print('set voice rate: ${v.rate}');
-        await _tts.setSpeechRate(v.rate);
-        await _tts.setPitch(v.pitch);
-        if (v.volume != null) await _tts.setVolume(v.volume!);
-
-        try {
-          await _tts.setLanguage(v.language);
-        } catch (e) {
-          print('voice setLanguage failed: $e, %v');
+      if (preves?.lang != line.lang) {
+        final v = _voices[line.lang];
+        if (v != null) {
+          applyEngineSetting(_tts, v);
         }
-        if (v.voice != null) await _tts.setVoice(v.voice!);
+        preves = v;
       }
 
       // Tell flutter_tts to speak
@@ -205,6 +201,21 @@ class Engine {
   }
 }
 
+Future applyEngineSetting(FlutterTts tts, EngineSetting es) async {
+  logger.log('set voice rate: ${es.rate}');
+  await tts.setSpeechRate(es.rate);
+  await tts.setPitch(es.pitch);
+  if (es.volume != null) await tts.setVolume(es.volume!);
+
+  try {
+    // setLanguage must before setVoice
+    await tts.setLanguage(es.language);
+  } catch (e) {
+    logger.log('voice setLanguage failed: $e, %v');
+  }
+  if (es.voice != null) await tts.setVoice(es.voice!);
+}
+
 class EngineState {
   final List<Chunk> chunks;
   final int? currentIndex;
@@ -238,7 +249,6 @@ class EngineState {
   }
 }
 
-// --- Riverpod Notifier ---
 class EngineNotifier extends Notifier<EngineState> {
   final Engine _engine = Engine();
   StreamSubscription? _subscription;
@@ -276,7 +286,7 @@ class EngineNotifier extends Notifier<EngineState> {
 
     // Clean up subscription and engine when provider is disposed
     ref.onDispose(() {
-      print('engine notify enter dispose');
+      logger.log('engine notify enter dispose');
       _subscription?.cancel();
       _engine.dispose();
     });

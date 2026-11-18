@@ -10,9 +10,9 @@ build/app/outputs/flutter-apk/app-release.apk: pubspec.yaml lib/*.dart lib/ui/*.
 	@if [ "$@" -eq "$@" ] 2>/dev/null; then \
 		echo connect to 192.168.1.190:$@; \
 		adb connect 192.168.1.190:"$@"; \
-		adb -s 192.168.1.190:"$@" install build/app/outputs/flutter-apk/app-release.apk; \
+		time adb -s 192.168.1.190:"$@" install build/app/outputs/flutter-apk/app-release.apk; \
 	else \
-		$(MAKE) -f $(MAKEFILE_LIST) build-$@; \
+		time $(MAKE) -f $(MAKEFILE_LIST) build-$@; \
 	fi
 
 # Define your custom compilation targets below (e.g., `make target` -> `make build-target`)

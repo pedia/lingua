@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:universal_io/universal_io.dart';
 import 'package:path_provider/path_provider.dart';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_file_open_handler/macos_file_open_handler.dart';
 import 'package:riverpod_devtools/riverpod_devtools.dart';
@@ -11,6 +11,7 @@ import 'package:hive_ce/hive_ce.dart';
 import 'hive/hive_registrar.g.dart';
 
 import 'app.dart';
+import 'log.dart';
 import 'g.dart';
 import 'ui/open.dart';
 import 'ui/font.dart';
@@ -18,9 +19,20 @@ import 'ui/font.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // FlutterError.onError = (FlutterErrorDetails details) {
-  //   FlutterError.dumpErrorToConsole(details);
-  // };
+  // Capture Flutter framework errors
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    logger.log(
+      '${details.exceptionAsString()}\n${details.stack}',
+      level: 'ERROR',
+    );
+  };
+
+  // Capture asynchronous / platform errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    logger.log('Async Error: $error\n$stack', level: 'FATAL');
+    return true;
+  };
 
   Hive.registerAdapters();
 

@@ -7,14 +7,14 @@ import 'package:lingua/demo/demo.dart';
 import 'package:lingua/demo/offset.dart';
 import 'package:lingua/demo/stack.dart';
 import 'package:lingua/demo/stuck.dart';
-import 'package:lingua/hive.dart';
+import 'package:lingua/log.dart';
+import 'package:lingua/ui/hive.dart';
 import 'package:lingua/demo/provider.dart';
 import 'package:lingua/demo/sliver.dart';
 import 'package:lingua/demo/sliver2.dart';
 import 'package:lingua/ui/chapter_list.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
-import 'package:lingua/ui/voice_setting.dart';
 import 'package:lingua/zh/fixedit.dart';
 
 import 'settings/setting.dart';
@@ -139,10 +139,6 @@ class MainApp extends ConsumerWidget {
           GoRoute(path: '/setting', builder: (_, _) => SettingFrame()),
           GoRoute(path: '/fixit/edit', builder: (_, _) => FixitEdit()),
           GoRoute(path: '/hive', builder: (_, _) => HiveFrame()),
-          GoRoute(
-            path: '/engine',
-            builder: (ctx, _) => EngineSettingPage.from(ctx),
-          ),
           GoRoute(path: '/demo', builder: (_, _) => DemoFrame()),
           GoRoute(path: '/provider', builder: (_, _) => ProviderScreen(id: 3)),
           GoRoute(path: '/sliver', builder: (_, _) => LongTextScreen()),
@@ -160,6 +156,7 @@ class MainApp extends ConsumerWidget {
             builder: (_, state) => ItemEditScreen(id: state.pint('id', 4)),
           ),
           GoRoute(path: '/note', builder: (_, state) => NoteScreen()),
+          GoRoute(path: '/logger', builder: (_, state) => LogViewerScreen()),
           GoRoute(path: '/offset', builder: (_, state) => OffsetDemoScreen()),
           GoRoute(path: '/stuck', builder: (_, state) => StuckScreen()),
           GoRoute(
@@ -222,13 +219,13 @@ final demoPaths = [
   '/book/91',
   '/fixit/edit',
   '/note',
+  '/logger',
   '/offset',
   '/stuck',
   '/error',
   '/shelf-mgmt',
   '/hive',
   '/setting',
-  '/engine',
   '/provider',
   '/demo',
   '/font',

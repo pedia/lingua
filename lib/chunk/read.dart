@@ -11,6 +11,7 @@ import '../tts/voice.dart' as tts;
 import '../settings/setting.dart';
 import '../zh/fix.dart';
 import '../imap.dart';
+import '../log.dart';
 
 import 'chunk.dart';
 
@@ -223,9 +224,9 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
 
     final lines = it.map((c) => c.process()).toList();
 
-    print('lines for $setlang $state');
+    logger.log('lines for $setlang $state');
     for (int i = 0; i < lines.length; i++) {
-      print('$i: ${lines[i].speak}');
+      logger.log('$i: ${lines[i].speak}');
       if (i > 2) {
         break;
       }

@@ -17,7 +17,6 @@ import '../chunk/chunk.dart';
 import '../demo/freya.dart';
 import '../data/sample.dart';
 import 'setting.dart';
-import 'voice_setting.dart';
 import 'font.dart';
 import 'gadget.dart';
 import 'chapter_list.dart';
