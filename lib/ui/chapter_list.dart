@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingua/ui/search.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:go_router/go_router.dart';
 import '../chunk/chunk.dart';
@@ -54,7 +53,7 @@ class TheDrawer extends ConsumerStatefulWidget {
 class _TheDrawerState extends ConsumerState<TheDrawer>
     with TickerProviderStateMixin {
   late final TabController _tabController = TabController(
-    length: 3,
+    length: 2,
     vsync: this,
     initialIndex: widget.initialIndex,
   );
@@ -76,7 +75,6 @@ class _TheDrawerState extends ConsumerState<TheDrawer>
           indicatorSize: TabBarIndicatorSize.tab,
           tabs: [
             Tab(text: 'Chapters'),
-            Tab(text: 'Search'),
             Tab(text: 'Highlight'),
           ],
         ),
@@ -85,7 +83,6 @@ class _TheDrawerState extends ConsumerState<TheDrawer>
             controller: _tabController,
             children: [
               ChapterList(widget.id, widget.book),
-              SearchView(widget.book),
               NoteList(widget.id),
             ],
           ),

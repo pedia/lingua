@@ -13,9 +13,11 @@ import 'package:lingua/demo/provider.dart';
 import 'package:lingua/demo/sliver.dart';
 import 'package:lingua/demo/sliver2.dart';
 import 'package:lingua/ui/chapter_list.dart';
+import 'package:lingua/ui/search.dart';
 import 'package:lingua/ui/setting.dart';
 import 'package:lingua/ui/shelf.dart';
 import 'package:lingua/zh/fixedit.dart';
+import 'package:lingua/chunk/chunk.dart';
 
 import 'settings/setting.dart';
 import 'ui/font.dart';
@@ -136,6 +138,10 @@ class MainApp extends ConsumerWidget {
             },
           ),
 
+          GoRoute(
+            path: '/book/search',
+            builder: (_, state) => SearchFrame(state.extra as Book),
+          ),
           GoRoute(path: '/setting', builder: (_, _) => SettingFrame()),
           GoRoute(path: '/fixit/edit', builder: (_, _) => FixitEdit()),
           GoRoute(path: '/hive', builder: (_, _) => HiveFrame()),

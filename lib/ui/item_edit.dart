@@ -21,6 +21,7 @@ class _BookEditScreenState extends ConsumerState<ItemEditScreen> {
   late Item _item;
   late int _selectedShelf;
   late int _origin;
+  Duration used = Duration();
   Book? _book;
 
   @override
@@ -31,8 +32,10 @@ class _BookEditScreenState extends ConsumerState<ItemEditScreen> {
     _origin = ref.read(shopProvider).find(_item.path);
     _selectedShelf = _origin;
 
+    final start = DateTime.now();
     _item.open().then((book) {
       setState(() {
+        used = DateTime.now().difference(start);
         _book = book;
         _item = _item.apply(_book!);
       });
@@ -243,6 +246,7 @@ class _BookEditScreenState extends ConsumerState<ItemEditScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              Text('Open used ${used.inMilliseconds} ms'),
             ],
           ),
         ),

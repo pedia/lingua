@@ -135,7 +135,7 @@ class Book {
   final String? description;
   final List<Chapter> chapters;
 
-  Uint8List? cover() => blue;
+  Uint8List? cover() => blueMark;
 }
 
 /// Shared HTML/XHTML chunk parser used by EPUB and MOBI/AZW/AZW3 readers.
@@ -336,7 +336,7 @@ class HtmlChunkParser {
   }
 
   static bool _isFootnoteContainer(dom.Element el, String tag) {
-    if (tag == 'aside') {
+    if (tag == 'aside' || tag == 'p') {
       return el.attributes['epub:type'] == 'footnote' ||
           el.querySelector('.duokan-footnote-content, .duokan-footnote-item') !=
               null ||
@@ -666,7 +666,7 @@ class ChunkParser {
   }
 }
 
-final blue = Uint8List.fromList([
+final blueMark = Uint8List.fromList([
   137, 80, 78, 71, 13, 10, 26, 10, // PNG Signature
   0, 0, 0, 13, 73, 72, 68, 82, // IHDR Header
   0, 0, 0, 8, 0, 0, 0, 8, // Width (8px), Height (8px)

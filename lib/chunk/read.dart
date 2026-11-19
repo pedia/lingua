@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../ui/chapter_list.dart' as legacy;
 import '../ui/book.dart' as legacy;
+import '../ui/search.dart';
 import '../tts/engine.dart' as tts;
 import '../tts/voice.dart' as tts;
 import '../settings/setting.dart';
@@ -171,8 +172,11 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
               IconButton(
                 icon: const Icon(Icons.search),
                 onPressed: () {
-                  setState(() => initialDrawerIndex = 1);
-                  _scaffoldKey.currentState?.openDrawer();
+                  // context.push('/book/search', extra: widget.book);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SearchFrame(widget.book)),
+                  );
                 },
               ),
               IconButton(
@@ -196,13 +200,13 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
 
     debugPrint('in apply got setting: $m');
 
-    final vs = [
+    final ess = [
       if (m.has('tts.en'))
         tts.EngineSetting.from(Lang.en, m.objectOf('tts.en')),
       if (m.has('tts.zh'))
         tts.EngineSetting.from(Lang.zh, m.objectOf('tts.zh')),
     ];
-    ref.read(tts.engineProvider.notifier).apply(vs);
+    ref.read(tts.engineProvider.notifier).apply(ess);
   }
 
   void play() async {
@@ -341,65 +345,61 @@ class ContentView extends ConsumerWidget {
     );
   }
 
-  /// list tile
   Widget tile(Chunk c, WidgetRef ref) {
     if (c is Picture) {
-      return Image.memory(blue, fit: BoxFit.fitWidth);
+      return Image.memory(blueMark, fit: BoxFit.fitWidth);
     }
     return Text.rich(
       TextSpan(
         text: c.text,
-        style: TextStyle(
-          fontFamily: '.osdefault',
-          fontSize: fontSize(c, ref),
-          height: 1.5,
-        ),
+        style: style(c, ref),
         children: c.spans.map(inline).toList(),
       ),
     );
   }
 
-  double fontSize(Chunk c, WidgetRef ref) {
+  TextStyle style(Chunk c, WidgetRef ref) {
     final key = (c.lang == Lang.zh || c.lang == Lang.jp || c.lang == Lang.kr)
         ? 'ui.zh.font-size'
         : 'ui.en.font-size';
-    return ref.watch(
+    final fs =
+        ref.watch(
           settingProvider.select((m) => m.doubleOf(key, defaults: 18)),
         ) +
         (c.strong ? 2 : 0);
-  }
 
-  InlineSpan block(Chunk c) {
-    // print('${c.lang} ${c.text} ${c.spans}');
-    if (c is Picture) {
-      return WidgetSpan(child: Image.memory(blue));
-    }
-
-    if (c.text != null) {
-      return TextSpan(
-        text: '${c.text}\n',
-        style: c.strong
-            ? const TextStyle(
-                fontFamily: '.osdefault',
-                fontSize: 20.0,
-                height: 1.6,
-              )
-            : null,
-      );
-    }
-
-    final cs = c.spans.map(inline).toList()
-      ..add(TextSpan(text: '\n', style: TextStyle(fontSize: 0)));
-    return TextSpan(children: cs);
+    return TextStyle(
+      fontFamily: c.lang == Lang.zh ? '.osdefault' : 'sans-serif',
+      fontSize: fs,
+      height: 1.55,
+    );
   }
 
   InlineSpan inline(Span p) {
-    if (p is Anchor) {
-      return TextSpan(
-        text: p.text,
-        style: const TextStyle(color: Colors.blue),
-      );
+    if (p is! Anchor) {
+      return TextSpan(text: p.text);
     }
-    return TextSpan(text: p.text);
+
+    final Anchor a = p;
+    return TextSpan(
+      text: a.text,
+      style: const TextStyle(color: Colors.blue),
+      mouseCursor: SystemMouseCursors.click,
+      recognizer: TapGestureRecognizer()
+        ..onTap = () async {
+          debugPrint('link:${a.link} note:${a.note}');
+          if (a.link?.startsWith('#') ?? false) {
+            // id => GlobalKey/context
+            // final key = doc.topks[href];
+            // if (key != null) {
+            //   await Scrollable.ensureVisible(key.currentContext!);
+            // }
+          }
+          // final url = Uri.tryParse(href);
+          // if (url != null && canLaunchUrl(url)) {
+          //   await launchUrl(url);
+          // }
+        },
+    );
   }
 }

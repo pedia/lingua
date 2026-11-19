@@ -147,7 +147,10 @@ void pickFiles() async {
         OpenPump.send(file.path!);
       }
 
-      FilePicker.clearTemporaryFiles();
+      // not been implemented
+      if (!Platform.isMacOS) {
+        FilePicker.clearTemporaryFiles();
+      }
     }
   }
 }

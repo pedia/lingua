@@ -145,6 +145,25 @@ void main() {
       expect(fn1.note, contains('Rückkehr der Götter'));
     });
 
+    test('pasfootnote', () {
+      const html =
+          '''<p><a class="ref" href="part02-01.xhtml#foot-1" id="back-1">1</a></p>
+        <p xmlns:epub="http://www.idpf.org/2007/ops" class="footnote" epub:type="footnote" id="foot-1">
+        <a href="part02-01.xhtml#back-1"><span class="no">1</span></a>
+        《蔣經國日記》，一九六七年五月三日。</p>''';
+      final chunks = ChunkParser.parseHtml(html);
+      expect(chunks.length, equals(1));
+      expect(chunks[0].spans.length, 1);
+      expect(chunks[0].spans[0], isA<Anchor>());
+      expect(
+        (chunks[0].spans[0] as Anchor).note,
+        contains('《蔣經國日記》，一九六七年五月三日'),
+      );
+      expect((chunks[0].spans[0] as Anchor).text, '1');
+      expect((chunks[0].spans[0] as Anchor).link, 'part02-01.xhtml#foot-1');
+      // TODO:
+    });
+
     test(
       'parses non-footnote Image chunks with alt and optional dimensions',
       () {
