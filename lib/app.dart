@@ -139,8 +139,9 @@ class MainApp extends ConsumerWidget {
           ),
 
           GoRoute(
-            path: '/book/search',
-            builder: (_, state) => SearchFrame(state.extra as Book),
+            path: '/book/:id/search',
+            builder: (_, state) =>
+                SearchFrame(id: state.pint('id', 4), book: state.extra as Book),
           ),
           GoRoute(path: '/setting', builder: (_, _) => SettingFrame()),
           GoRoute(path: '/fixit/edit', builder: (_, _) => FixitEdit()),

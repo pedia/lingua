@@ -32,9 +32,7 @@ class MobiParser {
     final pdbTitle = _readCString(data, 0, 32);
     final numRecords = bd.getUint16(76, Endian.big);
     if (numRecords == 0 || data.length < 78 + numRecords * 8) {
-      throw const FormatException(
-        'Invalid MOBI/AZW file: invalid record table',
-      );
+      throw const FormatException('Invalid MOBI/AZW file: invalid record table');
     }
 
     final offsets = List<int>.generate(
@@ -62,10 +60,10 @@ class MobiParser {
       final bRec = recordAt(boundaryIdx);
       if (bRec.length >= 8 &&
           ascii.decode(bRec.sublist(0, 8), allowInvalid: true) == 'BOUNDARY') {
-        final mobi6FirstImage = header.firstImageRecord;
+        final mobi6Header = header;
         headerIdx = boundaryIdx + 1;
         headerRec = recordAt(headerIdx);
-        header = _parseHeader(headerRec, fallbackFirstImage: mobi6FirstImage);
+        header = _parseHeader(headerRec, fallback: mobi6Header);
       }
     }
 
@@ -107,6 +105,17 @@ class MobiParser {
       return 'mobi_image_${idx.toString().padLeft(5, '0')}.jpg';
     }
 
+    Uint8List? resolveMobiImageBytes(String src) {
+      final firstImg = header.firstImageRecord;
+      if (firstImg == null) return null;
+      final match = RegExp(r'mobi_image_(\d+)').firstMatch(src);
+      final idx = int.tryParse(match?.group(1) ?? src.trim());
+      if (idx == null || idx <= 0 || firstImg + idx - 1 >= numRecords) {
+        return null;
+      }
+      return recordAt(firstImg + idx - 1);
+    }
+
     final globalFootnotes = HtmlChunkParser.extractFootnotes(html);
     final rawSections = html
         .split(_pageBreak)
@@ -122,13 +131,10 @@ class MobiParser {
     final chapters = <Chapter>[];
     for (int i = 0; i < sections.length; i++) {
       final sectionHtml = sections[i];
-      final fallbackTitle = sections.length == 1
-          ? bookTitle
-          : 'Chapter ${i + 1}';
-      final chapterTitle = HtmlChunkParser.extractChapterTitle(
-        sectionHtml,
-        fallbackTitle,
-      );
+      final fallbackTitle =
+          sections.length == 1 ? bookTitle : 'Chapter ${i + 1}';
+      final chapterTitle =
+          HtmlChunkParser.extractChapterTitle(sectionHtml, fallbackTitle);
       chapters.add(
         LazyChapter(
           chapterTitle,
@@ -136,12 +142,29 @@ class MobiParser {
             sectionHtml,
             footnotes: globalFootnotes,
             resolveRecindex: resolveRecindex,
+            resolveImageBytes: resolveMobiImageBytes,
           ),
         ),
       );
     }
 
-    return Book(title: bookTitle, author: header.author, chapters: chapters);
+    Uint8List? resolveCover() {
+      final firstImg = header.firstImageRecord;
+      final coverOff = header.coverOffset;
+      if (firstImg == null || coverOff == null) return null;
+      final recIdx = firstImg + coverOff;
+      if (recIdx < 0 || recIdx >= numRecords) return null;
+      return recordAt(recIdx);
+    }
+
+    return Book(
+      title: bookTitle,
+      author: header.author,
+      lang: header.lang,
+      description: header.description,
+      cover: resolveCover,
+      chapters: chapters,
+    );
   }
 
   /// Parse a `.mobi`, `.azw`, or `.azw3` file at [filePath] into a [Book].
@@ -152,7 +175,10 @@ class MobiParser {
 
   // --- Header & EXTH Parsing ---
 
-  static _MobiHeader _parseHeader(Uint8List rec0, {int? fallbackFirstImage}) {
+  static _MobiHeader _parseHeader(
+    Uint8List rec0, {
+    _MobiHeader? fallback,
+  }) {
     if (rec0.length < 16) {
       throw const FormatException('Invalid PalmDOC record 0');
     }
@@ -164,16 +190,28 @@ class MobiParser {
 
     int textEncoding = 1252;
     int extraDataFlags = 0;
-    int? firstImageRecord = fallbackFirstImage;
+    int? firstImageRecord = fallback?.firstImageRecord;
     int? huffOffset;
     int? huffCount;
     int? fdstOffset;
     String? title;
     String? author;
+    String? lang;
+    String? description;
+    int? coverOffset;
+    int? thumbOffset;
     int? kf8Boundary;
 
-    final hasMobi =
-        rec0.length >= 24 &&
+    String? decodeField(Uint8List payload) {
+      if (payload.isEmpty) return null;
+      final s = (textEncoding == 65001
+              ? utf8.decode(payload, allowMalformed: true)
+              : latin1.decode(payload, allowInvalid: true))
+          .trim();
+      return s.isEmpty ? null : s;
+    }
+
+    final hasMobi = rec0.length >= 24 &&
         ascii.decode(rec0.sublist(16, 20), allowInvalid: true) == 'MOBI';
 
     if (hasMobi) {
@@ -189,14 +227,13 @@ class MobiParser {
         if (fullNameOff > 0 &&
             fullNameLen > 0 &&
             fullNameOff + fullNameLen <= rec0.length) {
-          final nameBytes = rec0.sublist(
-            fullNameOff,
-            fullNameOff + fullNameLen,
-          );
-          title = textEncoding == 65001
-              ? utf8.decode(nameBytes, allowMalformed: true).trim()
-              : latin1.decode(nameBytes, allowInvalid: true).trim();
+          title = decodeField(rec0.sublist(fullNameOff, fullNameOff + fullNameLen));
         }
+      }
+
+      if (headerLen >= 80 && rec0.length >= 96) {
+        final locale = bd.getUint32(92, Endian.big);
+        lang ??= _langFromMobiLocale(locale);
       }
 
       if (headerLen >= 96 && rec0.length >= 112) {
@@ -222,15 +259,11 @@ class MobiParser {
         extraDataFlags = bd.getUint16(242, Endian.big);
       }
 
-      final exthFlags = (headerLen >= 116 && rec0.length >= 132)
-          ? bd.getUint32(128, Endian.big)
-          : 0;
+      final exthFlags =
+          (headerLen >= 116 && rec0.length >= 132) ? bd.getUint32(128, Endian.big) : 0;
       final exthStart = 16 + headerLen;
       if ((exthFlags & 0x40) != 0 && exthStart + 12 <= rec0.length) {
-        if (ascii.decode(
-              rec0.sublist(exthStart, exthStart + 4),
-              allowInvalid: true,
-            ) ==
+        if (ascii.decode(rec0.sublist(exthStart, exthStart + 4), allowInvalid: true) ==
             'EXTH') {
           final count = bd.getUint32(exthStart + 8, Endian.big);
           int pos = exthStart + 12;
@@ -240,17 +273,23 @@ class MobiParser {
             if (recLen < 8 || pos + recLen > rec0.length) break;
             final payload = rec0.sublist(pos + 8, pos + recLen);
 
-            if (recType == 100 && payload.isNotEmpty) {
-              author = textEncoding == 65001
-                  ? utf8.decode(payload, allowMalformed: true).trim()
-                  : latin1.decode(payload, allowInvalid: true).trim();
-            } else if (recType == 503 && payload.isNotEmpty) {
-              title = textEncoding == 65001
-                  ? utf8.decode(payload, allowMalformed: true).trim()
-                  : latin1.decode(payload, allowInvalid: true).trim();
+            if (recType == 100) {
+              author = decodeField(payload) ?? author;
+            } else if (recType == 103) {
+              description = decodeField(payload) ?? description;
             } else if (recType == 121 && payload.length >= 4) {
               final b = ByteData.sublistView(payload).getUint32(0, Endian.big);
               if (b != 0xFFFFFFFF) kf8Boundary = b;
+            } else if (recType == 201 && payload.length >= 4) {
+              final c = ByteData.sublistView(payload).getUint32(0, Endian.big);
+              if (c != 0xFFFFFFFF) coverOffset = c;
+            } else if (recType == 202 && payload.length >= 4) {
+              final t = ByteData.sublistView(payload).getUint32(0, Endian.big);
+              if (t != 0xFFFFFFFF) thumbOffset = t;
+            } else if (recType == 503) {
+              title = decodeField(payload) ?? title;
+            } else if (recType == 524) {
+              lang = decodeField(payload) ?? lang;
             }
             pos += recLen;
           }
@@ -270,9 +309,41 @@ class MobiParser {
       huffCount: huffCount,
       fdstRecordOffset: fdstOffset,
       kf8Boundary: kf8Boundary,
-      title: title,
-      author: author,
+      title: title ?? fallback?.title,
+      author: author ?? fallback?.author,
+      lang: lang ?? fallback?.lang,
+      description: description ?? fallback?.description,
+      coverOffset: coverOffset ?? thumbOffset ?? fallback?.coverOffset,
     );
+  }
+
+  static String? _langFromMobiLocale(int locale) {
+    if (locale == 0) return null;
+    final langId = locale & 0xFF;
+    switch (langId) {
+      case 0x04:
+        return (locale & 0xFFFF) == 0x0404 ? 'zh-TW' : 'zh';
+      case 0x07:
+        return 'de';
+      case 0x09:
+        return 'en';
+      case 0x0A:
+        return 'es';
+      case 0x0C:
+        return 'fr';
+      case 0x10:
+        return 'it';
+      case 0x11:
+        return 'ja';
+      case 0x12:
+        return 'ko';
+      case 0x16:
+        return 'pt';
+      case 0x19:
+        return 'ru';
+      default:
+        return null;
+    }
   }
 
   // --- Decompression (None, PalmDOC LZ77, HuffCDIC) ---
@@ -437,6 +508,9 @@ class _MobiHeader {
     this.kf8Boundary,
     this.title,
     this.author,
+    this.lang,
+    this.description,
+    this.coverOffset,
   });
 
   final int compression;
@@ -452,6 +526,9 @@ class _MobiHeader {
   final int? kf8Boundary;
   final String? title;
   final String? author;
+  final String? lang;
+  final String? description;
+  final int? coverOffset;
 }
 
 /// Decoder for Amazon/Mobipocket HUFF/CDIC dictionary compression.

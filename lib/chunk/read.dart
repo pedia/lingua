@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -16,10 +17,6 @@ import '../log.dart';
 
 import 'chunk.dart';
 
-int min(int a, int b) {
-  return a > b ? b : a;
-}
-
 class ReadScreen extends ConsumerStatefulWidget {
   const ReadScreen(this.id, this.book, {super.key});
   final int id;
@@ -34,8 +31,8 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
   final _roller = ScrollController();
   final double _appBarHeight = 56.0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-
   int initialDrawerIndex = 0;
+  CacheResult? _cache;
 
   @override
   void initState() {
@@ -104,10 +101,15 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
           // 1. Scrollable Body, force show on Android
           Scrollbar(
             controller: _roller,
-            child: ContentView(
-              chapter: widget.book.chapters[ci],
-              controller: _roller,
-              padding: EdgeInsets.fromLTRB(8, totalAppBarHeight + 8, 8, 8),
+            child: SelectableRegion(
+              focusNode: FocusNode(),
+              selectionControls: materialTextSelectionHandleControls,
+              contextMenuBuilder: selectToolbar,
+              child: ContentView(
+                chapter: widget.book.chapters[ci],
+                controller: _roller,
+                padding: EdgeInsets.fromLTRB(8, totalAppBarHeight + 8, 8, 8),
+              ),
             ),
           ),
 
@@ -122,17 +124,20 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
               padding: EdgeInsets.only(top: topPadding),
               height: totalAppBarHeight,
               color: Theme.of(context).primaryColor,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    ch.title,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              child: GestureDetector(
+                onTap: () => _roller.jumpTo(0),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      ch.title,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -161,6 +166,7 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
         ),
         child: SafeArea(
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
                 icon: const Icon(Icons.menu),
@@ -171,12 +177,9 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.search),
-                onPressed: () {
-                  // context.push('/book/search', extra: widget.book);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => SearchFrame(widget.book)),
-                  );
+                onPressed: () async {
+                  _cache ??= CacheResult('', []);
+                  _cache = await _cache?.show(context, widget.id, widget.book);
                 },
               ),
               IconButton(
@@ -347,7 +350,10 @@ class ContentView extends ConsumerWidget {
 
   Widget tile(Chunk c, WidgetRef ref) {
     if (c is Picture) {
-      return Image.memory(blueMark, fit: BoxFit.fitWidth);
+      return Image.memory(
+        c.bytes() ?? Uint8List.fromList([]),
+        fit: BoxFit.fitWidth,
+      );
     }
     return Text.rich(
       TextSpan(

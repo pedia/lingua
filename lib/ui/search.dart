@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../chunk/chunk.dart';
 import '../g.dart';
+import '../ui/book.dart';
 
 class SearchService {
   int big = 0;
@@ -216,8 +217,15 @@ int _expandRightByWords(String text, int index, int wordCount) {
 }
 
 class SearchFrame extends ConsumerStatefulWidget {
-  const SearchFrame(this.book, {super.key});
+  const SearchFrame({
+    required this.id,
+    required this.book,
+    this.cache,
+    super.key,
+  });
+  final int id;
   final Book book;
+  final CacheResult? cache;
 
   @override
   ConsumerState<SearchFrame> createState() => _SearchScreenState();
@@ -230,8 +238,17 @@ class _SearchScreenState extends ConsumerState<SearchFrame> {
   StreamSubscription<Result>? _subscription;
   bool _isSearching = false;
 
+  /// search via input change
+  bool _alive = false;
+
   @override
   void initState() {
+    if (widget.cache != null) {
+      setState(() {
+        _input.text = widget.cache!.query;
+        _searchResults.addAll(widget.cache!.results);
+      });
+    }
     super.initState();
   }
 
@@ -282,75 +299,83 @@ class _SearchScreenState extends ConsumerState<SearchFrame> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Search')),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CupertinoSearchTextField(
-            controller: _input,
-            placeholder: 'Input...',
-            style: TextStyle(fontFamily: '.osdefault'),
-            // onChanged: (query) => _search(query),
-            onSubmitted: (query) {
-              debugPrint('submit $query');
-              _search(query, recordHistory: true);
-            },
-            onSuffixTap: () async {
-              _subscription?.cancel();
-              await _searchService.cancelAndWait();
-              setState(() {
-                _searchResults.clear();
-                _isSearching = false;
-                _input.clear();
-              });
-            },
-          ),
-          const SizedBox(height: 16.0),
-          _buildRecentQueriesPanel(),
-          if (_isSearching) const LinearProgressIndicator(),
-          if (_searchResults.isNotEmpty)
-            Text(' Found ${_searchResults.length}'),
-          Expanded(
-            child: _searchResults.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No results found',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _searchResults.length,
-                    itemBuilder: (context, index) {
-                      final e = _searchResults[index];
-                      return ListTile(
-                        title: Text(
-                          e.snippet, //.substring(0, e.start),
-                          // children: [
-                          //   TextSpan(
-                          //     text: e.snippet.substring(e.start, e.end),
-                          //     style: TextStyle(color: Colors.red),
-                          //   ),
-                          //   TextSpan(text: e.snippet.substring(e.end)),
-                          // ],
-                        ),
-                        subtitle: Text(
-                          widget.book.chapters[e.chapterIndex].title,
-                        ),
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Selected: chapter ${e.chapterIndex} chunk ${e.chunkIndex}',
-                              ),
-                            ),
-                          );
-                        },
-                      );
+    return PopScope(
+      canPop: false,
+      // The result argument contains the pop result that is defined in `_PageTwo`.
+      onPopInvokedWithResult: (bool didPop, result) async {
+        if (didPop) {
+          return;
+        }
+        Navigator.pop(context, CacheResult(_input.text, _searchResults));
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text('Search')),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: CupertinoSearchTextField(
+                    controller: _input,
+                    placeholder: 'Input...',
+                    style: TextStyle(fontFamily: '.osdefault'),
+                    onChanged: _alive ? (query) => _search(query) : null,
+                    onSubmitted: (query) {
+                      debugPrint('submit $query');
+                      _search(query, recordHistory: true);
+                    },
+                    onSuffixTap: () async {
+                      _subscription?.cancel();
+                      await _searchService.cancelAndWait();
+                      setState(() {
+                        _searchResults.clear();
+                        _isSearching = false;
+                        _input.clear();
+                      });
                     },
                   ),
-          ),
-        ],
+                ),
+                CupertinoSwitch(
+                  value: _alive,
+                  onChanged: (value) => setState(() => _alive = value),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16.0),
+            if (!_isSearching) _buildRecentQueriesPanel(),
+            if (_isSearching) const LinearProgressIndicator(),
+            if (_searchResults.isNotEmpty)
+              Text(' Found ${_searchResults.length}'),
+            Expanded(
+              child: _searchResults.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No results found',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        final e = _searchResults[index];
+                        return ListTile(
+                          title: Text(e.snippet), // TODO: make query highlight
+                          subtitle: Text(
+                            widget.book.chapters[e.chapterIndex].title,
+                          ),
+                          onTap: () {
+                            // jump to chapter
+                            ref
+                                .read(isp(widget.id).notifier)
+                                .update(readChapterIndex: e.chapterIndex);
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -427,6 +452,21 @@ class _SearchScreenState extends ConsumerState<SearchFrame> {
           ),
           const SizedBox(height: 8),
         ],
+      ),
+    );
+  }
+}
+
+class CacheResult {
+  CacheResult(this.query, this.results);
+  final String query;
+  final List<Result> results;
+
+  Future<CacheResult?> show(BuildContext context, int id, Book book) {
+    return Navigator.push<CacheResult?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SearchFrame(id: id, book: book, cache: this),
       ),
     );
   }
