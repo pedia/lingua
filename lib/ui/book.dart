@@ -9,17 +9,12 @@ import 'package:archive/archive.dart';
 import 'package:saf/saf.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../settings/setting.dart';
 import '../hw.dart';
 import '../g.dart';
 import '../data/model.dart';
 import '../chunk/chunk.dart';
 import '../demo/freya.dart';
-import '../data/sample.dart';
-import 'setting.dart';
-import 'font.dart';
-import 'gadget.dart';
-import 'chapter_list.dart';
+import '../chunk/sample.dart';
 
 class ArchiveProvider extends FileProvider {
   ArchiveProvider(String base, this.files) : base = Uri(path: base);
@@ -180,9 +175,9 @@ extension ItemExt on Item {
   Future<Book?> open() async {
     Book? book;
     if (id == 5) {
-      // book = freya;
-    } else if (id == 6) {
-      // book = sample();
+      book = Book(title: 'Empty Book', chapters: []);
+    } else if (type == ItemType.debug) {
+      book = buildSampleBook();
     } else if (type == ItemType.file) {
       String fp = path;
       if (path.startsWith('content://')) {

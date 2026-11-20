@@ -438,19 +438,18 @@ class ShopNotifier extends Notifier<Shop> {
     Item(
       id: 5,
       ctime: DateTime.now(),
-      name: 'Freya Cycle',
+      name: 'Empty Book',
       path: '',
       type: ItemType.demo,
     ),
 
-    if (!bool.fromEnvironment('dart.vm.product'))
-      Item(
-        id: 6,
-        ctime: DateTime.now(),
-        name: 'Debug, 中文',
-        path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
-        type: ItemType.debug,
-      ),
+    Item(
+      id: 6,
+      ctime: DateTime.now(),
+      name: 'Debug, 中文',
+      path: '事實上，我想"我"並不記得“這個”月之前噴泉是什麼樣子',
+      type: ItemType.debug,
+    ),
   ];
 }
 

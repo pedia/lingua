@@ -128,14 +128,15 @@ class Chunk {
     String? text,
     Lang? lang,
     bool? strong,
-  }) => Chunk(
-    idx: idx ?? this.idx,
-    id: id ?? this.id,
-    spans: spans ?? this.spans,
-    text: text ?? this.text,
-    lang: lang ?? this.lang,
-    strong: strong ?? this.strong,
-  );
+  }) =>
+      Chunk(
+        idx: idx ?? this.idx,
+        id: id ?? this.id,
+        spans: spans ?? this.spans,
+        text: text ?? this.text,
+        lang: lang ?? this.lang,
+        strong: strong ?? this.strong,
+      );
 
   @override
   String toString() =>
@@ -174,15 +175,16 @@ class Picture extends Chunk {
     double? w,
     double? h,
     Uint8List? Function()? bytes,
-  }) => Picture(
-    src ?? this.src,
-    alt: alt ?? this.alt,
-    w: w ?? this.w,
-    h: h ?? this.h,
-    idx: idx ?? this.idx,
-    id: id ?? this.id,
-    bytes: bytes ?? _bytes,
-  );
+  }) =>
+      Picture(
+        src ?? this.src,
+        alt: alt ?? this.alt,
+        w: w ?? this.w,
+        h: h ?? this.h,
+        idx: idx ?? this.idx,
+        id: id ?? this.id,
+        bytes: bytes ?? _bytes,
+      );
 
   @override
   String toString() => 'Picture($src${alt != null ? ", alt: $alt" : ""})';
@@ -234,16 +236,7 @@ class HtmlChunkParser {
   static final RegExp _latin = RegExp(r'[a-zA-Z]');
 
   static const Set<String> _blocks = {
-    'p',
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'li',
-    'aside',
-    'blockquote',
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'aside', 'blockquote'
   };
 
   static final RegExp _whitespace = RegExp(r'\s+');
@@ -252,10 +245,7 @@ class HtmlChunkParser {
     r'footnote|doc-endnote|endnotes',
     caseSensitive: false,
   );
-  static final RegExp _imgHint = RegExp(
-    r'<img\b|<image\b',
-    caseSensitive: false,
-  );
+  static final RegExp _imgHint = RegExp(r'<img\b|<image\b', caseSensitive: false);
   static final RegExp _anchorHint = RegExp(r'<a\b', caseSensitive: false);
   static final RegExp _strongHint = RegExp(r'<strong\b', caseSensitive: false);
   static final RegExp _tagOrEntity = RegExp(r'[<&]');
@@ -359,19 +349,19 @@ class HtmlChunkParser {
     final found = (bestH2 != null && bestH2.isNotEmpty)
         ? bestH2
         : (bestH3 != null && bestH3.isNotEmpty)
-        ? bestH3
-        : (bestTitle != null && bestTitle.isNotEmpty)
-        ? bestTitle
-        : null;
+            ? bestH3
+            : (bestTitle != null && bestTitle.isNotEmpty)
+                ? bestTitle
+                : null;
     if (found != null) return found;
     if (sawEmpty || !_headingOpen.hasMatch(html)) return fallback;
 
     final doc = _parseRoot(html);
     for (final selector in ['h1', 'h2', 'h3', 'title']) {
-      final text = _queryFirst(
-        doc,
-        selector,
-      )?.text.replaceAll(_whitespace, ' ').trim();
+      final text = _queryFirst(doc, selector)
+          ?.text
+          .replaceAll(_whitespace, ' ')
+          .trim();
       if (text != null && text.isNotEmpty) return text;
     }
     return fallback;
@@ -387,7 +377,10 @@ class HtmlChunkParser {
   }) {
     final doc = _parseRoot(html);
     final fnMap = _footnoteHint.hasMatch(html)
-        ? <String, String>{...footnotes, ..._extractFootnotesFromNode(doc)}
+        ? <String, String>{
+            ...footnotes,
+            ..._extractFootnotesFromNode(doc),
+          }
         : footnotes;
     final hasImg = _imgHint.hasMatch(html);
     final hasAnchor = _anchorHint.hasMatch(html);
@@ -398,10 +391,7 @@ class HtmlChunkParser {
       if (node is! dom.Element) return;
 
       final tag = node.localName?.toLowerCase() ?? '';
-      if (tag == 'head' ||
-          tag == 'title' ||
-          tag == 'script' ||
-          tag == 'style') {
+      if (tag == 'head' || tag == 'title' || tag == 'script' || tag == 'style') {
         return;
       }
       if (_isFootnoteContainer(node, tag)) return;
@@ -422,12 +412,9 @@ class HtmlChunkParser {
       }
 
       if (isBlock) {
-        final hasChildBlocks =
-            tag != 'aside' &&
+        final hasChildBlocks = tag != 'aside' &&
             tag != 'strong' &&
-            node.children.any(
-              (c) => _blocks.contains(c.localName?.toLowerCase()),
-            );
+            node.children.any((c) => _blocks.contains(c.localName?.toLowerCase()));
 
         if (hasChildBlocks) {
           final lang = _detectLang(
@@ -443,8 +430,7 @@ class HtmlChunkParser {
         }
 
         final id = _getId(node, checkAnchorChild: hasAnchor);
-        final strong =
-            _isHeading(tag) ||
+        final strong = _isHeading(tag) ||
             tag == 'strong' ||
             (hasStrong && _allContentInStrong(node));
         final spans = _extractSpans(node, fnMap);
@@ -456,11 +442,7 @@ class HtmlChunkParser {
               : spans.first.text;
           var langText = plainText;
           if (langText.isEmpty && hasSpanAnchor) {
-            langText = spans
-                .whereType<Anchor>()
-                .map((a) => a.note)
-                .nonNulls
-                .join(' ');
+            langText = spans.whereType<Anchor>().map((a) => a.note).nonNulls.join(' ');
           }
           final resolvedLang = _detectLang(
             node.classes,
@@ -470,25 +452,21 @@ class HtmlChunkParser {
           );
 
           if (hasSpanAnchor) {
-            chunks.add(
-              Chunk(
-                idx: chunks.length,
-                id: id,
-                spans: spans,
-                lang: resolvedLang,
-                strong: strong,
-              ),
-            );
+            chunks.add(Chunk(
+              idx: chunks.length,
+              id: id,
+              spans: spans,
+              lang: resolvedLang,
+              strong: strong,
+            ));
           } else {
-            chunks.add(
-              Chunk(
-                idx: chunks.length,
-                id: id,
-                text: spans.first.text,
-                lang: resolvedLang,
-                strong: strong,
-              ),
-            );
+            chunks.add(Chunk(
+              idx: chunks.length,
+              id: id,
+              text: spans.first.text,
+              lang: resolvedLang,
+              strong: strong,
+            ));
           }
         }
 
@@ -557,11 +535,7 @@ class HtmlChunkParser {
         open--;
       }
 
-      if (!hitGt &&
-          open >= copiedUpTo &&
-          html.codeUnitAt(open) == 0x3C &&
-          !inSingle &&
-          !inDouble) {
+      if (!hitGt && open >= copiedUpTo && html.codeUnitAt(open) == 0x3C && !inSingle && !inDouble) {
         var nameStart = open + 1;
         while (nameStart < idx && html.codeUnitAt(nameStart) <= 0x20) {
           nameStart++;
@@ -595,10 +569,7 @@ class HtmlChunkParser {
 
   static dom.Node _parseRoot(String html) {
     final normalized = _normalizeSelfClosingXhtml(html);
-    if (RegExp(
-      r'<\s*(html|body)\b',
-      caseSensitive: false,
-    ).hasMatch(normalized)) {
+    if (RegExp(r'<\s*(html|body)\b', caseSensitive: false).hasMatch(normalized)) {
       return html_parser.parse(normalized).documentElement ??
           html_parser.parseFragment(normalized);
     }
@@ -654,8 +625,7 @@ class HtmlChunkParser {
     for (final el in elements) {
       final tag = el.localName?.toLowerCase() ?? '';
       if (el.id.isEmpty) continue;
-      if (!_isFootnoteContainer(el, tag) && !_insideEndnoteSection(el))
-        continue;
+      if (!_isFootnoteContainer(el, tag) && !_insideEndnoteSection(el)) continue;
       final text = _extractFootnoteBody(el);
       if (text.isNotEmpty) map[el.id] = text;
     }
@@ -712,8 +682,7 @@ class HtmlChunkParser {
     if (tag == 'aside') {
       return epubType == 'footnote' ||
           role == 'doc-footnote' ||
-          el.querySelector('.duokan-footnote-content, .duokan-footnote-item') !=
-              null ||
+          el.querySelector('.duokan-footnote-content, .duokan-footnote-item') != null ||
           el.id.contains('footnote');
     }
     if (tag == 'section') {
@@ -723,8 +692,7 @@ class HtmlChunkParser {
           el.classes.contains('_idFootnotes');
     }
     if (tag == 'li') {
-      return (el.classes.contains('duokan-footnote-item') &&
-              el.id.isNotEmpty) ||
+      return (el.classes.contains('duokan-footnote-item') && el.id.isNotEmpty) ||
           el.classes.contains('_idFootnote') ||
           epubType == 'footnote' ||
           role == 'doc-footnote' ||
@@ -792,9 +760,11 @@ class HtmlChunkParser {
 
         if (href.isNotEmpty || note != null) {
           flushPlain();
-          spans.add(
-            Anchor(linkText, note: note, link: href.isNotEmpty ? href : null),
-          );
+          spans.add(Anchor(
+            linkText,
+            note: note,
+            link: href.isNotEmpty ? href : null,
+          ));
           return;
         }
       }
@@ -968,8 +938,8 @@ class HtmlChunkParser {
       final key = entry.key;
       final keyStr = key is dom.AttributeName
           ? (key.prefix != null && key.prefix!.isNotEmpty
-                ? '${key.prefix}:${key.name}'
-                : key.name)
+              ? '${key.prefix}:${key.name}'
+              : key.name)
           : key.toString();
       final lower = keyStr.toLowerCase();
       for (final name in names) {
@@ -1004,8 +974,8 @@ class HtmlChunkParser {
       final idx = resolvedSrc.indexOf(';base64,');
       if (idx >= 0) {
         loader = () => Uint8List.fromList(
-          base64Decode(resolvedSrc.substring(idx + 8).trim()),
-        );
+              base64Decode(resolvedSrc.substring(idx + 8).trim()),
+            );
       }
     } else if (resolveImageBytes != null) {
       loader = () => resolveImageBytes(resolvedSrc);
@@ -1034,8 +1004,7 @@ class HtmlChunkParser {
       }
     }
 
-    final id =
-        _getId(img) ??
+    final id = _getId(img) ??
         (img.parent?.localName?.toLowerCase() == 'svg'
             ? _getId(img.parent!)
             : null);
@@ -1065,11 +1034,12 @@ class ChunkParser {
     String html, {
     Lang defaultLang = Lang.unknown,
     Map<String, String> footnotes = const {},
-  }) => HtmlChunkParser.parseHtml(
-    html,
-    defaultLang: defaultLang,
-    footnotes: footnotes,
-  );
+  }) =>
+      HtmlChunkParser.parseHtml(
+        html,
+        defaultLang: defaultLang,
+        footnotes: footnotes,
+      );
 
   static Book parseBytes(List<int> bytes) {
     if (MobiParser.isMobiBytes(bytes)) {

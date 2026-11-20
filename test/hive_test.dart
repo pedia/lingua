@@ -31,13 +31,16 @@ void main() {
       'c': [1],
     });
     expect(box.get(2), isMap);
-    // expect(box.length, equals(2));
-    // box.add('hello');
-    // for (var i = 0; i < box.length; i++) {
-    //   print('$i: ${box.getAt(i)}');
-    // }
 
-    print(box.toMap());
+    box.put('a1', 1);
+    box.put('a2', 2);
+    box.put('a3', 3);
+    print('loop:');
+    for (var i in box.valuesBetween(startKey: 'a1', endKey: 'a3')) {
+      print('$i');
+    }
+
+    print('map: ${box.toMap()}');
   });
   test('model', () async {
     gid = 0;

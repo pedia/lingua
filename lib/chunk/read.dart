@@ -1,10 +1,10 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lingua/ui/gadget.dart';
 import '../ui/chapter_list.dart' as legacy;
 import '../ui/book.dart' as legacy;
 import '../ui/search.dart';
@@ -72,12 +72,16 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.book.chapters.isEmpty) {
+      return InfoScreen('Book is empty');
+    }
     final topPadding = MediaQuery.of(context).padding.top;
     final totalAppBarHeight = _appBarHeight + topPadding;
 
     final ci = ref.watch(
       legacy.isp(widget.id).select((o) => o.readChapterIndex),
     );
+
     final ch = widget.book.chapters[ci];
     ref.listen(legacy.isp(widget.id), (prev, next) {
       if (_roller.hasClients &&
@@ -126,6 +130,7 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
               color: Theme.of(context).primaryColor,
               child: GestureDetector(
                 onTap: () => _roller.jumpTo(0),
+                onDoubleTap: () => _roller.jumpTo(0),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Align(
@@ -253,7 +258,6 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
     ref.listen(tts.engineProvider, (prev, next) {
       if (next.isPlaying && next.currentIndex != null) {
         final idx = next.chunks[next.currentIndex!].idx;
-        print('playback chunk $idx');
         ref.read(legacy.isp(widget.id).notifier).update(speakLine: idx);
       }
     });
@@ -283,7 +287,7 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
 
   Widget progress(BuildContext context) {
     final s = ref.watch(legacy.isp(widget.id));
-    // final l = ref.watch(linep);
+    // TODO: check s.speakChapterIndex
     return Text(
       ' ${s.speakLine}/${widget.book.chapters[s.readChapterIndex].chunks.length} ',
     );
@@ -344,7 +348,9 @@ class ContentView extends ConsumerWidget {
       controller: controller,
       padding: padding,
       itemCount: chapter.chunks.length,
-      itemBuilder: (context, i) => tile(chapter.chunks[i], ref),
+      itemBuilder: (context, i) =>
+          // ListTile(title: Text('$i')),
+          tile(chapter.chunks[i], ref),
     );
   }
 
