@@ -9,15 +9,14 @@ class Fixit {
 
 const speakFixit = [
   Fixit('您', '你'),
-  // Fixit('他', '男他'),
-  // Fixit('她', '女她'),
+  Fixit('&nbsp;', ' '),
 ];
 
-const allFixit = [Fixit('您', '你')];
+const allFixit = [Fixit('您', '你'), Fixit('&nbsp;', ' ')];
 
 extension ChunkFix on Chunk {
   /// pre-process for tts
-  Chunk process() => copyWith(
+  Chunk process() => clean().copyWith(
     text: _fix(text, lang),
     spans: spans.map((span) => span.fix(lang)).toList(),
   );

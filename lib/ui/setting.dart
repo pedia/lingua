@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingua/tts/engine.dart';
 import 'package:path_provider/path_provider.dart';
@@ -29,22 +28,14 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
 
   @override
   void dispose() {
-    tts.stop();
     super.dispose();
   }
 
-  final tts = FlutterTts();
   final envs = <(String, Voice)>[];
   final zhvs = <(String, Voice)>[];
 
   void loadVoices() {
-    tts.getVoices.then((x) {
-      final list = (x as List)
-          .cast<Map>()
-          .map((e) => Voice(Map<String, String>.from(e)))
-          .where((e) => e.valid)
-          .toList();
-
+    ref.read(engineProvider.notifier).getVoices().then((list) {
       for (final v in list) {
         if (v.match(Lang.en)) {
           envs.add((v.title, v));
@@ -93,17 +84,14 @@ class _SettingsPageState extends ConsumerState<SettingFrame> {
       settingProvider.select((m) => m.of('tts.${lang.name}')),
     );
     final es = EngineSetting.from(lang, sm);
-    await tts.stop();
-    await tts.awaitSpeakCompletion(true);
-    await applyEngineSetting(tts, es);
 
-    final s =
-        {
-          Lang.zh: '你好,选择体验更好的语音合成引擎 say something in English',
-          Lang.en: 'Hello, I am focus on english speaking',
-        }[lang] ??
-        '';
-    tts.speak(s);
+    final s = {
+      Lang.zh: '你好,选择体验更好的语音合成引擎 say something in English',
+      Lang.en: 'Hello, I am focus on english speaking',
+    }[lang];
+    if (s != null) {
+      ref.read(engineProvider.notifier).playWith(es, s);
+    }
   }
 
   List<SettingItem> get items => <SettingItem>[

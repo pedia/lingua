@@ -109,18 +109,6 @@ class Chunk {
   final String? text;
   final bool strong;
 
-  /// Speakable plain text for this chunk (omitting footnote marker anchors).
-  String get speak {
-    if (text != null) return text!;
-    if (spans.isEmpty) return '';
-    final buf = StringBuffer();
-    for (final s in spans) {
-      if (s is Anchor && s.note != null) continue;
-      buf.write(s.text);
-    }
-    return buf.toString().replaceAll(RegExp(r' {2,}'), ' ').trim();
-  }
-
   Chunk copyWith({
     int? idx,
     String? id,
@@ -162,6 +150,238 @@ class Picture extends Chunk {
   /// Load raw image bytes on demand from the backing archive (or inline data URI).
   Uint8List? bytes() => _bytes?.call();
 
+  /// Update [w] and [h] before display in a UI view.
+  ///
+  /// - If [w] or [h] is provided, applies those values directly.
+  /// - Otherwise, when either [w] or [h] is missing (or [force] is true),
+  ///   reads intrinsic pixel dimensions from [bytes()] headers (PNG, JPEG, GIF,
+  ///   WebP, BMP, SVG) and fills missing sides proportionally.
+  /// - If [maxWidth] and/or [maxHeight] are specified, scales down
+  ///   proportionally to fit within those bounds while preserving aspect ratio.
+  ///
+  /// Returns `true` if both [w] and [h] are positive numbers after updating.
+  bool updateSize({
+    double? w,
+    double? h,
+    double? maxWidth,
+    double? maxHeight,
+    bool force = false,
+  }) {
+    if (w != null) this.w = w;
+    if (h != null) this.h = h;
+
+    if (force || this.w == null || this.h == null) {
+      final data = bytes();
+      final intrinsic = data != null ? _readImageDimensions(data) : null;
+      if (intrinsic != null && intrinsic.w > 0 && intrinsic.h > 0) {
+        if (force) {
+          this.w = w ?? intrinsic.w;
+          this.h = h ?? intrinsic.h;
+        } else if (this.w == null && this.h == null) {
+          this.w = intrinsic.w;
+          this.h = intrinsic.h;
+        } else if (this.w != null && this.h == null) {
+          this.h = this.w! * (intrinsic.h / intrinsic.w);
+        } else if (this.h != null && this.w == null) {
+          this.w = this.h! * (intrinsic.w / intrinsic.h);
+        }
+      }
+    }
+
+    var cw = this.w;
+    var ch = this.h;
+    if (cw != null && ch != null && cw > 0 && ch > 0) {
+      if (maxWidth != null && maxWidth > 0 && cw > maxWidth) {
+        final ratio = maxWidth / cw;
+        cw = maxWidth;
+        ch = ch * ratio;
+      }
+      if (maxHeight != null && maxHeight > 0 && ch > maxHeight) {
+        final ratio = maxHeight / ch;
+        ch = maxHeight;
+        cw = cw * ratio;
+      }
+      this.w = cw;
+      this.h = ch;
+      return true;
+    }
+    return false;
+  }
+
+  static ({double w, double h})? _readImageDimensions(Uint8List data) {
+    final len = data.length;
+    if (len < 10) return null;
+
+    // PNG: 8-byte signature + IHDR width/height at offsets 16..24 (big-endian)
+    if (len >= 24 &&
+        data[0] == 0x89 &&
+        data[1] == 0x50 &&
+        data[2] == 0x4E &&
+        data[3] == 0x47 &&
+        data[4] == 0x0D &&
+        data[5] == 0x0A &&
+        data[6] == 0x1A &&
+        data[7] == 0x0A) {
+      final bd = ByteData.sublistView(data);
+      final w = bd.getUint32(16, Endian.big).toDouble();
+      final h = bd.getUint32(20, Endian.big).toDouble();
+      return (w > 0 && h > 0) ? (w: w, h: h) : null;
+    }
+
+    // GIF87a / GIF89a: width/height at offsets 6..10 (little-endian)
+    if (len >= 10 &&
+        data[0] == 0x47 &&
+        data[1] == 0x49 &&
+        data[2] == 0x46 &&
+        data[3] == 0x38) {
+      final bd = ByteData.sublistView(data);
+      final w = bd.getUint16(6, Endian.little).toDouble();
+      final h = bd.getUint16(8, Endian.little).toDouble();
+      return (w > 0 && h > 0) ? (w: w, h: h) : null;
+    }
+
+    // BMP: 'BM' + DIB header at 14
+    if (len >= 26 && data[0] == 0x42 && data[1] == 0x4D) {
+      final bd = ByteData.sublistView(data);
+      final dibSize = bd.getUint32(14, Endian.little);
+      if (dibSize == 12) {
+        final w = bd.getUint16(18, Endian.little).toDouble();
+        final h = bd.getUint16(20, Endian.little).toDouble();
+        return (w > 0 && h > 0) ? (w: w, h: h) : null;
+      }
+      final w = bd.getInt32(18, Endian.little).abs().toDouble();
+      final h = bd.getInt32(22, Endian.little).abs().toDouble();
+      return (w > 0 && h > 0) ? (w: w, h: h) : null;
+    }
+
+    // WebP: RIFF....WEBP
+    if (len >= 25 &&
+        data[0] == 0x52 &&
+        data[1] == 0x49 &&
+        data[2] == 0x46 &&
+        data[3] == 0x46 &&
+        data[8] == 0x57 &&
+        data[9] == 0x45 &&
+        data[10] == 0x42 &&
+        data[11] == 0x50) {
+      final bd = ByteData.sublistView(data);
+      // VP8 (lossy)
+      if (len >= 30 &&
+          data[12] == 0x56 &&
+          data[13] == 0x50 &&
+          data[14] == 0x38 &&
+          data[15] == 0x20 &&
+          data[23] == 0x9D &&
+          data[24] == 0x01 &&
+          data[25] == 0x2A) {
+        final w = (bd.getUint16(26, Endian.little) & 0x3FFF).toDouble();
+        final h = (bd.getUint16(28, Endian.little) & 0x3FFF).toDouble();
+        return (w > 0 && h > 0) ? (w: w, h: h) : null;
+      }
+      // VP8L (lossless)
+      if (data[12] == 0x56 &&
+          data[13] == 0x50 &&
+          data[14] == 0x38 &&
+          data[15] == 0x4C &&
+          data[20] == 0x2F) {
+        final bits = bd.getUint32(21, Endian.little);
+        final w = ((bits & 0x3FFF) + 1).toDouble();
+        final h = (((bits >> 14) & 0x3FFF) + 1).toDouble();
+        return (w > 0 && h > 0) ? (w: w, h: h) : null;
+      }
+      // VP8X (extended)
+      if (len >= 30 &&
+          data[12] == 0x56 &&
+          data[13] == 0x50 &&
+          data[14] == 0x38 &&
+          data[15] == 0x58) {
+        final w = (1 + (data[24] | (data[25] << 8) | (data[26] << 16))).toDouble();
+        final h = (1 + (data[27] | (data[28] << 8) | (data[29] << 16))).toDouble();
+        return (w > 0 && h > 0) ? (w: w, h: h) : null;
+      }
+    }
+
+    // JPEG: FF D8 ... SOF0..SOF15 (excluding DHT C4, JPG C8, DAC CC)
+    if (data[0] == 0xFF && data[1] == 0xD8) {
+      int pos = 2;
+      while (pos + 3 < len) {
+        while (pos < len && data[pos] != 0xFF) {
+          pos++;
+        }
+        while (pos < len && data[pos] == 0xFF) {
+          pos++;
+        }
+        if (pos >= len) break;
+        final marker = data[pos++];
+        if (marker == 0x00 || marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+          continue;
+        }
+        if (marker == 0xD9 || marker == 0xDA) break; // EOI or SOS
+        if (pos + 1 >= len) break;
+        final segLen = (data[pos] << 8) | data[pos + 1];
+        if (segLen < 2 || pos + segLen > len) break;
+        if (marker >= 0xC0 &&
+            marker <= 0xCF &&
+            marker != 0xC4 &&
+            marker != 0xC8 &&
+            marker != 0xCC) {
+          if (pos + 6 < len) {
+            final h = ((data[pos + 3] << 8) | data[pos + 4]).toDouble();
+            final w = ((data[pos + 5] << 8) | data[pos + 6]).toDouble();
+            return (w > 0 && h > 0) ? (w: w, h: h) : null;
+          }
+          break;
+        }
+        pos += segLen;
+      }
+      return null;
+    }
+
+    // SVG text header
+    final head = utf8.decode(
+      data.length > 2048 ? data.sublist(0, 2048) : data,
+      allowMalformed: true,
+    );
+    final svgMatch = RegExp(r'<svg\b([^>]*)>', caseSensitive: false).firstMatch(head);
+    if (svgMatch != null) {
+      final attrs = svgMatch.group(1)!;
+      double? attrNum(String name) {
+        final m = RegExp(
+          '\\b$name\\s*=\\s*["\']([^"\']+)["\']',
+          caseSensitive: false,
+        ).firstMatch(attrs);
+        return HtmlChunkParser._parseSize(m?.group(1));
+      }
+
+      var w = attrNum('width');
+      var h = attrNum('height');
+      if (w == null || h == null) {
+        final vb = RegExp(
+          r'''\bviewBox\s*=\s*["']([^"']+)["']''',
+          caseSensitive: false,
+        ).firstMatch(attrs);
+        if (vb != null) {
+          final parts = vb
+              .group(1)!
+              .trim()
+              .split(RegExp(r'[\s,]+'))
+              .map(double.tryParse)
+              .whereType<double>()
+              .toList();
+          if (parts.length == 4) {
+            w ??= parts[2];
+            h ??= parts[3];
+          }
+        }
+      }
+      if (w != null && h != null && w > 0 && h > 0) {
+        return (w: w, h: h);
+      }
+    }
+
+    return null;
+  }
+
   @override
   Picture copyWith({
     int? idx,
@@ -194,17 +414,66 @@ abstract class Chapter {
   Chapter(this.title);
   final String title;
   List<Chunk> get chunks;
+
+  List<Chunk>? _cached;
+  bool _cleaned = false;
+  double? _cachedMaxWidth;
+
+  /// Whether this chapter's chunks have been processed through a cleaner.
+  bool get isCleaned => _cleaned;
+
+  /// Apply [cleaner] once and cache the prepared chunks (and optional
+  /// [maxWidth] picture sizing), returning the cached list on subsequent calls.
+  List<Chunk> cleanWith(
+    Chunk Function(Chunk) cleaner, {
+    double? maxWidth,
+  }) {
+    if (!_cleaned || _cached == null) {
+      final base = _cached ?? chunks;
+      if (!_cleaned) {
+        _cached = [for (final c in base) cleaner(c)];
+        _cleaned = true;
+        _cachedMaxWidth = maxWidth;
+        return _cached!;
+      }
+    }
+    if (maxWidth != null && maxWidth != _cachedMaxWidth && _cached != null) {
+      for (final c in _cached!) {
+        if (c is Picture) {
+          c.updateSize(maxWidth: maxWidth);
+        }
+      }
+      _cachedMaxWidth = maxWidth;
+    }
+    return _cached!;
+  }
 }
 
 class LazyChapter extends Chapter {
-  LazyChapter(super.title, this._loader);
+  LazyChapter(super.title, this._loader, {Chunk Function(Chunk)? clean})
+      : _clean = clean;
 
   final List<Chunk> Function() _loader;
-  List<Chunk>? _cached;
+  final Chunk Function(Chunk)? _clean;
 
   @override
-  List<Chunk> get chunks => _cached ??= _loader();
+  List<Chunk> get chunks {
+    final existing = _cached;
+    if (existing != null) return existing;
+    final loaded = _loader();
+    final cleanFn = _clean;
+    if (cleanFn != null) {
+      _cached = [for (final c in loaded) cleanFn(c)];
+      _cleaned = true;
+    } else {
+      _cached = loaded;
+    }
+    return _cached!;
+  }
 }
+
+/// Reference to a [Chunk] location inside a [Book] by 0-based [chapter] and [chunk] indices.
+typedef ChunkRef = ({int chapter, int chunk});
 
 class Book {
   Book({
@@ -222,9 +491,174 @@ class Book {
   final String? description;
   final List<Chapter> chapters;
   final Uint8List? Function()? _cover;
+  Map<String, List<ChunkRef>>? _index;
 
   /// Load cover image bytes on demand from the book metadata/archive.
   Uint8List? cover() => _cover?.call();
+
+  /// Lazily built, cached inverted index mapping normalized keywords to
+  /// ordered `(chapter, chunk)` references across all [chapters].
+  Map<String, List<ChunkRef>> get index => _index ??= _buildIndex();
+
+  /// Clear any cached inverted [index] so it rebuilds on next access.
+  void invalidateIndex() => _index = null;
+
+  /// Search the book using the inverted [index] for all normalized keywords in [query].
+  ///
+  /// When [exactPhrase] is `true`, candidate chunks are additionally verified
+  /// to contain the normalized query phrase contiguously.
+  List<ChunkRef> search(String query, {bool exactPhrase = false}) {
+    final terms = _queryTokens(query);
+    if (terms.isEmpty) return const [];
+
+    final idx = index;
+    final lists = <List<ChunkRef>>[];
+    for (final term in terms) {
+      final hits = idx[term];
+      if (hits == null || hits.isEmpty) return const [];
+      lists.add(hits);
+    }
+
+    lists.sort((a, b) => a.length.compareTo(b.length));
+    var candidates = lists.first;
+    for (int i = 1; i < lists.length; i++) {
+      candidates = _intersectSorted(candidates, lists[i]);
+      if (candidates.isEmpty) return const [];
+    }
+
+    if (!exactPhrase) return List<ChunkRef>.unmodifiable(candidates);
+
+    final normQuery = _normalizeForPhrase(query);
+    if (normQuery.isEmpty) return const [];
+    final matched = <ChunkRef>[];
+    for (final ref in candidates) {
+      final chunk = chapters[ref.chapter].chunks[ref.chunk];
+      if (_normalizeForPhrase(_chunkSearchText(chunk)).contains(normQuery)) {
+        matched.add(ref);
+      }
+    }
+    return matched;
+  }
+
+  Map<String, List<ChunkRef>> _buildIndex() {
+    final map = <String, List<ChunkRef>>{};
+    for (int chIdx = 0; chIdx < chapters.length; chIdx++) {
+      final chunks = chapters[chIdx].chunks;
+      for (int cIdx = 0; cIdx < chunks.length; cIdx++) {
+        final text = _chunkSearchText(chunks[cIdx]);
+        if (text.isEmpty) continue;
+        final ref = (chapter: chIdx, chunk: cIdx);
+        for (final token in _indexTokens(text)) {
+          final list = map[token];
+          if (list == null) {
+            map[token] = <ChunkRef>[ref];
+          } else if (list.last != ref) {
+            list.add(ref);
+          }
+        }
+      }
+    }
+    return map;
+  }
+
+  static String _chunkSearchText(Chunk chunk) {
+    if (chunk.text != null) return chunk.text!;
+    if (chunk.spans.isEmpty) return '';
+    final buf = StringBuffer();
+    for (int i = 0; i < chunk.spans.length; i++) {
+      if (i > 0) buf.write(' ');
+      buf.write(chunk.spans[i].text);
+    }
+    return buf.toString();
+  }
+
+  static List<ChunkRef> _intersectSorted(List<ChunkRef> a, List<ChunkRef> b) {
+    final out = <ChunkRef>[];
+    int i = 0;
+    int j = 0;
+    while (i < a.length && j < b.length) {
+      final ra = a[i];
+      final rb = b[j];
+      final cmp = ra.chapter != rb.chapter
+          ? ra.chapter.compareTo(rb.chapter)
+          : ra.chunk.compareTo(rb.chunk);
+      if (cmp == 0) {
+        out.add(ra);
+        i++;
+        j++;
+      } else if (cmp < 0) {
+        i++;
+      } else {
+        j++;
+      }
+    }
+    return out;
+  }
+
+  static final RegExp _tokenSegment = RegExp(
+    r'[a-z0-9\u00c0-\u024f\u1e00-\u1eff]+|[\uac00-\ud7af]+|[\u4e00-\u9fff\u3040-\u30ff]+',
+  );
+
+  static String _foldWidthAndCase(String input) {
+    final buf = StringBuffer();
+    for (int i = 0; i < input.length; i++) {
+      final code = input.codeUnitAt(i);
+      if (code >= 0xFF01 && code <= 0xFF5E) {
+        buf.writeCharCode(code - 0xFEE0);
+      } else if (code == 0x3000) {
+        buf.writeCharCode(0x20);
+      } else {
+        buf.writeCharCode(code);
+      }
+    }
+    return buf.toString().toLowerCase();
+  }
+
+  static String _normalizeForPhrase(String input) =>
+      _foldWidthAndCase(input).replaceAll(HtmlChunkParser._whitespace, ' ').trim();
+
+  static Iterable<String> _indexTokens(String text) sync* {
+    final normalized = _foldWidthAndCase(text);
+    for (final m in _tokenSegment.allMatches(normalized)) {
+      final seg = m.group(0)!;
+      final first = seg.codeUnitAt(0);
+      if (_isCjkOrKana(first)) {
+        for (int i = 0; i < seg.length; i++) {
+          yield seg.substring(i, i + 1);
+          if (i + 1 < seg.length) {
+            yield seg.substring(i, i + 2);
+          }
+        }
+      } else {
+        yield seg;
+      }
+    }
+  }
+
+  static List<String> _queryTokens(String query) {
+    final normalized = _foldWidthAndCase(query);
+    final tokens = <String>[];
+    for (final m in _tokenSegment.allMatches(normalized)) {
+      final seg = m.group(0)!;
+      final first = seg.codeUnitAt(0);
+      if (_isCjkOrKana(first)) {
+        if (seg.length == 1) {
+          tokens.add(seg);
+        } else {
+          for (int i = 0; i + 1 < seg.length; i++) {
+            tokens.add(seg.substring(i, i + 2));
+          }
+        }
+      } else {
+        tokens.add(seg);
+      }
+    }
+    return tokens;
+  }
+
+  static bool _isCjkOrKana(int code) =>
+      (code >= 0x4E00 && code <= 0x9FFF) ||
+      (code >= 0x3040 && code <= 0x30FF);
 }
 
 /// Shared HTML/XHTML chunk parser used by EPUB and MOBI/AZW/AZW3 readers.

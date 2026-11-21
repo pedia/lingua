@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../chunk/chunk.dart';
+import '../chunk/fix.dart';
 import 'voice.dart';
 import '../log.dart';
 
@@ -23,7 +24,7 @@ class Engine {
   bool _isPlaying = false;
   bool _isPaused = false;
   final _tts = FlutterTts();
-  final Map<Lang, EngineSetting> _voices = {};
+  final Map<Lang, EngineSetting> _esmap = {};
 
   // Tracks character progress for pause/resume slicing
   int _currentTextOffset = 0;
@@ -87,11 +88,11 @@ class Engine {
       if (!_isPlaying) break;
 
       final line = _lines[_currentIndex];
-      logger.log('speak $line voice length: ${_voices.length}');
       _eventController.add(Event(playback: Playback.startLine, chunk: line));
 
       // Determine text to speak (supports resuming from offset if paused mid-line)
       String textToSpeak = line.speak;
+      logger.log('speak $textToSpeak esmap: ${_esmap.length}');
       if (_currentTextOffset > 0 && _currentTextOffset < textToSpeak.length) {
         textToSpeak = textToSpeak.substring(_currentTextOffset);
       }
@@ -99,7 +100,9 @@ class Engine {
       _utteranceCompleter = Completer<void>();
 
       if (preves?.lang != line.lang) {
-        final v = _voices[line.lang];
+        // zh_tw engine can speak English
+        final lang = line.lang == Lang.all ? Lang.zh : line.lang;
+        final v = _esmap[lang];
         if (v != null) {
           applyEngineSetting(_tts, v);
         }
@@ -190,7 +193,7 @@ class Engine {
 
   void apply(List<EngineSetting> es) {
     for (var v in es) {
-      _voices[v.lang] = v;
+      _esmap[v.lang] = v;
     }
   }
 
@@ -250,7 +253,7 @@ class EngineState {
 }
 
 class EngineNotifier extends Notifier<EngineState> {
-  final Engine _engine = Engine();
+  final _engine = Engine();
   StreamSubscription? _subscription;
 
   @override
@@ -324,6 +327,22 @@ class EngineNotifier extends Notifier<EngineState> {
 
   void apply(List<EngineSetting> es) {
     _engine.apply(es);
+  }
+
+  Future getVoices() async {
+    final vs = await _engine._tts.getVoices;
+    return (vs as List)
+        .cast<Map>()
+        .map((e) => Voice(Map<String, String>.from(e)))
+        .where((e) => e.valid)
+        .toList();
+  }
+
+  Future playWith(EngineSetting es, String text) async {
+    stop();
+
+    await applyEngineSetting(_engine._tts, es);
+    await _engine._tts.speak(text);
   }
 }
 

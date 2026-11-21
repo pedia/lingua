@@ -11,7 +11,7 @@ import '../ui/search.dart';
 import '../tts/engine.dart' as tts;
 import '../tts/voice.dart' as tts;
 import '../settings/setting.dart';
-import '../zh/fix.dart';
+import '../chunk/fix.dart';
 import '../imap.dart';
 import '../log.dart';
 
@@ -223,7 +223,8 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
     );
     final state = ref.read(legacy.isp(widget.id));
 
-    var it = widget.book.chapters[state.readChapterIndex].chunks
+    var it = widget.book.chapters[state.readChapterIndex]
+        .process()
         .where(
           (c) =>
               (setlang == '' || c.lang == Lang.from(setlang)) && c is! Picture,
@@ -325,6 +326,28 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
             });
           },
         ),
+        cp.copyWith(
+          label: 'Search',
+          type: ContextMenuButtonType.custom,
+          onPressed: () {
+            cp.onPressed?.call();
+
+            Clipboard.getData(Clipboard.kTextPlain).then((data) {
+              final String? selectedText = data?.text;
+
+              Navigator.push<CacheResult?>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SearchFrame(
+                    id: widget.id,
+                    book: widget.book,
+                    query: selectedText,
+                  ),
+                ),
+              );
+            });
+          },
+        ),
         ...editableTextState.contextMenuButtonItems, // Copy, Select all, …
       ],
     );
@@ -348,17 +371,24 @@ class ContentView extends ConsumerWidget {
       controller: controller,
       padding: padding,
       itemCount: chapter.chunks.length,
-      itemBuilder: (context, i) =>
-          // ListTile(title: Text('$i')),
-          tile(chapter.chunks[i], ref),
+      itemBuilder: (context, i) => tile(
+        context,
+        chapter.forRead(maxWidth: MediaQuery.of(context).size.width)[i],
+        ref,
+      ),
     );
   }
 
-  Widget tile(Chunk c, WidgetRef ref) {
+  Widget tile(BuildContext context, Chunk c, WidgetRef ref) {
     if (c is Picture) {
+      final dpr = MediaQuery.devicePixelRatioOf(context);
+      // print('picture: ${c.w} ${c.h}, dpr: $dpr');
       return Image.memory(
         c.bytes() ?? Uint8List.fromList([]),
         fit: BoxFit.fitWidth,
+        width: c.w,
+        height: c.h,
+        cacheWidth: (dpr * c.w!).round(),
       );
     }
     return Text.rich(
@@ -371,7 +401,11 @@ class ContentView extends ConsumerWidget {
   }
 
   TextStyle style(Chunk c, WidgetRef ref) {
-    final key = (c.lang == Lang.zh || c.lang == Lang.jp || c.lang == Lang.kr)
+    final key =
+        (c.lang == Lang.all ||
+            c.lang == Lang.zh ||
+            c.lang == Lang.jp ||
+            c.lang == Lang.kr)
         ? 'ui.zh.font-size'
         : 'ui.en.font-size';
     final fs =
@@ -381,7 +415,9 @@ class ContentView extends ConsumerWidget {
         (c.strong ? 2 : 0);
 
     return TextStyle(
-      fontFamily: c.lang == Lang.zh ? '.osdefault' : 'sans-serif',
+      fontFamily: c.lang == Lang.zh || c.lang == Lang.all
+          ? '.osdefault'
+          : 'sans-serif',
       fontSize: fs,
       height: 1.55,
     );

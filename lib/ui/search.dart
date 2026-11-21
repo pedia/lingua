@@ -220,11 +220,13 @@ class SearchFrame extends ConsumerStatefulWidget {
   const SearchFrame({
     required this.id,
     required this.book,
+    this.query,
     this.cache,
     super.key,
   });
   final int id;
   final Book book;
+  final String? query;
   final CacheResult? cache;
 
   @override
@@ -248,7 +250,12 @@ class _SearchScreenState extends ConsumerState<SearchFrame> {
         _input.text = widget.cache!.query;
         _searchResults.addAll(widget.cache!.results);
       });
+    } else if (widget.query != null) {
+      setState(() {
+        _input.text = widget.query!;
+      });
     }
+
     super.initState();
   }
 
@@ -470,39 +477,4 @@ class CacheResult {
       ),
     );
   }
-}
-
-const Map<String, String> _ansiColors = {
-  'black': '\x1B[30m',
-  'red': '\x1B[31m',
-  'green': '\x1B[32m',
-  'yellow': '\x1B[33m',
-  'blue': '\x1B[34m',
-  'magenta': '\x1B[35m',
-  'cyan': '\x1B[36m',
-  'white': '\x1B[37m',
-  'brightRed': '\x1B[91m',
-  'brightGreen': '\x1B[92m',
-  'brightYellow': '\x1B[93m',
-  'brightBlue': '\x1B[94m',
-};
-
-const String _ansiReset = '\x1B[0m';
-
-/// Converts markup like `xx[red]xx[/red]` into ANSI escape sequences.
-String colorizeAnsi(String input) {
-  final tagPattern = RegExp(r'\[([a-zA-Z]+)\](.*?)\[/\1\]', dotAll: true);
-
-  return input.replaceAllMapped(tagPattern, (match) {
-    final colorName = match.group(1)!;
-    final content = match.group(2)!;
-    final ansiCode = _ansiColors[colorName];
-
-    if (ansiCode == null) return match.group(0)!;
-    return '$ansiCode$content$_ansiReset';
-  });
-}
-
-void clog(String message) {
-  debugPrint(colorizeAnsi(message));
 }

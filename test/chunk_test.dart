@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import '../lib/chunk/chunk.dart';
+import '../lib/chunk/sample.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -307,6 +308,72 @@ void main() {
       expect(pic.idx, equals(0));
       expect(pic.speak, isEmpty);
       expect(pic.copyWith(idx: 3).idx, equals(3));
+    });
+
+    test('updates Picture.w and Picture.h via updateSize() from image headers and viewport bounds', () {
+      // Minimal 800x600 PNG header
+      final png = Uint8List(24)
+        ..setAll(0, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        ..setAll(12, ascii.encode('IHDR'));
+      ByteData.sublistView(png)
+        ..setUint32(16, 800, Endian.big)
+        ..setUint32(20, 600, Endian.big);
+
+      final pngPic = Picture('a.png', bytes: () => png);
+      expect(pngPic.w, isNull);
+      expect(pngPic.h, isNull);
+      expect(pngPic.updateSize(maxWidth: 400), isTrue);
+      expect(pngPic.w, equals(400.0));
+      expect(pngPic.h, equals(300.0));
+
+      // Minimal 1000x500 JPEG SOF0 header with explicit HTML w=200 (missing h)
+      final jpg = Uint8List.fromList([
+        0xFF, 0xD8,
+        0xFF, 0xC0, 0x00, 0x0B, 0x08,
+        0x01, 0xF4, // height = 500
+        0x03, 0xE8, // width = 1000
+        0x03, 0x01, 0x11, 0x00,
+        0xFF, 0xD9,
+      ]);
+      final jpgPic = Picture('b.jpg', w: 200, bytes: () => jpg);
+      expect(jpgPic.updateSize(), isTrue);
+      expect(jpgPic.w, equals(200.0));
+      expect(jpgPic.h, equals(100.0));
+
+      // Minimal 320x240 GIF89a header + maxHeight constraint
+      final gif = Uint8List(10)..setAll(0, ascii.encode('GIF89a'));
+      ByteData.sublistView(gif)
+        ..setUint16(6, 320, Endian.little)
+        ..setUint16(8, 240, Endian.little);
+      final gifPic = Picture('c.gif', bytes: () => gif);
+      expect(gifPic.updateSize(maxHeight: 120), isTrue);
+      expect(gifPic.w, equals(160.0));
+      expect(gifPic.h, equals(120.0));
+
+      // Minimal 640x480 WebP VP8L header
+      final webp = Uint8List(25)
+        ..setAll(0, ascii.encode('RIFF'))
+        ..setAll(8, ascii.encode('WEBPVP8L'))
+        ..[20] = 0x2F;
+      ByteData.sublistView(webp)
+        ..setUint32(21, (640 - 1) | ((480 - 1) << 14), Endian.little);
+      final webpPic = Picture('d.webp', bytes: () => webp);
+      expect(webpPic.updateSize(), isTrue);
+      expect(webpPic.w, equals(640.0));
+      expect(webpPic.h, equals(480.0));
+
+      // SVG header with viewBox + explicit override
+      final svgPic = Picture(
+        'e.svg',
+        bytes: () => Uint8List.fromList(utf8.encode('<svg viewBox="0 0 500 250"></svg>')),
+      );
+      expect(svgPic.updateSize(), isTrue);
+      expect(svgPic.w, equals(500.0));
+      expect(svgPic.h, equals(250.0));
+
+      expect(svgPic.updateSize(w: 120, h: 90), isTrue);
+      expect(svgPic.w, equals(120.0));
+      expect(svgPic.h, equals(90.0));
     });
   });
 
@@ -708,6 +775,117 @@ void main() {
       );
       final pdb = buildPdb(pdbName: 'Locked', records: [rec0, utf8.encode('0123456789')]);
       expect(() => MobiParser.parseBytes(pdb), throwsFormatException);
+    });
+  });
+
+  group('Sample Book', () {
+    test('provides organized sample book with format, footnote, and picture chapters', () {
+      final book = sampleBook;
+      expect(book.title, equals('Chunk Sample Book'));
+      expect(book.cover(), isNotNull);
+      expect(book.chapters.length, equals(3));
+
+      // Chapter 1: Formats & Languages
+      final ch1 = book.chapters[0];
+      expect(ch1.title, equals('Chapter 1: Formats and Languages'));
+      final c1 = ch1.chunks;
+      expect(c1.whereType<Picture>(), isEmpty);
+      expect(c1.any((c) => c.strong && c.id == 'ch1-top'), isTrue);
+      expect(c1.any((c) => c.text == 'Split word spans and chars merge seamlessly.'), isTrue);
+      expect(c1.any((c) => c.lang == Lang.zh && (c.text ?? '').contains('Galileo Galilei')), isTrue);
+      expect(c1.any((c) => c.lang == Lang.es), isTrue);
+      expect(c1.any((c) => c.lang == Lang.jp), isTrue);
+      expect(c1.any((c) => c.lang == Lang.kr), isTrue);
+      expect(c1.every((c) => (c.text ?? c.spans.map((s) => s.text).join()).trim().isNotEmpty), isTrue);
+
+      // Chapter 2: Footnotes & Endnotes
+      final ch2 = book.chapters[1];
+      expect(ch2.title, equals('Chapter 2: Footnotes and Endnotes'));
+      expect(ch2.chunks.whereType<Picture>(), isEmpty);
+      final notes = ch2.chunks
+          .expand((c) => c.spans)
+          .whereType<Anchor>()
+          .where((a) => a.note != null)
+          .toList();
+      expect(notes.length, equals(5));
+      expect(notes[0].note, equals('EPUB 3 aside footnote content.'));
+      expect(notes[1].note, equals('Duokan nested ordered-list footnote content.'));
+      expect(notes[2].note, equals('Inline zy-footnote attribute note.'));
+      expect(notes[3].note, contains('exceeding forty characters'));
+      expect(notes[4].note, equals('InDesign / Kobo endnote content with backlink stripped.'));
+      expect(
+        ch2.chunks.last.speak,
+        equals('InDesign / Kobo endnote reference in running text.'),
+      );
+
+      // Chapter 3: Pictures
+      final ch3 = book.chapters[2];
+      expect(ch3.title, equals('Chapter 3: Pictures and Media'));
+      final pics = ch3.chunks.whereType<Picture>().toList();
+      expect(pics.length, equals(7));
+      expect(pics[0].id, equals('pic-standard'));
+      expect(pics[0].w, equals(640.0));
+      expect(pics[0].h, equals(480.0));
+      expect(pics[0].bytes(), isNotNull);
+      expect(pics[1].w, isNull); // percentage width
+      expect(pics[1].bytes(), isNotNull);
+      expect(pics[2].bytes(), isNotNull); // URL-encoded with query/fragment
+      expect(pics[3].src, startsWith('data:image/png;base64,'));
+      expect(pics[3].bytes(), equals(book.cover()));
+      expect(pics[4].w, equals(800.0)); // SVG viewBox + image
+      expect(pics[4].h, equals(600.0));
+      expect(pics[4].bytes(), isNotNull);
+      expect(pics[5].src, equals('mobi_image_00001.png')); // recindex
+      expect(pics[5].bytes(), isNotNull);
+      expect(pics[6].id, equals('pic-inline'));
+      expect(pics[6].speak, isEmpty);
+    });
+
+    test('builds Book.index map and supports normalized multi-script search', () {
+      final book = sampleBook;
+      final index = book.index;
+
+      // Direct normalized keyword lookup in Book.index
+      final galileoRefs = index['galileo'];
+      expect(galileoRefs, isNotNull);
+      expect(galileoRefs!.length, equals(1));
+      expect(galileoRefs.first.chapter, equals(0));
+      final galileoChunk =
+          book.chapters[galileoRefs.first.chapter].chunks[galileoRefs.first.chunk];
+      expect(galileoChunk.text, contains('Galileo Galilei'));
+
+      // Case-insensitive & full-width normalization
+      expect(book.search('GALILEO'), equals(galileoRefs));
+      expect(book.search('Ｇａｌｉｌｅｏ'), equals(galileoRefs));
+
+      // Multi-keyword intersection vs exactPhrase
+      final splitMergeHits = book.search('split merge');
+      expect(splitMergeHits.length, equals(1));
+      expect(
+        book.chapters[splitMergeHits.first.chapter].chunks[splitMergeHits.first.chunk].text,
+        equals('Split word spans and chars merge seamlessly.'),
+      );
+      expect(book.search('split merge', exactPhrase: true), isEmpty);
+      expect(book.search('split word spans', exactPhrase: true), equals(splitMergeHits));
+
+      // Cross-chapter hits for shared keyword
+      final footnoteRefs = index['footnote'];
+      expect(footnoteRefs, isNotNull);
+      expect(footnoteRefs!.map((r) => r.chapter).toSet(), equals({1}));
+      expect(footnoteRefs.length, equals(3));
+
+      // Multi-script & CJK bigram queries
+      final zhHits = book.search('繁體中文');
+      expect(zhHits.length, equals(2));
+      expect(zhHits.every((r) => r.chapter == 0), isTrue);
+      expect(book.search('español').length, equals(1));
+      expect(book.search('한국어').length, equals(2));
+      expect(book.search('한글').length, equals(1));
+      expect(book.search('ひらがな').length, equals(1));
+
+      // Missing term returns empty list
+      expect(book.search('nonexistentkeywordxyz'), isEmpty);
+      expect(book.search('   '), isEmpty);
     });
   });
 }
