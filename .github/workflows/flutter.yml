@@ -21,3 +21,13 @@ jobs:
           channel: stable
           flutter-version: 3.19.0
       - run: flutter --version
+
+      - run: flutter pub get
+      - run: flutter pub upgrade --tighten
+      - run: flutter build apk --release --target-platform android-arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+          generate_release_notes: true
