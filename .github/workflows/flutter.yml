@@ -29,7 +29,9 @@ jobs:
           # flutter-version: 3.19.0
       - run: flutter --version
 
-      
+      - name: Upgrade Gradle Wrapper
+        working-directory: android
+        run: ./gradlew wrapper --gradle-version=9.1.0 --distribution-type=all      
 
       - run: flutter pub get
       - run: flutter pub upgrade --tighten
