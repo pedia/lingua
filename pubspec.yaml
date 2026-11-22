@@ -52,6 +52,7 @@ dependencies:
   # opencc: ^1.0.1
   collection: ^1.19.1  
   ffi: ^2.2.0
+  quick_actions: ^1.1.1
 
 
 dev_dependencies:

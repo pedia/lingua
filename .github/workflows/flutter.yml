@@ -40,7 +40,7 @@ jobs:
 
       - name: Upgrade Gradle Wrapper
         working-directory: android
-        run: ./gradlew wrapper --gradle-version=9.1.0 --distribution-type=all      
+        run: ./gradlew wrapper --gradle-version=9.3.1 --distribution-type=all      
 
       - run: flutter pub get
       - run: flutter pub upgrade --tighten
