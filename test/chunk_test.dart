@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import '../lib/chunk/chunk.dart';
 import '../lib/chunk/sample.dart';
+import '../lib/chunk/fix.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

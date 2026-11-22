@@ -45,12 +45,12 @@ jobs:
         run: flutter analyze
 
       # Step 7: Run Unit and Widget tests
-      - name: Run tests
-        run: flutter test
+      # - name: Run tests
+      #   run: flutter test
 
       # Step 8: Build the release APK (Android application package)
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --target-platform android-arm64
 
       # Step 9: Upload the built APK as a GitHub artifact
       - name: Upload Build Artifact

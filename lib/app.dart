@@ -124,7 +124,17 @@ class MainApp extends ConsumerWidget {
       ],
       routerConfig: GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, _) => ShelfFrame()),
+          GoRoute(
+            path: '/',
+            builder: (_, _) {
+              // final id = box.get('last', defaultValue: 0);
+              // if (id != 0) {
+              //   return BookScreen(id);
+              // }
+              return ShelfFrame();
+            },
+          ),
+          GoRoute(path: '/shelf', builder: (_, _) => ShelfFrame()),
           GoRoute(
             path: '/book/:id',
             builder: (_, state) {
@@ -151,7 +161,7 @@ class MainApp extends ConsumerWidget {
           GoRoute(path: '/sliver', builder: (_, _) => LongTextScreen()),
           GoRoute(path: '/stack', builder: (_, _) => NonSliverTextScreen()),
           GoRoute(path: '/tabs', builder: (_, _) => DynamicTabScreen()),
-          GoRoute(path: '/shelf-mgmt', builder: (_, _) => ShelfEditScreen()),
+          GoRoute(path: '/shelf/edit', builder: (_, _) => ShelfEditScreen()),
           GoRoute(path: '/font', builder: (_, _) => FontFrame()),
           GoRoute(
             path: '/master-detail',
@@ -230,7 +240,8 @@ final demoPaths = [
   '/offset',
   '/stuck',
   '/error',
-  '/shelf-mgmt',
+  '/shelf',
+  '/shelf/edit',
   '/hive',
   '/setting',
   '/provider',

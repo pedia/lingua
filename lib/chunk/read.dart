@@ -90,113 +90,124 @@ class _ReadScreenState extends ConsumerState<ReadScreen> {
       }
     });
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: Drawer(
-        width: 280,
-        child: legacy.TheDrawer(
-          widget.id,
-          widget.book,
-          initialIndex: initialDrawerIndex,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.go('/shelf');
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: Drawer(
+          width: 280,
+          child: legacy.TheDrawer(
+            widget.id,
+            widget.book,
+            initialIndex: initialDrawerIndex,
+          ),
         ),
-      ),
-      body: Stack(
-        children: [
-          // 1. Scrollable Body, force show on Android
-          Scrollbar(
-            controller: _roller,
-            child: SelectableRegion(
-              focusNode: FocusNode(),
-              selectionControls: materialTextSelectionHandleControls,
-              contextMenuBuilder: selectToolbar,
-              child: ContentView(
-                chapter: widget.book.chapters[ci],
-                controller: _roller,
-                padding: EdgeInsets.fromLTRB(8, totalAppBarHeight + 8, 8, 8),
+        body: Stack(
+          children: [
+            // 1. Scrollable Body, force show on Android
+            Scrollbar(
+              controller: _roller,
+              child: SelectableRegion(
+                focusNode: FocusNode(),
+                selectionControls: materialTextSelectionHandleControls,
+                contextMenuBuilder: selectToolbar,
+                child: ContentView(
+                  chapter: widget.book.chapters[ci],
+                  controller: _roller,
+                  padding: EdgeInsets.fromLTRB(8, totalAppBarHeight + 8, 8, 8),
+                ),
               ),
             ),
-          ),
 
-          // 2. Sliding Top AppBar / Header
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            top: _isAppBarVisible ? 0 : -totalAppBarHeight,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: EdgeInsets.only(top: topPadding),
-              height: totalAppBarHeight,
-              color: Theme.of(context).primaryColor,
-              child: GestureDetector(
-                onTap: () => _roller.jumpTo(0),
-                onDoubleTap: () => _roller.jumpTo(0),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      ch.title,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+            // 2. Sliding Top AppBar / Header
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              top: _isAppBarVisible ? 0 : -totalAppBarHeight,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.only(top: topPadding),
+                height: totalAppBarHeight,
+                color: Theme.of(context).primaryColor,
+                child: GestureDetector(
+                  onTap: () => _roller.jumpTo(0),
+                  onDoubleTap: () => _roller.jumpTo(0),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        ch.title,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-
-      // 3. Always-showing bottom buttons panel
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.only(
-          left: 16.0,
-          right: 16,
-          top: 0.0,
-          bottom: 16,
-        ),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 8,
-              offset: const Offset(0, -3),
-            ),
           ],
         ),
-        child: SafeArea(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () {
-                  setState(() => initialDrawerIndex = 0);
-                  _scaffoldKey.currentState?.openDrawer();
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () async {
-                  _cache ??= CacheResult('', []);
-                  _cache = await _cache?.show(context, widget.id, widget.book);
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => context.push('/edit/${widget.id}'),
-              ),
-              ...speakButtons(),
-              IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () => context.push('/setting'),
+
+        // 3. Always-showing bottom buttons panel
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.only(
+            left: 16.0,
+            right: 16,
+            top: 0.0,
+            bottom: 16,
+          ),
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(8),
+                blurRadius: 8,
+                offset: const Offset(0, -3),
               ),
             ],
+          ),
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () {
+                    setState(() => initialDrawerIndex = 0);
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () async {
+                    _cache ??= CacheResult('', []);
+                    _cache = await _cache?.show(
+                      context,
+                      widget.id,
+                      widget.book,
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => context.push('/edit/${widget.id}'),
+                ),
+                ...speakButtons(),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () => context.push('/setting'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

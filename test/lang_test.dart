@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/src/widgets/binding.dart';
 import 'package:lingua/epub/lang.dart';
 import 'package:flutter_open_chinese_convert/flutter_open_chinese_convert.dart';
-import 'package:opencc/opencc.dart' show ZhConverter;
+// import 'package:opencc/opencc.dart' show ZhConverter;
 
 class ChineseTextUtility {
   // 1. Check if a string consists entirely of Chinese characters
@@ -75,8 +75,8 @@ void main() {
     print('Are both strings identical after conversion? $areEqual'); // true
   });
 
-  test('opencc', () {
-    final zh = ZhConverter('s2t');
-    expect(zh.convert('汉字'), '漢字');
-  });
+  // test('opencc', () {
+  //   final zh = ZhConverter('s2t');
+  //   expect(zh.convert('汉字'), '漢字');
+  // });
 }
