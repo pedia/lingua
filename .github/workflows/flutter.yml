@@ -29,18 +29,18 @@ jobs:
           # flutter-version: 3.19.0
       - run: flutter --version
 
-      - name: Create local.properties
-        run: |
-          FLUTTER_ROOT="$(dirname "$(dirname "$(which flutter)")")"
-          SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          cat <<EOF > android/local.properties
-          sdk.dir=$SDK_DIR
-          flutter.sdk=$FLUTTER_ROOT
-          EOF
+      # - name: Create local.properties
+      #   run: |
+      #     FLUTTER_ROOT="$(dirname "$(dirname "$(which flutter)")")"
+      #     SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+      #     cat <<EOF > android/local.properties
+      #     sdk.dir=$SDK_DIR
+      #     flutter.sdk=$FLUTTER_ROOT
+      #     EOF
 
-      - name: Upgrade Gradle Wrapper
-        working-directory: android
-        run: ./gradlew wrapper --gradle-version=9.1.0 --distribution-type=all      
+      # - name: Upgrade Gradle Wrapper
+      #   working-directory: android
+      #   run: ./gradlew wrapper --gradle-version=9.1.0 --distribution-type=all      
 
       - run: flutter pub get
       - run: flutter pub upgrade --tighten
