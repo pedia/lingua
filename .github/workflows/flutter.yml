@@ -33,7 +33,7 @@ jobs:
 
       - run: flutter pub get
       - run: flutter pub upgrade --tighten
-      - run: flutter build apk --release --target-platform android-arm64
+      - run: flutter build apk --release --target-platform android-arm64 --android-skip-build-dependency-validation
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
